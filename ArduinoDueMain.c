@@ -26,12 +26,12 @@ int main(void)
   {
 /******************************************************************************/
 
-  APV_ERROR_CODE apvErrorCode = APV_ERROR_CODE_NONE;
+  APV_SERIAL_ERROR_CODE apvSerialErrorCode = APV_SERIAL_ERROR_CODE_NONE;
 
 /******************************************************************************/
 
   // Default to using the UART for primary serial comms
-  apvErrorCode = apvSerialCommsManager(APV_PRIMARY_SERIAL_PORT_UART);
+  apvSerialErrorCode = apvSerialCommsManager(APV_PRIMARY_SERIAL_PORT_UART);
 
 /******************************************************************************/
 

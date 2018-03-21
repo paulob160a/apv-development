@@ -12,7 +12,6 @@
 /* Include Files :                                                            */
 /******************************************************************************/
 
-
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -39,18 +38,18 @@ static void (*apvPrimarySerialCommsInterruptHandler)(void) = NULL;
 /*  - responsible for assigning and setting up the serial port handlers       */
 /******************************************************************************/
 
-APV_ERROR_CODE apvSerialCommsManager(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
+APV_SERIAL_ERROR_CODE apvSerialCommsManager(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
   {
 /******************************************************************************/
 
-  APV_ERROR_CODE apvErrorCode = APV_ERROR_CODE_NONE;
+  APV_SERIAL_ERROR_CODE apvErrorCode = APV_SERIAL_ERROR_CODE_NONE;
 
 /******************************************************************************/
 
   // Check to see if the primary serial comms has already been assigned
   if (apvSerialCommsManagerAssigned == true)
     {
-    apvErrorCode = APV_ERROR_CODE_PRIMARY_SERIAL_PORT_ALREADY_ASSIGNED;
+    apvErrorCode = APV_SERIAL_ERROR_CODE_PRIMARY_SERIAL_PORT_ALREADY_ASSIGNED;
     }
   else
     {
