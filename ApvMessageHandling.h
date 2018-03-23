@@ -63,6 +63,8 @@
 /******************************************************************************/
 
 #include <stdint.h>
+#include "ApvError.h"
+#include "ApvCrcGenerator.h"
 
 /******************************************************************************/
 /* Definitions :                                                              */
@@ -72,8 +74,10 @@
 #define APV_MESSAGING_END_OF_MESSAGE                   APV_MESSAGING_START_OF_MESSAGE // EOM
 
 // Communication physical and logical planes are encapsulated in one token (byte)
-#define APV_COMMS_PLANE_FIELD_BITS                     (4) // apvCommsPlanes_t
-#define APV_SIGNAL_PLANE_FIELD_BITS                    (4) // apvSignalPlanes_t
+#define APV_COMMS_PLANE_FIELD_BITS                     (4)    // apvCommsPlanes_t
+#define APV_SIGNAL_PLANE_FIELD_BITS                    (4)    // apvSignalPlanes_t
+#define APV_MESSAGE_PLANE_MASK                         (0x0f) // one nybble
+#define APV_MESSAGE_PLANE_SHIFT                        APV_SIGNAL_PLANE_FIELD_BITS
 
 #define APV_MESSAGING_MINIMUM_UNSTUFFED_MESSAGE_LENGTH (1) // 1
 #define APV_MESSAGING_MAXIMUM_UNSTUFFED_MESSAGE_LENGTH ((APV_MESSAGING_START_OF_MESSAGE - 1) >> 1) // 62
@@ -131,11 +135,11 @@ typedef enum apvSignalPlanes_tTag
   APV_SIGNAL_PLANES
   } apvSignalPlanes_t;
 
-// Definition of the communication "planes" frame token
+// Definition of the communication "planes" frame token. Note VC++ 2012 warning C4214 indicates using a bit-field type other than 'int'
 typedef struct apvMessagePlanes_tTag
   {
-  uint8_t apvCommsPlane : APV_COMMS_PLANE_FIELD_BITS;  // bits 0 - 3
-  uint8_t apvDataPlane  : APV_SIGNAL_PLANE_FIELD_BITS; // bits 4 - 7
+  uint8_t apvCommsPlane  : APV_COMMS_PLANE_FIELD_BITS;  // bits 0 - 3
+  uint8_t apvSignalPlane : APV_SIGNAL_PLANE_FIELD_BITS; // bits 4 - 7
   } apvMessagePlanes_t;
 
 typedef union apvMessagePlanesToken_tTag
@@ -147,11 +151,11 @@ typedef union apvMessagePlanesToken_tTag
 typedef struct apvMessageStructure_tTag
   {
   uint8_t                 apvMessagingStartOfMessageToken;
-  uint8_t                 apvMessagingLengthOfMessage;
+  uint8_t                 apvMessagingLengthOfMessage; // this does not include the appended CRC
   apvMessagePlanesToken_t apvMessagingPlanesToken;
-  uint8_t                 apvMessagingPayload[APV_MESSAGING_MAXIMUM_STUFFED_MESSAGE_LENGTH];
-  uint8_t                 apvMessagingCrcHighToken;
+  uint8_t                 apvMessagingPayload[APV_MESSAGING_MAXIMUM_STUFFED_MESSAGE_LENGTH + APV_CRC_WORD_WIDTH]; // the block CRC generator adds the CRC to the end of the message
   uint8_t                 apvMessagingCrcLowToken;
+  uint8_t                 apvMessagingCrcHighToken;
   uint8_t                 apvMessagingEndOfMessageToken;
   } apvMessageStructure_t;
 
@@ -161,6 +165,22 @@ typedef union apvMessageFrame_tTag
   apvMessageStructure_t apvMessageStructure;
   uint8_t               apvMessageFrame[sizeof(apvMessageStructure_t)];
   } apvMessageFrame_t;
+
+// Holds the state of an in-progress attempt to de-frame a low-level message
+typedef struct apvMessageDeFramingState_tTag
+  {
+  uint8_t blah;
+  } apvMessageDeFramingState_t;
+
+/******************************************************************************/
+/* Function Declarations :                                                    */
+/******************************************************************************/
+
+extern APV_ERROR_CODE apvFrameMessage(apvMessageStructure_t *messageStructure,
+                                      apvCommsPlanes_t       commsPlane,
+                                      apvSignalPlanes_t      signalPlane,
+                                      uint8_t               *message,
+                                      uint16_t               messageLength);
 
 /******************************************************************************/
 

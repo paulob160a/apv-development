@@ -27,7 +27,7 @@
 
 // APV uses the CCITT-CRC16 error detection specification
 #define APV_CRC_GENERATOR_POLYNOMIAL    ((uint16_t)0x1021)
-#define APV_CRC_GENERATOR_INITIAL_VALUE ((uint16_t)0x0000)
+#define APV_CRC_GENERATOR_INITIAL_VALUE ((uint16_t)0xFFFF)
 #define APV_CRC_GENERATOR_CHECKSUM      ((uint16_t)0x2189)
 
 #define APV_CRC_BYTE_WIDTH              8

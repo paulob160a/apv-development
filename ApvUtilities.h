@@ -2,46 +2,46 @@
 /* (C) PulsingCoreSoftware Limited 2018 (C)                                   */
 /******************************************************************************/
 /*                                                                            */
-/* ApvError.h                                                                 */
-/* 21.03.18                                                                   */
+/* ApvUtilities.h                                                             */
+/* 22.03.18                                                                   */
 /* Paul O'Brien                                                               */
 /*                                                                            */
-/* - error codes and handlers for the whole application                       */
+/* - a set of functions to add some helpers                                   */
 /*                                                                            */
 /******************************************************************************/
 
-#ifndef _APV_ERROR_H_
-#define _APV_ERROR_H_
+#ifndef _APV_UTILITIES_
+#define _APV_UTILITIES_
+
+/******************************************************************************/
+/* Include Files :                                                            */
+/******************************************************************************/
+
+#include <stdint.h>
+#ifndef WIN32
+#include <__armlib.h>
+#endif
+#include "ApvError.h"
 
 /******************************************************************************/
 /* Definitions :                                                              */
 /******************************************************************************/
 
-#define APV_MESSAGE_BUFFER_EMPTY ((uint16_t)0)
+#define APV_INITIAL_INTERRUPT_NESTING_COUNT ((int16_t)0)
 
 /******************************************************************************/
-/* Type Definitions :                                                         */
+/* Global Variables :                                                         */
 /******************************************************************************/
 
-typedef enum apvGlobalErrorFlags_tTag
-  {
-  APV_GLOBAL_ERROR_FLAG_NONE = 0,
-  APV_GLOBAL_ERROR_FLAG_FUNCTION_INTERRUPT_NESTING,
-  APV_GLOBAL_ERROR_FLAGS
-  } apvGlobalErrorFlags_t;
+extern int16_t               apvInterruptNestingCount;
+extern APV_GLOBAL_ERROR_FLAG apvGlobalErrorFlags;
 
-typedef apvGlobalErrorFlags_t APV_GLOBAL_ERROR_FLAG;
+/******************************************************************************/
+/* Function Declarations :                                                    */
+/******************************************************************************/
 
-typedef enum apvErrorCodes_tTag
-  {
-  APV_ERROR_CODE_NONE = 0,
-  APV_ERROR_CODE_MESSAGE_BUFFER_FAULTY,
-  APV_ERROR_CODE_MESSAGE_DEFINITION_ERROR,
-  APV_ERROR_CODE_RING_BUFFER_DEFINITION_ERROR,
-  APV_ERROR_CODES
-  } apvErrorCodes_t;
-
-typedef apvErrorCodes_t APV_ERROR_CODE;
+extern void APV_CRITICAL_REGION_ENTRY(void);
+extern void APV_CRITICAL_REGION_EXIT(void);
 
 /******************************************************************************/
 

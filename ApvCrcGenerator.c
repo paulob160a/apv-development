@@ -14,16 +14,14 @@
 /* Include Files :                                                            */
 /******************************************************************************/
 
-#include <stdio.h>
 #include <stdint.h>
-#include "ApvError.h"
 #include "ApvCrcGenerator.h"
 
 /******************************************************************************/
 /* Static Variables :                                                         */
 /******************************************************************************/
 
-const static uint16_t crc16_ccitt_table[] = 
+static uint16_t crc16_ccitt_table[] = 
   {
   0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50A5, 0x60C6, 0x70E7,
   0x8108, 0x9129, 0xA14A, 0xB16B, 0xC18C, 0xD1AD, 0xE1CE, 0xF1EF,
@@ -66,7 +64,7 @@ const static uint16_t crc16_ccitt_table[] =
 /*  -->  newByte : an unsigned 8-bit number                                   */
 /*  <--> crc     : the running CRC value                                      */
 /*                                                                            */
-/*  - compute one iteration of a CCITT CRC16                                  */
+/*  - compute a CCITT CRC16                                                   */
 /******************************************************************************/
 
 void apvComputeCrc(uint8_t newByte, uint16_t *crc)
@@ -77,57 +75,6 @@ void apvComputeCrc(uint8_t newByte, uint16_t *crc)
 
 /******************************************************************************/
   } /* end of apvComputeCrc                                                   */
-
-/******************************************************************************/
-/* apvBlockComputeCrc() :                                                     */
-/*  --> messageBuffer       : an array of unsigned 8-bit numbers              */
-/*  --> messageBufferLength : the length of the message buffer content. The   */
-/*                            full length of the buffer MUST be at least two  */
-/*                            bytes longer to accommodate the CRC             */
-/*  <--> crc                : the resulting CRC value                         */
-/*                                                                            */
-/*  - compute the CCITT CRC16 of a complete message block                     */
-/******************************************************************************/
-
-APV_ERROR_CODE apvBlockComputeCrc(uint8_t *messageBuffer, uint16_t messageBufferLength, uint16_t *crc)
-  {
-/******************************************************************************/
-
-  APV_ERROR_CODE apvErrorCode  = APV_ERROR_CODE_NONE;
-
-/******************************************************************************/
-
-  if ((messageBuffer == NULL) || (crc == NULL) || (messageBufferLength == APV_MESSAGE_BUFFER_EMPTY))
-    {
-    apvErrorCode = APV_ERROR_CODE_MESSAGE_BUFFER_FAULTY;
-    }
-  else
-    {
-    // Initialise the CRC register
-    *crc = APV_CRC_GENERATOR_INITIAL_VALUE;
-
-    // Compute the CRC over the whole message
-    while (messageBufferLength > 0)
-      {
-      messageBufferLength = messageBufferLength - 1;
-
-      apvComputeCrc(*messageBuffer, crc);
-
-      messageBuffer = messageBuffer + 1;
-      }
-
-    // Store the CRC at the end of the message
-    *messageBuffer = (uint8_t)((*crc & (APV_CRC_BYTE_MASK << APV_CRC_MASK_SHIFT)) >> APV_CRC_MASK_SHIFT);
-     messageBuffer = messageBuffer + 1;
-    *messageBuffer = (uint8_t)(*crc & APV_CRC_BYTE_MASK);
-    }
-
-/******************************************************************************/
-
-  return(apvErrorCode);
-
-/******************************************************************************/
-  } /* end of apvBlockComputeCrc                                              */
 
 /******************************************************************************/
 /* (C) PulsingCoreSoftware Limited 2018 (C)                                   */

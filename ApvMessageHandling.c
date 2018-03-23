@@ -57,11 +57,12 @@
 /* Include Files :                                                            */
 /******************************************************************************/
 
+#include <stdio.h>
+#include <stdint.h>
+#include "ApvError.h"
+#include "ApvCrcGenerator.h"
 #include "ApvMessageHandling.h"
-
-/******************************************************************************/
-/* Function Definitions :                                                     */
-/******************************************************************************/
+#include "ApvCommsUtilities.h"
 
 /******************************************************************************/
 /* Static Variables :                                                         */
@@ -69,6 +70,112 @@
 
 apvMessageStructure_t  apvMessagePool;
 apvMessageStructure_t *apvMessageRoot = &apvMessagePool;
+
+/******************************************************************************/
+/* Function Definitions :                                                     */
+/******************************************************************************/
+/* apvFrameMessage() :                                                        */
+/*  <--> messageStructure : full definition for the framed message            */
+/*   --> commsPlane       : message physical path                             */
+/*   --> signalPlane      : message logical path                              */
+/*   --> message          : message to frame                                  */
+/*   --> message length   : number of tokens in the message                   */
+/*                                                                            */
+/* - construct a fully link-framed message                                    */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvFrameMessage(apvMessageStructure_t *messageStructure,
+                               apvCommsPlanes_t       commsPlane,
+                               apvSignalPlanes_t      signalPlane,
+                               uint8_t               *message,
+                               uint16_t               messageLength)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE framingError = APV_ERROR_CODE_NONE;
+
+/******************************************************************************/
+
+  if ((messageStructure == NULL) || (message == NULL) ||
+      (messageLength < APV_MESSAGING_MINIMUM_UNSTUFFED_MESSAGE_LENGTH) ||
+      (messageLength > APV_MESSAGING_MAXIMUM_UNSTUFFED_MESSAGE_LENGTH))
+    {
+    framingError = APV_ERROR_CODE_MESSAGE_DEFINITION_ERROR;
+    }
+  else
+    {
+    messageStructure->apvMessagingStartOfMessageToken = APV_MESSAGING_START_OF_MESSAGE;
+
+    messageStructure->apvMessagingPlanesToken.apvMessagePlanes.apvCommsPlane  = commsPlane;
+    messageStructure->apvMessagingPlanesToken.apvMessagePlanes.apvSignalPlane = signalPlane;
+
+    messageStructure->apvMessagingLengthOfMessage = 0;
+
+    // Insert any required byte-stuffing
+    while (messageLength > 0)
+      {
+      messageStructure->apvMessagingLengthOfMessage = messageStructure->apvMessagingLengthOfMessage + 1;
+
+      if (*message == APV_MESSAGING_START_OF_MESSAGE)
+        {
+        messageStructure->apvMessagingPayload[messageStructure->apvMessagingLengthOfMessage - 1] =  APV_MESSAGING_STUFFING_FLAG;
+        messageStructure->apvMessagingPayload[messageStructure->apvMessagingLengthOfMessage]     = *message;
+
+        messageStructure->apvMessagingLengthOfMessage = messageStructure->apvMessagingLengthOfMessage + 1;
+        }
+      else
+        {
+        messageStructure->apvMessagingPayload[messageStructure->apvMessagingLengthOfMessage - 1] = *message;
+        }
+
+      messageLength = messageLength - 1;
+      message       = message       + 1;
+      }
+
+    // Compute the CRC
+    apvBlockComputeCrc(&messageStructure->apvMessagingPayload[0],
+                        messageStructure->apvMessagingLengthOfMessage,
+                        (uint16_t *)&messageStructure->apvMessagingCrcLowToken);
+
+    messageStructure->apvMessagingEndOfMessageToken   = APV_MESSAGING_END_OF_MESSAGE;
+    }
+
+/******************************************************************************/
+
+  return(framingError);
+
+/******************************************************************************/
+  } /* end of apvFrameMessage                                                 */
+
+/******************************************************************************/
+/* apvDeFrameMessage() :                                                      */
+/*   --> ringBuffer       : 1 { <byte> } n                                    */
+/*  <--> messageStructure : full definition for the framed message            */
+/*   --> ringBuffer       : 1 { <byte> } n                                    */
+/*  <--> messageState     : the current state of the message de-framing       */
+/*                          finite-state-machine                              */
+/*                                                                            */
+/* - attempt to de-frame a message one or more tokens (bytes) at a time using */
+/*   the message structure-defining finite-state-machine                      */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvDeFrameMessage(apvRingBuffer_t            *ringBuffer,
+                                 apvMessageStructure_t      *messageStructure,
+                                 apvMessageDeFramingState_t *messageState)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE deFramingError = APV_ERROR_CODE_NONE;
+
+/******************************************************************************/
+/******************************************************************************/
+
+  return(deFramingError);
+
+/******************************************************************************/
+  } /* end of apvDeFrameMessage                                               */
 
 /******************************************************************************/
 /* (C) PulsingCoreSoftware Limited 2018 (C)                                   */
