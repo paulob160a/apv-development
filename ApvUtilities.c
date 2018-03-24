@@ -14,8 +14,10 @@
 
 #include <stdio.h>
 #ifdef WIN32
-#define __ARMLIB_disableIRQ() printf("\n DISABLE INTERRUPTS : NESTING LEVEL %05d", apvInterruptNestingCount);
-#define __ARMLIB_enableIRQ()  printf("\n ENABLE INTERRUPTS  : NESTING LEVEL %05d", apvInterruptNestingCount);
+#define libarm_disable_irq() //printf("\n DISABLE INTERRUPTS : NESTING LEVEL %05d", apvInterruptNestingCount);
+#define libarm_enable_irq()  //printf("\n ENABLE INTERRUPTS  : NESTING LEVEL %05d", apvInterruptNestingCount);
+#else
+#include <libarm.h>
 #endif
 #include "ApvUtilities.h"
 
@@ -48,7 +50,7 @@ void APV_CRITICAL_REGION_ENTRY(void)
     {
     if (apvInterruptNestingCount >= APV_INITIAL_INTERRUPT_NESTING_COUNT)
       {
-       __ARMLIB_disableIRQ(); // the locking mechanism
+      libarm_disable_irq(); // the locking mechanism
       }
 
     apvInterruptNestingCount = apvInterruptNestingCount + 1;
@@ -71,7 +73,7 @@ void APV_CRITICAL_REGION_EXIT(void)
 
   if (apvInterruptNestingCount == (APV_INITIAL_INTERRUPT_NESTING_COUNT + 1))
     {
-     __ARMLIB_enableIRQ(); // the unlocking mechanism
+    libarm_enable_irq(); // the unlocking mechanism
     }
 
   apvInterruptNestingCount = apvInterruptNestingCount - 1;

@@ -22,6 +22,7 @@
 #include <__armlib.h>
 #endif
 #include "ApvError.h"
+#include "ApvCommsUtilities.h"
 
 /******************************************************************************/
 /* Definitions :                                                              */
@@ -42,6 +43,7 @@ extern APV_GLOBAL_ERROR_FLAG apvGlobalErrorFlags;
 
 extern void APV_CRITICAL_REGION_ENTRY(void);
 extern void APV_CRITICAL_REGION_EXIT(void);
+extern void apvRingBufferPrint(apvRingBuffer_t *ringBuffer);
 
 /******************************************************************************/
 
