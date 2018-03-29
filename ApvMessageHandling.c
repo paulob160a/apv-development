@@ -35,15 +35,15 @@
 /* - the message format by token-numbering is :                               */
 /*                                                                            */
 /*   00 : <SOM>. It is not included in the message length                     */
-/*   01 : <message-length>. The unstuffed (flagged) message length range is   */
+/*   01 : <<comms-plane><signal-plane>>. Bits 0-3 are the comms-plane, bits   */
+/*        4-7 are the signal-plane. As this follows <SOM> it is NOT allowed   */
+/*        to be a 'bare' <SOM> (0x7e). It is not included in the message      */
+/*        length                                                              */
+/*   02 : <message-length>. The unstuffed (flagged) message length range is   */
 /*        constrained to be : 1 >= <message-length> <= ((0x7e - 1) / 2) i.e.  */
 /*        1 .. 62. A message length less than '1' is meaningless. A message   */
 /*        length of 62 if and when fully stuffed(!) expands to 124 or 0x7C.   */
 /*        It is not included in the message length                            */
-/*   02 : <<comms-plane><signal-plane>>. Bits 0-3 are the comms-plane, bits   */
-/*        4-7 are the signal-plane. As this follows <SOM><!SOM> it is allowed */
-/*        to be a 'bare' <SOM> (0x7e) if required. It is not included in the  */
-/*        message length                                                      */
 /*   03 : <message>. ( 1 * [ 1 | 2 ] ) { <token> } ( 62 * [ 1 | 2 ] ) i.e.    */
 /*        03 .. ( 03 + 0x7C )                                                 */
 /*                                                                            */
@@ -60,16 +60,59 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "ApvError.h"
+#include "ApvStateMachines.h"
 #include "ApvCrcGenerator.h"
 #include "ApvMessageHandling.h"
 #include "ApvCommsUtilities.h"
 
 /******************************************************************************/
+/* Global Variables :                                                         */
+/******************************************************************************/
+
+apvMessagingDeFramingState_t *apvMessageDeFramingStateMachine = &apvMessagingDeFramingStateMachine[APV_MESSAGE_FRAME_STATE_NULL];
+
+/******************************************************************************/
 /* Static Variables :                                                         */
 /******************************************************************************/
 
-apvMessageStructure_t  apvMessagePool;
-apvMessageStructure_t *apvMessageRoot = &apvMessagePool;
+static apvMessagingStateVariables_t apvMessageVariableCache;
+static apvMessageStructure_t        apvMessageFrame;
+
+/******************************************************************************/
+/* The message de-framing state-machine :                                     */
+/******************************************************************************/
+
+apvMessagingDeFramingState_t apvMessagingDeFramingStateMachine[APV_MESSAGE_FRAME_STATES] = 
+  {
+    {
+     APV_MESSAGE_FRAME_STATE_NULL,
+     APV_MESSAGE_FRAME_STATE_INITIALISATION,
+     apvMessageDeFramingNull,
+    &apvMessageVariableCache,
+    &apvMessageFrame
+    },
+    {
+     APV_MESSAGE_FRAME_STATE_INITIALISATION,
+     APV_MESSAGE_FRAME_STATE_START_OF_MESSAGE,
+     apvMessageDeFramingInitialise,
+    &apvMessageVariableCache,
+    &apvMessageFrame
+    },
+    {
+     APV_MESSAGE_FRAME_STATE_START_OF_MESSAGE,
+     APV_MESSAGE_FRAME_STATE_SIGNAL_AND_LOGICAL_PLANES,
+     apvMessageDeFramingStartOfMessage,
+    &apvMessageVariableCache,
+    &apvMessageFrame
+    },
+    {
+     APV_MESSAGE_FRAME_STATE_SIGNAL_AND_LOGICAL_PLANES,
+     APV_MESSAGE_FRAME_STATE_MESSAGE_LENGTH,
+     apvMessageDeFramingSignalAndLogicalPlanes,
+    &apvMessageVariableCache,
+    &apvMessageFrame
+    }
+  };
 
 /******************************************************************************/
 /* Function Definitions :                                                     */
@@ -149,33 +192,263 @@ APV_ERROR_CODE apvFrameMessage(apvMessageStructure_t *messageStructure,
   } /* end of apvFrameMessage                                                 */
 
 /******************************************************************************/
-/* apvDeFrameMessage() :                                                      */
-/*   --> ringBuffer       : 1 { <byte> } n                                    */
-/*  <--> messageStructure : full definition for the framed message            */
-/*   --> ringBuffer       : 1 { <byte> } n                                    */
-/*  <--> messageState     : the current state of the message de-framing       */
-/*                          finite-state-machine                              */
+/* apvDeFrameMessageInitialisation() :                                        */
+/*   --> ringBuffer          : 1 { <byte> } n                                 */
+/*  <--> messageBuffer       : full definition for the framed message         */
+/*  <--> messageStateMachine : the current state of the message de-framing    */
+/*                             finite-state-machine                           */
 /*                                                                            */
-/* - attempt to de-frame a message one or more tokens (bytes) at a time using */
+/* - set-up to de-frame a message one or more tokens (bytes) at a time using  */
 /*   the message structure-defining finite-state-machine                      */
 /*                                                                            */
 /******************************************************************************/
 
-APV_ERROR_CODE apvDeFrameMessage(apvRingBuffer_t            *ringBuffer,
-                                 apvMessageStructure_t      *messageStructure,
-                                 apvMessageDeFramingState_t *messageState)
+APV_MESSAGING_STATE_CODE apvDeFrameMessageInitialisation(apvRingBuffer_t               *ringBuffer,
+                                                          apvMessageStructure_t        *messageBuffer,
+                                                          apvMessagingDeFramingState_t *messageStateMachine)
   {
 /******************************************************************************/
 
-  APV_ERROR_CODE deFramingError = APV_ERROR_CODE_NONE;
+  APV_MESSAGING_STATE_CODE deFramingError = APV_STATE_MACHINE_CODE_NONE;
 
 /******************************************************************************/
+
+  // Initialise the state-machine variables
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NUMBER_OF_STATES] = APV_MESSAGE_FRAME_STATES;
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_FIRST_STATE]      = APV_MESSAGE_FRAME_STATE_NULL;
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_LAST_STATE]       = APV_MESSAGE_FRAME_STATE_ERROR_REPORTER;
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_ACTIVE_STATE]     = APV_MESSAGE_FRAME_STATE_NULL;
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT]      = 0;
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_STUFFING_FLAG]    = (apvMessageStateVariable_t)false;
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN]        = 0;
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_LAST_TOKEN]       = 0;
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_CRC_SUM]          = APV_CRC_GENERATOR_INITIAL_VALUE;
+
+  if ((ringBuffer == NULL) || (messageBuffer == NULL))
+    {
+    deFramingError = APV_STATE_MACHINE_CODE_ERROR;
+    }
+  else
+    {
+    // KEEP THIS FOR THE FINAL READ-BACK WHEN THE MESSAGE HAS BEEN ASSEMBLED, USE THE STATE-MACHINE MESSAGE-FRAME FOR ASSEMBLY
+    messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_LOW]     = (apvMessageStateVariable_t)(((apvMessageStateEntryPointer_t)ringBuffer)     & APV_UINT64_POINTER_UINT32_MASK);
+    messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_HIGH]    = (apvMessageStateVariable_t)((((apvMessageStateEntryPointer_t)ringBuffer)    & (APV_UINT64_POINTER_UINT32_MASK << APV_UINT64_POINTER_UINT32_SHIFT)) >> APV_UINT64_POINTER_UINT32_SHIFT);
+    messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW]  = (apvMessageStateVariable_t)(((apvMessageStateEntryPointer_t)messageBuffer)  & APV_UINT64_POINTER_UINT32_MASK);
+    messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_HIGH] = (apvMessageStateVariable_t)((((apvMessageStateEntryPointer_t)messageBuffer) & (APV_UINT64_POINTER_UINT32_MASK << APV_UINT64_POINTER_UINT32_SHIFT)) >> APV_UINT64_POINTER_UINT32_SHIFT);
+    }
+
+/******************************************************************************/
+
+  return(deFramingError);
+
+/******************************************************************************/
+  } /* end of apvDeFrameMessageInitialisation                                 */
+
+/******************************************************************************/
+/* apvMessageDeFrameMessage() :                                               */
+/*  --> messageStateMachine : the message state machine table                 */
+/* <-- apvStateError        : error codes                                     */
+/*                                                                            */
+/* - activate the messaging state machine                                     */
+/*                                                                            */
+/******************************************************************************/
+
+APV_MESSAGING_STATE_CODE apvDeFrameMessage(apvMessagingDeFramingState_t *messageStateMachine)
+  {
+/******************************************************************************/
+
+  APV_MESSAGING_STATE_CODE deFramingError = APV_STATE_MACHINE_CODE_NONE;
+
+/******************************************************************************/
+
+  deFramingError = apvExecuteStateMachine((apvMessagingDeFramingState_t *)messageStateMachine);
+
 /******************************************************************************/
 
   return(deFramingError);
 
 /******************************************************************************/
   } /* end of apvDeFrameMessage                                               */
+
+/******************************************************************************/
+/* Message de-framing state machine functions :                               */
+/******************************************************************************/
+/* apvMessageDeFramingNull() :                                                */
+/* <--> messageStateMachine : the message state machine table                 */
+/* <--  apvStateError       : error codes                                     */
+/*                                                                            */
+/* - holding state for the messaging state machine                            */
+/*                                                                            */
+/******************************************************************************/
+
+APV_MESSAGING_STATE_CODE apvMessageDeFramingNull(apvMessagingDeFramingState_t *messageStateMachine)
+  {
+/******************************************************************************/
+
+  APV_MESSAGING_STATE_CODE apvStateError = APV_STATE_MACHINE_CODE_NONE;
+
+/******************************************************************************/
+
+  // Save the next active state to change state
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_ACTIVE_STATE] = (apvMessageStateVariable_t)messageStateMachine->apvMessageNextState;
+
+/******************************************************************************/
+
+  return(apvStateError);
+
+/******************************************************************************/
+  } /* end of apvMessageDeFramingNull                                         */
+
+/******************************************************************************/
+/* apvMessageDeFramingInitialise() :                                          */
+/* <--> messageStateMachine : the message state machine table                 */
+/* <--  apvStateError       : error codes                                     */
+/*                                                                            */
+/* - initialisation state for the messaging state machine : re-initialise the */
+/*   non-static state variables                                               */
+/*                                                                            */
+/******************************************************************************/
+
+APV_MESSAGING_STATE_CODE apvMessageDeFramingInitialise(apvMessagingDeFramingState_t *messageStateMachine)
+  {
+/******************************************************************************/
+
+  APV_MESSAGING_STATE_CODE apvStateError = APV_STATE_MACHINE_CODE_NONE;
+
+/******************************************************************************/
+
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT]   = 0;
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_STUFFING_FLAG] = (apvMessageStateVariable_t)false;
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN]     = 0;
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_LAST_TOKEN]    = 0;
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_CRC_SUM]       = APV_CRC_GENERATOR_INITIAL_VALUE;
+
+  // Save the next active state to change state
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_ACTIVE_STATE] = (apvMessageStateVariable_t)messageStateMachine->apvMessageNextState;
+
+/******************************************************************************/
+
+  return(apvStateError);
+
+/******************************************************************************/
+  } /* end of apvMessageDeFramingInitialise                                   */
+
+/******************************************************************************/
+/* apvMessageDeFramingStartOfMessage() :                                      */
+/* <--> messageStateMachine : the message state machine table                 */
+/* <--  apvStateError       : error codes                                     */
+/*                                                                            */
+/* - start-of-message <SOM> detection state for the messaging state machine   */
+/*                                                                            */
+/******************************************************************************/
+
+APV_MESSAGING_STATE_CODE apvMessageDeFramingStartOfMessage(apvMessagingDeFramingState_t *messageStateMachine)
+  {
+/******************************************************************************/
+
+  APV_MESSAGING_STATE_CODE  apvStateError     = APV_STATE_MACHINE_CODE_NONE;
+
+  apvRingBuffer_t          *ringBufferPointer = NULL;
+  ringBufferEntryPointer_t  ringBufferInteger = 0;
+
+/******************************************************************************/
+
+  // Compute the ring-buffer structure address
+  ringBufferInteger = ((apvMessageStateEntryPointer_t)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_LOW]) +
+                         (((apvMessageStateEntryPointer_t)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_HIGH]) << APV_UINT64_POINTER_UINT32_SHIFT);
+
+  ringBufferPointer = (apvRingBuffer_t *)ringBufferInteger;
+
+  // Get the next token off the ring-buffer if it exists
+  if (apvRingBufferUnLoad(ringBufferPointer,
+                          ((uint8_t *)(&messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN])),
+                          1,
+                          true) != 0)
+    {
+    if (messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN] == APV_MESSAGING_START_OF_MESSAGE)
+      { // if the token is <SOM> no change
+      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_LAST_TOKEN] = APV_MESSAGING_START_OF_MESSAGE;
+      }
+    else
+      { // if the token is not <SOM> a message may be starting - keep the new token and change state - record the way back!
+      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_LAST_STATE]   = 
+                                                                            messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_ACTIVE_STATE];
+
+      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_ACTIVE_STATE] = (apvMessageStateVariable_t)messageStateMachine->apvMessageNextState;
+      }
+    }
+  else
+    {
+    // There are no more tokens ready - wait in this state
+    apvStateError = APV_STATE_MACHINE_CODE_STOP;
+    }
+
+/******************************************************************************/
+
+  return(apvStateError);
+
+/******************************************************************************/
+  } /* end of apvMessageDeFramingStartOfMessage                               */
+
+/******************************************************************************/
+/* apvMessageDeFramingSignalAndLogicalPlanes() :                              */
+/* <--> messageStateMachine : the message state machine table                 */
+/* <--  apvStateError       : error codes                                     */
+/*                                                                            */
+/* - decode the originating signal plane and the intended logical plane :     */
+/*                                                                            */
+/******************************************************************************/
+
+APV_MESSAGING_STATE_CODE apvMessageDeFramingSignalAndLogicalPlanes(apvMessagingDeFramingState_t *messageStateMachine)
+  {
+/******************************************************************************/
+
+  APV_MESSAGING_STATE_CODE       apvStateError        = APV_STATE_MACHINE_CODE_NONE;
+
+  apvRingBuffer_t               *ringBufferPointer    = NULL;
+  ringBufferEntryPointer_t       ringBufferInteger    = 0;
+
+/******************************************************************************/
+
+  // Compute the ring-buffer structure address
+  ringBufferInteger = ((apvMessageStateEntryPointer_t)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_LOW]) +
+                         (((apvMessageStateEntryPointer_t)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_HIGH]) << APV_UINT64_POINTER_UINT32_SHIFT);
+
+  ringBufferPointer = (apvRingBuffer_t *)ringBufferInteger;
+
+  // Save the current token as a potential 'planes' token
+  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_LAST_TOKEN] = messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN];
+
+  // Get the next token off the ring-buffer if it exists
+  if (apvRingBufferUnLoad(ringBufferPointer,
+                          ((uint8_t *)(&messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN])),
+                          1,
+                          true) != 0)
+    {
+    if (messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN] == APV_MESSAGING_START_OF_MESSAGE)
+      { // <SOM> signals a false message start so go back to the previous state
+      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_ACTIVE_STATE] = 
+                  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_LAST_STATE];
+      }
+    else
+      { // The token is potentially a 'planes' token, save it and change state
+      messageStateMachine->apvMessageFrame->apvMessagingPlanesToken.apvMessagePlanesToken = messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN];
+
+      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_ACTIVE_STATE] = (apvMessageStateVariable_t)messageStateMachine->apvMessageNextState;
+      }
+    }
+  else
+    {
+    // There are no more tokens ready - wait in this state
+    apvStateError = APV_STATE_MACHINE_CODE_STOP;
+    }
+
+/******************************************************************************/
+
+  return(apvStateError);
+
+/******************************************************************************/
+  } /* end of apvMessageDeFramingSignalAndLogicalPlanes                       */
 
 /******************************************************************************/
 /* (C) PulsingCoreSoftware Limited 2018 (C)                                   */

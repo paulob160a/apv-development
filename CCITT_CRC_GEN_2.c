@@ -34,18 +34,22 @@
 
 /******************************************************************************/
 
-#define INITIAL_RANDOM_SEED         ((uint32_t)0xFEDCBA98)
-                                    
-#define RANDOM_BYTE_MASK            ((uint16_t)0x000000FF)
-#define RANDOM_MASK_SHIFT           8
-#define RANDOM_SHIFT_LIMIT          (sizeof(uint16_t) * RANDOM_MASK_SHIFT)
-                                    
-#define MAXIMUM_ENTROPY             APV_MESSAGING_MAXIMUM_UNSTUFFED_MESSAGE_LENGTH
-#define CRC_ENTROPY                   2
+#define INITIAL_RANDOM_SEED            ((uint32_t)0xFEDCBA98)
+                                       
+#define RANDOM_BYTE_MASK               ((uint16_t)0x000000FF)
+#define RANDOM_MASK_SHIFT              8
+#define RANDOM_SHIFT_LIMIT             (sizeof(uint16_t) * RANDOM_MASK_SHIFT)
+                                       
+#define MAXIMUM_ENTROPY                APV_MESSAGING_MAXIMUM_UNSTUFFED_MESSAGE_LENGTH
+#define CRC_ENTROPY                      2
 
-#define APV_RING_BUFFER_TEST_STRING "The rain in Spain falls mainly on the citizens who are happy!"
+#define APV_RING_BUFFER_TEST_STRING    "The rain in Spain falls mainly on the citizens who are happy!"
 
-#define _EXIT                       'x'
+#define APV_TEST_MESSAGE_BUFFER_LENGTH 256
+#define APV_MAXIMUM_SOM_FIELD_LENGTH     4
+#define APV_MAXIMUM_PAYLOAD_LENGTH     APV_MESSAGING_MAXIMUM_UNSTUFFED_MESSAGE_LENGTH
+
+#define _EXIT                          'x'
 
 /******************************************************************************/
 
@@ -54,6 +58,13 @@ uint8_t               informationStreamIn[MAXIMUM_ENTROPY  + CRC_ENTROPY];
 uint8_t               informationStreamOut[MAXIMUM_ENTROPY + CRC_ENTROPY];
 
 apvMessageStructure_t newMessage;
+
+uint8_t               testMessageBuffer[APV_TEST_MESSAGE_BUFFER_LENGTH]; // nice and long!
+uint16_t              testMessageSomLength     = APV_MAXIMUM_SOM_FIELD_LENGTH + 1;
+uint16_t              testMessagePayLoadLength = APV_MAXIMUM_PAYLOAD_LENGTH   + 1;
+uint16_t              testMessageLength        = 0;
+bool                  testMessageSom           = false;
+uint16_t              testMessageSoms          = 0;
 
 /******************************************************************************/
 
@@ -193,16 +204,113 @@ int main(void)
     }
 
 /******************************************************************************/
+/* Test the test message construction function                                */
+/******************************************************************************/
+
+  while (exit == false)
+    {
+    printf("\n TEST MESSAGE CONSTRUCTION :");
+    printf("\n -------------------------");
+    printf("\n");
+    
+    while ((testMessageSomLength != 0) && (testMessageSomLength > APV_MAXIMUM_SOM_FIELD_LENGTH))
+      {
+      printf("\n Enter the <SOM> field length [ 1 .. %d ] : ", APV_MAXIMUM_SOM_FIELD_LENGTH);
+      scanf("%hu", &testMessageSomLength);
+      }
+    
+    while ((testMessagePayLoadLength != 0) && (testMessagePayLoadLength > APV_MAXIMUM_PAYLOAD_LENGTH))
+      {
+      printf("\n Enter the payload field length [ 1.. %d ] : ", APV_MAXIMUM_PAYLOAD_LENGTH);
+      scanf("%hu", &testMessagePayLoadLength);
+      }
+    
+    printf("\n Random <SOM>s ? [ 0 == false | !0 == true ] ");
+    scanf("%hu", &testMessageSom);
+
+    testMessageSoms = testMessagePayLoadLength;
+
+    if (testMessageSom != false)
+      {
+      while (testMessageSoms > (testMessagePayLoadLength - 1))
+        {
+        printf("\n Enter the MAXIMUM number of <SOM>s [ 0 .. %d ] : ", (testMessagePayLoadLength - 1));
+        scanf("%hu", &testMessageSoms);
+        }
+      }
+
+    apvError = apvCreateTestMessage(&testMessageBuffer[0],
+                                     testMessageSomLength,
+                                    &testMessagePayLoadLength,
+                                    &testMessageLength,
+                                     testMessageSom,
+                                     testMessageSoms,
+                                     false,
+                                     false);
+    
+    // Print the generated test-message
+    printf("\n");
+    
+    printf("\n Actual payload length = %03hu", testMessagePayLoadLength);
+
+    printf("\n");
+
+    for (entropy = 0; entropy <= testMessageLength; entropy++)
+      {
+      if (testMessageBuffer[entropy] == APV_MESSAGING_START_OF_MESSAGE)
+        {
+        printf("\n [%03hu] : %03hu <--", entropy, testMessageBuffer[entropy]);
+        }
+      else
+        {
+        printf("\n [%03hu] : %03hu ", entropy, testMessageBuffer[entropy]);
+        }
+      }
+
+    // Test the CRC
+    crcRegister = APV_CRC_GENERATOR_INITIAL_VALUE;
+
+    apvBlockComputeCrc(&testMessageBuffer[testMessageSomLength + APV_COMMS_MESSAGE_PLANE_FIELD_WIDTH + APV_COMMS_MESSAGE_PAYLOAD_LENGTH_FIELD_WIDTH], testMessagePayLoadLength + APV_CRC_WORD_WIDTH, &crcRegister);
+
+    if (crcRegister == APV_CRC_GENERATOR_FINAL_VALUE)
+      {
+      printf("\n Payload CRC check has passed : %02x", crcRegister);
+      }
+    else
+      {
+      printf("\n Payload CRC check has failed : %02x", crcRegister);
+      }
+
+    testMessageSomLength     = APV_MAXIMUM_SOM_FIELD_LENGTH + 1;
+    testMessagePayLoadLength = APV_MAXIMUM_PAYLOAD_LENGTH   + 1;
+    testMessageLength        = 0;
+
+    while (!_kbhit())
+      ;
+
+    keyPressed = _getch();
+
+    if (keyPressed == _EXIT)
+      {
+      exit = true;
+      }
+    }
+    
+  exit = false;
+
+
+/******************************************************************************/
 /* Test the message framing                                                   */
 /******************************************************************************/
 
   // Arbitrarily insert a SOM token
+
   informationStream[23] = APV_MESSAGING_START_OF_MESSAGE;
 
   // Using the previously constructed message first
   apvError = apvFrameMessage(&newMessage,
                               APV_COMMS_PLANE_SPI_RADIO_0,
-                              APV_SIGNAL_PLANE_CONTROL_5,
+                              APV_SIGNAL_PLANE_CONTROL_4,
                              &informationStream[0],
                               MAXIMUM_ENTROPY);
 
@@ -224,7 +332,7 @@ int main(void)
 
   apvError = apvFrameMessage(&newMessage,
                               APV_COMMS_PLANE_SPI_RADIO_0,
-                              APV_SIGNAL_PLANE_CONTROL_5,
+                              APV_SIGNAL_PLANE_CONTROL_3,
                              &informationStream[0],
                               MAXIMUM_ENTROPY);
 
@@ -412,7 +520,16 @@ int main(void)
      }
 
 /******************************************************************************/
+  /* Test the state machines :                                                */
+/******************************************************************************/
 
+   apvDeFrameMessageInitialisation(&ringBuffer0,
+                                   &newMessage,
+                                   &apvMessagingDeFramingStateMachine[0]);
+
+   apvDeFrameMessage(&apvMessagingDeFramingStateMachine[0]);
+
+/******************************************************************************/
 
    while (!_kbhit())
     ;

@@ -15,8 +15,10 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "ar19937.h"
 #include "ApvUtilities.h"
 #include "ApvCommsUtilities.h"
+#include "ApvCrcGenerator.h"
 
 /******************************************************************************/
 /* Function Definitions :                                                     */
@@ -77,7 +79,7 @@ APV_ERROR_CODE apvRingBufferInitialise(apvRingBuffer_t *ringBuffer,
 
   for (i = 0; i < ringBuffer->apvCommsRingBufferLength; i++)
     {
-    ringBuffer->apvCommsRingBuffer[i] == APV_RING_BUFFER_INITIALISATION_FLAG;
+    ringBuffer->apvCommsRingBuffer[i] = APV_RING_BUFFER_INITIALISATION_FLAG;
     }
   }
 #endif
@@ -231,7 +233,7 @@ uint16_t apvRingBufferUnLoad(apvRingBuffer_t *ringBuffer,
 
       while (numberOfTokensToUnLoad > 0)
         {
-        *tokens = *(ringBuffer->apvCommsRingBufferTail);
+        *tokens = *(ringBuffer->apvCommsRingBufferTail); // EXPLICIT cast from (uint32_t) to (uint8_t)
   
 #ifdef _APV_DEBUG_RING_BUFFERS_ 
         *(ringBuffer->apvCommsRingBufferTail) = APV_RING_BUFFER_INITIALISATION_FLAG; 
@@ -267,7 +269,161 @@ uint16_t apvRingBufferUnLoad(apvRingBuffer_t *ringBuffer,
   } /* end of apvRingBufferUnLoad                                             */
 
 /******************************************************************************/
+/* apvCreateTestMessage() :                                                   */
+/*  <--> testMessage       : pointer to the receiving message buffer          */
+/*  <--> testPayLoadLength : number of tokens on the payload i.e. non-framing */
+/*                           tokens. Returns the actual payload length        */
+/*                           including <SOM>s and stuffing flags              */
+/*   <-- testMessageLength : the final fully-framed message length            */
+/*   --> testMessageFault  : insert a fault in message after the CRC has been */
+/*                           calculated                                       */
+/*   --> testSomFault      : insert a random <SOM> into the message           */
+/*   <-- testError         : error codes                                      */
+/*                                                                            */
+/* - construct correct or faulty messages to test the messaging state-machine */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvCreateTestMessage(uint8_t  *testMessage,
+                                    uint16_t  testMessageSomLength,
+                                    uint16_t *testMessagePayLoadLength,
+                                    uint16_t *testMessageLength,
+                                    bool      testMessageInsertSom,
+                                    uint16_t  testMessageSoms,
+                                    bool      testMessageFault,
+                                    bool      testMessageSomFault)
+  {
+/******************************************************************************/
+
+  uint16_t       payLoadCrc           = 0,
+                 payLoadLengthPointer = 0,
+                 payLoadLength        = 0;
+
+  APV_ERROR_CODE testError  = APV_ERROR_CODE_NONE;
+
+/******************************************************************************/
+
+  if (( testMessage              != NULL) && (testMessageLength    != NULL) &&
+      (*testMessagePayLoadLength != 0)    && (testMessageSomLength != 0))
+    {
+    *testMessageLength = 0;
+
+    // Load the <SOM> tokens
+    while (testMessageSomLength > 0)
+      {
+      *(testMessage + *testMessageLength) = APV_MESSAGING_START_OF_MESSAGE;
+
+       testMessageSomLength =  testMessageSomLength - 1;
+      *testMessageLength    = *testMessageLength    + 1;
+      }
+
+    *(testMessage + *testMessageLength) = APV_MESSAGING_START_OF_MESSAGE;
+
+    // Load a random (non 0x7e) <SOM> 'planes' token
+    while (*(testMessage + *testMessageLength) == APV_MESSAGING_START_OF_MESSAGE)
+      {
+      *(testMessage + *testMessageLength) = (uint8_t)genrand_int32();
+      }
+
+    *testMessageLength = *testMessageLength + 1;
+
+    // Mark the payload length pointer
+    payLoadLengthPointer = *testMessageLength;
+
+    *testMessageLength   = *testMessageLength + 1;
+
+    // Initialise the CRC register
+    payLoadCrc = APV_CRC_GENERATOR_INITIAL_VALUE;
+
+    // Generate and load a payload - if any tokens are 0x7e <SOM> precede by the <ESCAPE> token
+    payLoadLength = *testMessagePayLoadLength;
+
+    while (*testMessagePayLoadLength > 0)
+      {
+      *(testMessage + *testMessageLength) = (uint8_t)genrand_int32();
+
+       if (*(testMessage + *testMessageLength) == APV_MESSAGING_START_OF_MESSAGE)
+         {
+         *(testMessage + *testMessageLength) = APV_MESSAGING_STUFFING_FLAG;
+
+         apvComputeCrc(*(testMessage + *testMessageLength), &payLoadCrc);
+
+         *testMessageLength       = *testMessageLength        + 1;
+          payLoadLength           =  payLoadLength            + 1;
+
+         *(testMessage + *testMessageLength) = APV_MESSAGING_START_OF_MESSAGE;
+         }
+
+       apvComputeCrc(*(testMessage + *testMessageLength), &payLoadCrc);
+
+      *testMessageLength        = *testMessageLength        + 1;
+
+       if (testMessageInsertSom != false)
+         {
+         if (testMessageSoms != 0)
+           {
+           if ((((uint8_t)genrand_int32()) & APV_COMMS_RANDOM_TRIGGER_MASK) == APV_COMMS_RANDOM_TRIGGER_MASK)
+             {
+             testMessageSoms = testMessageSoms - 1;
+
+             *(testMessage + *testMessageLength) = APV_MESSAGING_STUFFING_FLAG;
+
+              apvComputeCrc(*(testMessage + *testMessageLength), &payLoadCrc);
+
+             *testMessageLength = *testMessageLength + 1;
+
+              payLoadLength     = payLoadLength      + 1;
+
+             *(testMessage + *testMessageLength) = APV_MESSAGING_START_OF_MESSAGE;
+
+              apvComputeCrc(*(testMessage + *testMessageLength), &payLoadCrc);
+
+             *testMessageLength = *testMessageLength + 1;
+
+              payLoadLength     = payLoadLength      + 1;
+             }
+           }
+         }
+
+      *testMessagePayLoadLength =  *testMessagePayLoadLength - 1;
+      }
+
+    // Load the payload CRC
+    *(testMessage + *testMessageLength) = (uint8_t)((payLoadCrc & (APV_CRC_BYTE_MASK << APV_CRC_MASK_SHIFT)) >> APV_CRC_MASK_SHIFT);
+
+    *testMessageLength = *testMessageLength + 1;
+
+    *(testMessage + *testMessageLength) = (uint8_t)(payLoadCrc & APV_CRC_BYTE_MASK);
+
+    *testMessageLength = *testMessageLength + 1;
+
+    // Finally load the actual payload length and the <EOM> token and return the actual payload length
+    *(testMessage + payLoadLengthPointer) = payLoadLength;
+
+    *(testMessage + *testMessageLength) = APV_MESSAGING_END_OF_MESSAGE;
+
+    *testMessagePayLoadLength = payLoadLength;
+    }
+  else
+    {
+    testError = APV_ERROR_CODE_MESSAGE_DEFINITION_ERROR;
+    }
+
+/******************************************************************************/
+
+  return(testError);
+
+/******************************************************************************/
+  } /* end of apvCreateTestMessage                                            */
+
+/******************************************************************************/
 /* apvRingBufferPrint() :                                                     */
+/*  --> ringBuffer : pointer to a ring-buffer structure                       */
+/*                                                                            */
+/* - non-destructively prints the LINEAR contents of a ring-buffer from       */
+/*   <START> to <END>. The <HEAD>-pointer is marked as 'H->' and the <TAIL>-  */
+/*   pointer as 'T->'                                                         */
+/*                                                                            */
 /******************************************************************************/
 
 void apvRingBufferPrint(apvRingBuffer_t *ringBuffer)
