@@ -272,6 +272,7 @@ extern APV_MESSAGING_STATE_CODE apvMessageDeFramingNull(apvMessagingDeFramingSta
 extern APV_MESSAGING_STATE_CODE apvMessageDeFramingInitialise(apvMessagingDeFramingState_t *messageStateMachine);
 extern APV_MESSAGING_STATE_CODE apvMessageDeFramingStartOfMessage(apvMessagingDeFramingState_t *messageStateMachine);
 extern APV_MESSAGING_STATE_CODE apvMessageDeFramingSignalAndLogicalPlanes(apvMessagingDeFramingState_t *messageStateMachine);
+extern APV_MESSAGING_STATE_CODE apvMessageDeFramingMessageLength(apvMessagingDeFramingState_t *messageStateMachine);
 
 /******************************************************************************/
 

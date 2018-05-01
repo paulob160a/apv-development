@@ -38,6 +38,23 @@ extern int16_t               apvInterruptNestingCount;
 extern APV_GLOBAL_ERROR_FLAG apvGlobalErrorFlags;
 
 /******************************************************************************/
+/* Type Definitions :                                                         */
+/******************************************************************************/
+
+typedef enum apvPointerConversionWords_tTag
+  {
+  APV_POINTER_CONVERSION_WORD_LOW = 0,
+  APV_POINTER_CONVERSION_WORD_HIGH,
+  APV_POINTER_CONVERSION_WORDS
+  } apvPointerConversionWords_t;
+
+typedef union apvPointerConversion_tTag
+  {
+  uint32_t apvPointerConversionWords[APV_POINTER_CONVERSION_WORDS]; // map the low-word to [0], high-word to [1]
+  uint64_t apvPointerConversion;
+  } apvPointerConversion_t;
+
+/******************************************************************************/
 /* Function Declarations :                                                    */
 /******************************************************************************/
 

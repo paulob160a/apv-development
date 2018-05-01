@@ -14,6 +14,7 @@
 /* Include Files :                                                            */
 /******************************************************************************/
 
+#include <stdio.h>
 #include <stdint.h>
 #include "ApvCrcGenerator.h"
 
@@ -75,6 +76,57 @@ void apvComputeCrc(uint8_t newByte, uint16_t *crc)
 
 /******************************************************************************/
   } /* end of apvComputeCrc                                                   */
+
+/******************************************************************************/
+/* apvBlockComputeCrc() :                                                     */
+/*  --> messageBuffer       : an array of unsigned 8-bit numbers              */
+/*  --> messageBufferLength : the length of the message buffer content. The   */
+/*                            full length of the buffer MUST be at least two  */
+/*                            bytes longer to accommodate the CRC             */
+/*  <--> crc                : the resulting CRC value                         */
+/*                                                                            */
+/*  - compute the CCITT CRC16 of a complete message block                     */
+/******************************************************************************/
+
+APV_ERROR_CODE apvBlockComputeCrc(uint8_t *messageBuffer, uint16_t messageBufferLength, uint16_t *crc)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE apvErrorCode  = APV_ERROR_CODE_NONE;
+
+/******************************************************************************/
+
+  if ((messageBuffer == NULL) || (crc == NULL) || (messageBufferLength == APV_MESSAGE_BUFFER_EMPTY))
+    {
+    apvErrorCode = APV_ERROR_CODE_MESSAGE_BUFFER_FAULTY;
+    }
+  else
+    {
+    // Initialise the CRC register
+    *crc = APV_CRC_GENERATOR_INITIAL_VALUE;
+
+    // Compute the CRC over the whole message
+    while (messageBufferLength > 0)
+      {
+      messageBufferLength = messageBufferLength - 1;
+
+      apvComputeCrc(*messageBuffer, crc);
+
+      messageBuffer = messageBuffer + 1;
+      }
+
+    // Store the CRC at the end of the message
+    *messageBuffer = (uint8_t)((*crc & (APV_CRC_BYTE_MASK << APV_CRC_MASK_SHIFT)) >> APV_CRC_MASK_SHIFT);
+     messageBuffer = messageBuffer + 1;
+    *messageBuffer = (uint8_t)(*crc & APV_CRC_BYTE_MASK);
+    }
+
+/******************************************************************************/
+
+  return(apvErrorCode);
+
+/******************************************************************************/
+  } /* end of apvBlockComputeCrc                                              */
 
 /******************************************************************************/
 /* (C) PulsingCoreSoftware Limited 2018 (C)                                   */
