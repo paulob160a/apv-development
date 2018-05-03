@@ -2,7 +2,7 @@
 /* (C) PulsingCoreSoftware Limited 2018 (C)                                   */
 /******************************************************************************/
 /*                                                                            */
-/* ApvEventtimers.c                                                           */
+/* ApvEventTimers.c                                                           */
 /* 30.04.18                                                                   */
 /* Paul O'Brien                                                               */
 /*                                                                            */
@@ -14,15 +14,8 @@
 #include <stdint.h>
 #include <sam3x8e.h>
 #include "ApvError.h"
+#include "ApvSystemTime.h"
 #include "ApvEventTimers.h"
-
-/******************************************************************************/
-/* Global Variable Definitions :                                              */
-/******************************************************************************/
-
-apvEventTimersBlock_t apvEventTimerBlock[APV_EVENT_TIMERS];
-
-uint32_t apvEventTimerGeneralPurpose = 0;
 
 /******************************************************************************/
 /* Function Definitions :                                                     */
@@ -166,10 +159,145 @@ APV_ERROR_CODE apvAssignEventTimer(uint16_t                timerChannel,
   } /* end of apvAssignEventTimer                                             */
 
 /******************************************************************************/
+/* apvConfigureWaveformEventTimer() :                                                 */
+/*  --> timerChannel : timer instance and channel : [ 27 .. 35 ] ==           */
+/*                                                    0 { instance } 2 +      */
+/*                                                    0 { channel  } 2        */
+/*  --> apvEventTimerBlockBaseAddress : BASE (low) address of the event timer */
+/*                                      blocks                                */
+/*                                                                            */
+/*  - setup the clock and operational mode of an event timer channel. As of   */
+/*    02.05.18 this is just a selector for the clock source                   */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvConfigureWaveformEventTimer(uint16_t                           timerChannel,
+                                              apvEventTimersBlock_t             *apvEventTimerBlockBaseAddress,
+                                              apvEventTimerChannelClockSource_t  channelClock,
+                                              uint32_t                           timeBaseTarget, // nanoseconds
+                                              apvEventTimerChannelClockExtC0_t   externalClock0,
+                                              apvEventTimerChannelClockExtC1_t   externalClock1,   
+                                              apvEventTimerChannelClockExtC2_t   externalClock2)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE apvEventTimerError       = APV_ERROR_CODE_NONE;
+
+  uint16_t       eventTimerBlock          = 0,
+                 eventTimerChannel        = 0;
+
+  uint32_t      *eventTimerBlockRegisters = NULL;
+
+/******************************************************************************/
+
+  if (apvEventTimerBlockBaseAddress == NULL)
+    {
+    apvEventTimerError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+  else
+    {
+    eventTimerBlock   = (timerChannel - ID_TC0) / TCCHANNEL_NUMBER;
+    eventTimerChannel = (timerChannel - ID_TC0) % TCCHANNEL_NUMBER;
+
+    if ((eventTimerBlock >= TCCHANNEL_NUMBER) || (eventTimerChannel >= TCCHANNEL_NUMBER) || (timeBaseTarget < APV_EVENT_TIMER_TIMEBASE_MINIMUM) || (timeBaseTarget>  APV_EVENT_TIMER_TIMEBASE_MAXIMUM))
+      {
+      apvEventTimerError = APV_ERROR_CODE_PARAMETER_OUT_OF_RANGE;
+      }
+    else
+      {
+      if ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannelInUse[eventTimerChannel] == false)
+        {
+        apvEventTimerError = APV_ERROR_CODE_EVENT_TIMER_INITIALISATION_ERROR;
+        }
+      else
+        {
+        uint64_t timerDivisor = 1,
+                 timerTarget  = (uint64_t)timeBaseTarget;
+
+        // Guard against division by zero
+        if (timerTarget == 0)
+          {
+          timerTarget = APV_EVENT_TIMER_INVERSE_NANOSECONDS;
+          }
+
+        timerTarget = timerTarget << APV_EVENT_TIMER_TIMEBASE_SCALER;     // numerical scaling for the divisions required
+        timerTarget = timerTarget /  APV_EVENT_TIMER_INVERSE_NANOSECONDS; // this many nanoseconds (timerTarget * (1 x 10 ^ -9))
+        timerTarget = timerTarget *  APV_EVENT_TIMER_TIMEBASE_BASECLOCK;  // this fraction of the base CPU clock
+
+        // Dereference the general event timer block registers
+        eventTimerBlockRegisters = (apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerBlock;
+
+        // Compute the timebase divisor for the requested channel (only supporting /2, /8, /32 and /128)
+        switch(channelClock)
+          {
+          case APV_EVENT_TIMER_CHANNEL_TIMER_CLOCK_3 : timerDivisor = timerDivisor * APV_EVENT_TIMER_DIVISOR_x4; // 4 x  1  =  4
+          case APV_EVENT_TIMER_CHANNEL_TIMER_CLOCK_2 : timerDivisor = timerDivisor * APV_EVENT_TIMER_DIVISOR_x4; // 4 x  4  = 16, 4 x  1 =  4 
+          case APV_EVENT_TIMER_CHANNEL_TIMER_CLOCK_1 : timerDivisor = timerDivisor * APV_EVENT_TIMER_DIVISOR_x4; // 4 x 16 =  64, 4 x  4 = 16, 4 x 1 = 4
+          case APV_EVENT_TIMER_CHANNEL_TIMER_CLOCK_0 : timerDivisor = timerDivisor * APV_EVENT_TIMER_DIVISOR_x2; // 2 x 64 = 128, 2 x 16 = 32, 2 x 4 = 8, 2 x 1 = 2,
+
+          default                                    :
+                                                       break;
+          }
+
+        timerTarget = timerTarget /  timerDivisor;                    // pre-scale the CPU clock
+        timerTarget = timerTarget >> APV_EVENT_TIMER_TIMEBASE_SCALER; // remove the numerical scaling
+
+        switch(eventTimerBlock)
+          {
+          case APV_EVENT_TIMER_2 : ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_CMR = channelClock | TC_CMR_WAVE;
+                                   ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_RC  = timerTarget;
+
+                                   if (externalClock2 != APV_EVENT_TIMER_CHANNEL_TIMER_XC2_NONE)
+                                     {
+                                     // Load the TC2XC2S field of the BMR
+                                     *(eventTimerBlockRegisters + APV_EVENT_TIMER_BLOCK_REGISTER_OFFSET) = 
+                                          *(eventTimerBlockRegisters + APV_EVENT_TIMER_BLOCK_REGISTER_OFFSET) | externalClock2;
+                                     }
+
+                                   break;
+
+          case APV_EVENT_TIMER_1 : ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_CMR = channelClock | TC_CMR_WAVE;
+                                   ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_RC  = timerTarget;
+
+                                   if (externalClock1 != APV_EVENT_TIMER_CHANNEL_TIMER_XC1_NONE)
+                                     {
+                                     // Load the TC1XC1S field of the BMR
+                                     *(eventTimerBlockRegisters + APV_EVENT_TIMER_BLOCK_REGISTER_OFFSET) = 
+                                          *(eventTimerBlockRegisters + APV_EVENT_TIMER_BLOCK_REGISTER_OFFSET) | externalClock1;
+                                     }
+
+                                   break;
+
+          case APV_EVENT_TIMER_0 : ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_CMR = channelClock | TC_CMR_WAVE;
+                                   ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_RC  = timerTarget;
+
+                                   if (externalClock0 != APV_EVENT_TIMER_CHANNEL_TIMER_XC0_NONE)
+                                     {
+                                     // Load the TC0XC0S field of the BMR
+                                     *(eventTimerBlockRegisters + APV_EVENT_TIMER_BLOCK_REGISTER_OFFSET) = 
+                                          *(eventTimerBlockRegisters + APV_EVENT_TIMER_BLOCK_REGISTER_OFFSET) | externalClock1;
+                                     }
+
+          default                : break;
+          }
+        }
+      }
+    }
+
+/******************************************************************************/
+
+  return(apvEventTimerError);
+
+/******************************************************************************/
+  } /* end of apvConfigureWaveformEventTimer                                          */
+
+/******************************************************************************/
 /* apvEventTimerChannel0CallBack() :                                          */
 /*  --> apvEventTimerIndex : can be used to signal an event on this timer     */
 /*                           channel                                          */
+/*                                                                            */
 /*  - callback handler for intra interrupt service routine use on channel 0   */
+/*                                                                            */
 /******************************************************************************/
 
 void apvEventTimerChannel0CallBack(uint32_t apvEventTimerIndex)
@@ -177,6 +305,126 @@ void apvEventTimerChannel0CallBack(uint32_t apvEventTimerIndex)
 /******************************************************************************/
 /******************************************************************************/
   } /* end of apvEventTimerChannel0CallBack                                   */
+
+/******************************************************************************/
+/* apvEventTimerChannel1CallBack() :                                          */
+/*  --> apvEventTimerIndex : can be used to signal an event on this timer     */
+/*                           channel                                          */
+/*                                                                            */
+/*  - callback handler for intra interrupt service routine use on channel 0   */
+/*                                                                            */
+/******************************************************************************/
+
+void apvEventTimerChannel1CallBack(uint32_t apvEventTimerIndex)
+  {
+/******************************************************************************/
+/******************************************************************************/
+  } /* end of apvEventTimerChannel1CallBack                                   */
+
+/******************************************************************************/
+/* apvEventTimerChannel2CallBack() :                                          */
+/*  --> apvEventTimerIndex : can be used to signal an event on this timer     */
+/*                           channel                                          */
+/*                                                                            */
+/*  - callback handler for intra interrupt service routine use on channel 0   */
+/*                                                                            */
+/******************************************************************************/
+
+void apvEventTimerChannel2CallBack(uint32_t apvEventTimerIndex)
+  {
+/******************************************************************************/
+/******************************************************************************/
+  } /* end of apvEventTimerChannel2CallBack                                   */
+
+/******************************************************************************/
+/* apvEventTimerChannel3CallBack() :                                          */
+/*  --> apvEventTimerIndex : can be used to signal an event on this timer     */
+/*                           channel                                          */
+/*                                                                            */
+/*  - callback handler for intra interrupt service routine use on channel 0   */
+/*                                                                            */
+/******************************************************************************/
+
+void apvEventTimerChannel3CallBack(uint32_t apvEventTimerIndex)
+  {
+/******************************************************************************/
+/******************************************************************************/
+  } /* end of apvEventTimerChannel3CallBack                                   */
+
+/******************************************************************************/
+/* apvEventTimerChannel4CallBack() :                                          */
+/*  --> apvEventTimerIndex : can be used to signal an event on this timer     */
+/*                           channel                                          */
+/*                                                                            */
+/*  - callback handler for intra interrupt service routine use on channel 0   */
+/*                                                                            */
+/******************************************************************************/
+
+void apvEventTimerChannel4CallBack(uint32_t apvEventTimerIndex)
+  {
+/******************************************************************************/
+/******************************************************************************/
+  } /* end of apvEventTimerChannel4CallBack                                   */
+
+/******************************************************************************/
+/* apvEventTimerChannel5CallBack() :                                          */
+/*  --> apvEventTimerIndex : can be used to signal an event on this timer     */
+/*                           channel                                          */
+/*                                                                            */
+/*  - callback handler for intra interrupt service routine use on channel 0   */
+/*                                                                            */
+/******************************************************************************/
+
+void apvEventTimerChannel5CallBack(uint32_t apvEventTimerIndex)
+  {
+/******************************************************************************/
+/******************************************************************************/
+  } /* end of apvEventTimerChannel5CallBack                                   */
+
+/******************************************************************************/
+/* apvEventTimerChannel6CallBack() :                                          */
+/*  --> apvEventTimerIndex : can be used to signal an event on this timer     */
+/*                           channel                                          */
+/*                                                                            */
+/*  - callback handler for intra interrupt service routine use on channel 0   */
+/*                                                                            */
+/******************************************************************************/
+
+void apvEventTimerChannel6CallBack(uint32_t apvEventTimerIndex)
+  {
+/******************************************************************************/
+/******************************************************************************/
+  } /* end of apvEventTimerChannel6CallBack                                   */
+
+/******************************************************************************/
+/* apvEventTimerChannel7CallBack() :                                          */
+/*  --> apvEventTimerIndex : can be used to signal an event on this timer     */
+/*                           channel                                          */
+/*                                                                            */
+/*  - callback handler for intra interrupt service routine use on channel 0   */
+/*                                                                            */
+/******************************************************************************/
+
+void apvEventTimerChannel7CallBack(uint32_t apvEventTimerIndex)
+  {
+/******************************************************************************/
+/******************************************************************************/
+  } /* end of apvEventTimerChannel7CallBack                                   */
+
+/******************************************************************************/
+/* apvEventTimerChannel8CallBack() :                                          */
+/*  --> apvEventTimerIndex : can be used to signal an event on this timer     */
+/*                           channel                                          */
+/*                                                                            */
+/*  - callback handler for intra interrupt service routine use on channel 0   */
+/*                                                                            */
+/******************************************************************************/
+
+void apvEventTimerChannel8CallBack(uint32_t apvEventTimerIndex)
+  {
+/******************************************************************************/
+/******************************************************************************/
+  } /* end of apvEventTimerChannel8CallBack                                   */
 
 /******************************************************************************/
 /* (C) PulsingCoreSoftware Limited 2018 (C)                                   */

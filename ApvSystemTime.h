@@ -1,50 +1,37 @@
 /******************************************************************************/
-/* (C) PulsingCoreSoftware Limited 2018 (C)                                   */
-/******************************************************************************/
 /*                                                                            */
-/* ApvError.h                                                                 */
-/* 21.03.18                                                                   */
+/* ApvSystemTime.h                                                            */
+/* 03.05.18                                                                   */
 /* Paul O'Brien                                                               */
 /*                                                                            */
-/* - error codes and handlers for the whole application                       */
+/* - holding file for the various system timer definitions                    */
 /*                                                                            */
 /******************************************************************************/
 
-#ifndef _APV_ERROR_H_
-#define _APV_ERROR_H_
+#ifndef _APV_SYSTEM_TIME_H_
+#define _APV_SYSTEM_TIME_H_
+
+/******************************************************************************/
+/* Include Files :                                                            */
+/******************************************************************************/
+
+#include "ApvEventTimers.h"
 
 /******************************************************************************/
 /* Definitions :                                                              */
 /******************************************************************************/
 
-#define APV_MESSAGE_BUFFER_EMPTY ((uint16_t)0)
+#define APV_EVENT_TIMER_GENERAL_PURPOSE_TIME_BASE (APV_EVENT_TIMER_TIMEBASE_MINIMUM * ((uint32_t)100000)) // 1000000 nanoseconds (1 millisecond)
+
+#define APV_EVENT_TIMER_CHANNEL_TIME_BASE_MAXIMUM ((uint32_t)((int32_t)-1))
 
 /******************************************************************************/
-/* Type Definitions :                                                         */
+/* Global Variable Declarations :                                             */
 /******************************************************************************/
 
-typedef enum apvGlobalErrorFlags_tTag
-  {
-  APV_GLOBAL_ERROR_FLAG_NONE = 0,
-  APV_GLOBAL_ERROR_FLAG_FUNCTION_INTERRUPT_NESTING,
-  APV_GLOBAL_ERROR_FLAGS
-  } apvGlobalErrorFlags_t;
+extern apvEventTimersBlock_t apvEventTimerBlock[APV_EVENT_TIMERS];
 
-typedef apvGlobalErrorFlags_t APV_GLOBAL_ERROR_FLAG;
-
-typedef enum apvErrorCodes_tTag
-  {
-  APV_ERROR_CODE_NONE = 0,
-  APV_ERROR_CODE_MESSAGE_BUFFER_FAULTY,
-  APV_ERROR_CODE_MESSAGE_DEFINITION_ERROR,
-  APV_ERROR_CODE_RING_BUFFER_DEFINITION_ERROR,
-  APV_ERROR_CODE_PARAMETER_OUT_OF_RANGE,
-  APV_ERROR_CODE_EVENT_TIMER_INITIALISATION_ERROR,
-  APV_ERROR_CODE_NULL_PARAMETER,
-  APV_ERROR_CODES
-  } apvErrorCodes_t;
-
-typedef apvErrorCodes_t APV_ERROR_CODE;
+extern uint32_t apvEventTimerGeneralPurposeTimeBaseTarget;
 
 /******************************************************************************/
 
