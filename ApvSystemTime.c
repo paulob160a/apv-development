@@ -16,9 +16,11 @@
 /* Global Variable Definitions :                                             */
 /******************************************************************************/
 
-apvEventTimersBlock_t apvEventTimerBlock[APV_EVENT_TIMERS];
+apvEventTimersBlock_t       apvEventTimerBlock[APV_EVENT_TIMERS]; // timer block shadow
 
-uint32_t apvEventTimerGeneralPurposeTimeBaseTarget = 0;
+uint32_t                   apvEventTimerGeneralPurposeTimeBaseTarget = 0;
+
+apvEventTimersHotOneList_t apvEventTimerHotShot;
 
 /******************************************************************************/
 /******************************************************************************/

@@ -13,9 +13,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <sam3x8e.h>
+#include <core_cm3.h>
 #include "ApvSerial.h"
 #include "ApvEventTimers.h"
 #include "ApvSystemTime.h"
+#include "ApvPeripheralControl.h"
 
 /******************************************************************************/
 /* Local Function Declarations :                                              */
@@ -49,19 +51,43 @@ int main(void)
   // Set the general-purpose (system tick) timebase to 1 millisecond (1000000 nanoseconds)
   apvEventTimerGeneralPurposeTimeBaseTarget = APV_EVENT_TIMER_GENERAL_PURPOSE_TIME_BASE;
 
-  apvSerialErrorCode =  apvConfigureWaveformEventTimer( APV_EVENT_TIMER_GENERAL_PURPOSE_ID,
-                                                       &apvEventTimerBlock[APV_EVENT_TIMER_0],
-                                                        APV_EVENT_TIMER_CHANNEL_TIMER_CLOCK_3,
-                                                        apvEventTimerGeneralPurposeTimeBaseTarget, // nanoseconds,
-                                                        APV_EVENT_TIMER_CHANNEL_TIMER_XC0_NONE,
-                                                        APV_EVENT_TIMER_CHANNEL_TIMER_XC1_NONE,   
-                                                        APV_EVENT_TIMER_CHANNEL_TIMER_XC2_NONE);
+  apvSerialErrorCode = apvConfigureWaveformEventTimer( APV_EVENT_TIMER_GENERAL_PURPOSE_ID,
+                                                      &apvEventTimerBlock[APV_EVENT_TIMER_0],
+                                                       APV_EVENT_TIMER_CHANNEL_TIMER_CLOCK_0,
+                                                       apvEventTimerGeneralPurposeTimeBaseTarget, // nanoseconds,
+                                                       true,                                      // enable the RC3 interrupt
+                                                       APV_EVENT_TIMER_CHANNEL_TIMER_XC0_NONE,
+                                                       APV_EVENT_TIMER_CHANNEL_TIMER_XC1_NONE,   
+                                                       APV_EVENT_TIMER_CHANNEL_TIMER_XC2_NONE);
+
+  // SWITCH ON THE NVC/TIMER IRQ
+  apvSerialErrorCode = apvSwitchNvicDeviceIrq(APV_EVENT_TIMER_GENERAL_PURPOSE_ID,
+                                              true);
+
+  apvSerialErrorCode = apvSwitchPeripheralClock(ID_TC0,
+                                                true);
+
+  apvSerialErrorCode = apvSwitchWaveformEventTimer( APV_EVENT_TIMER_GENERAL_PURPOSE_ID,
+                                                   &apvEventTimerBlock[APV_EVENT_TIMER_0],
+                                                    true);
 
 /******************************************************************************/
 
-  while (true)
+  if (apvSerialErrorCode == APV_SERIAL_ERROR_CODE_NONE)
     {
-    apvRunTimeCounter = apvRunTimeCounter + 1;
+    while (true)
+      {
+       __disable_irq();
+
+       if (apvEventTimerHotShot.Flags.APV_EVENT_TIMER_CHANNEL_0_FLAG == APV_EVENT_TIMER_FLAG_SET)
+         {
+         apvEventTimerHotShot.Flags.APV_EVENT_TIMER_CHANNEL_0_FLAG = APV_EVENT_TIMER_FLAG_CLEAR;
+
+         apvRunTimeCounter = apvRunTimeCounter + 1;
+         }
+
+       __enable_irq();
+      }
     }
 
 /******************************************************************************/

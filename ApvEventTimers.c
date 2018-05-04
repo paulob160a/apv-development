@@ -159,15 +159,27 @@ APV_ERROR_CODE apvAssignEventTimer(uint16_t                timerChannel,
   } /* end of apvAssignEventTimer                                             */
 
 /******************************************************************************/
-/* apvConfigureWaveformEventTimer() :                                                 */
+/* apvConfigureWaveformEventTimer() :                                         */
 /*  --> timerChannel : timer instance and channel : [ 27 .. 35 ] ==           */
 /*                                                    0 { instance } 2 +      */
 /*                                                    0 { channel  } 2        */
 /*  --> apvEventTimerBlockBaseAddress : BASE (low) address of the event timer */
 /*                                      blocks                                */
+/*  --> channelClock                  : channel clock source                  */
+/*  --> timeBaseTarget                : timebase tick interval in nanoseconds */
+/*  --> interruptEnable               : [ false == disable tick interrupt |   */
+/*                                        true  == enable  tick interrupt ]   */
 /*                                                                            */
-/*  - setup the clock and operational mode of an event timer channel. As of   */
-/*    02.05.18 this is just a selector for the clock source                   */
+/*  --> externalClock0                : timer block #1 external clock source  */
+/*  --> externalClock1                : timer block #2 external clock source  */
+/*  --> externalClock2                : timer block #3 external clock source  */
+/*  <-- apvEventTimerError            : event timer error codes               */
+/*                                                                            */
+/*  - setup the clock and operational mode of an event timer channel          */
+/*    Using "waveform" mode the number of ticks required for an interrupt     */
+/*    duration are computed and loaded into channel->RC3. The clock source    */
+/*    and timer type [ capture | waveform ] are selected and loaded in        */
+/*    channel->CMR. The "wave select" mode is RC_UP                           */
 /*                                                                            */
 /******************************************************************************/
 
@@ -175,6 +187,7 @@ APV_ERROR_CODE apvConfigureWaveformEventTimer(uint16_t                          
                                               apvEventTimersBlock_t             *apvEventTimerBlockBaseAddress,
                                               apvEventTimerChannelClockSource_t  channelClock,
                                               uint32_t                           timeBaseTarget, // nanoseconds
+                                              bool                               interruptEnable,
                                               apvEventTimerChannelClockExtC0_t   externalClock0,
                                               apvEventTimerChannelClockExtC1_t   externalClock1,   
                                               apvEventTimerChannelClockExtC2_t   externalClock2)
@@ -244,8 +257,14 @@ APV_ERROR_CODE apvConfigureWaveformEventTimer(uint16_t                          
 
         switch(eventTimerBlock)
           {
-          case APV_EVENT_TIMER_2 : ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_CMR = channelClock | TC_CMR_WAVE;
+          case APV_EVENT_TIMER_2 : ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_CMR = channelClock | TC_CMR_WAVE | TC_CMR_WAVSEL_UP_RC;
                                    ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_RC  = timerTarget;
+
+                                   if (interruptEnable == true)
+                                     {
+                                     ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_IER = 
+                                                 ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_IER | TC_IER_CPCS;
+                                     }
 
                                    if (externalClock2 != APV_EVENT_TIMER_CHANNEL_TIMER_XC2_NONE)
                                      {
@@ -256,8 +275,14 @@ APV_ERROR_CODE apvConfigureWaveformEventTimer(uint16_t                          
 
                                    break;
 
-          case APV_EVENT_TIMER_1 : ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_CMR = channelClock | TC_CMR_WAVE;
+          case APV_EVENT_TIMER_1 : ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_CMR = channelClock | TC_CMR_WAVE | TC_CMR_WAVSEL_UP_RC;
                                    ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_RC  = timerTarget;
+
+                                   if (interruptEnable == true)
+                                     {
+                                     ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_IER = 
+                                                 ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_IER | TC_IER_CPCS;
+                                     }
 
                                    if (externalClock1 != APV_EVENT_TIMER_CHANNEL_TIMER_XC1_NONE)
                                      {
@@ -268,8 +293,14 @@ APV_ERROR_CODE apvConfigureWaveformEventTimer(uint16_t                          
 
                                    break;
 
-          case APV_EVENT_TIMER_0 : ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_CMR = channelClock | TC_CMR_WAVE;
+          case APV_EVENT_TIMER_0 : ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_CMR = channelClock | TC_CMR_WAVE | TC_CMR_WAVSEL_UP_RC;
                                    ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_RC  = timerTarget;
+
+                                   if (interruptEnable == true)
+                                     {
+                                     ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_IER = 
+                                                 ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_IER | TC_IER_CPCS;
+                                     }
 
                                    if (externalClock0 != APV_EVENT_TIMER_CHANNEL_TIMER_XC0_NONE)
                                      {
@@ -289,7 +320,77 @@ APV_ERROR_CODE apvConfigureWaveformEventTimer(uint16_t                          
   return(apvEventTimerError);
 
 /******************************************************************************/
-  } /* end of apvConfigureWaveformEventTimer                                          */
+  } /* end of apvConfigureWaveformEventTimer                                  */
+
+/******************************************************************************/
+/* apvSwitchWaveformEventTimer() :                                            */
+/*  --> timerChannel : timer instance and channel : [ 27 .. 35 ] ==           */
+/*                                                    0 { instance } 2 +      */
+/*                                                    0 { channel  } 2        */
+/*  --> apvEventTimerBlockBaseAddress : BASE (low) address of the event timer */
+/*                                      blocks                                */
+/*  --> apvEventTimerSwitch           : start/stop the timer                  */
+/*                                         [ false == STOP | true  == START ] */
+/*  <-- apvEventTimerError            : evet timer error codes                */
+/*                                                                            */
+/* - start/stop an event timer block channel timer                            */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvSwitchWaveformEventTimer(uint16_t                           timerChannel,
+                                           apvEventTimersBlock_t             *apvEventTimerBlockBaseAddress,
+                                           bool                               apvEventTimerSwitch)
+   {
+/******************************************************************************/
+
+          APV_ERROR_CODE apvEventTimerError       = APV_ERROR_CODE_NONE;
+
+          uint16_t       eventTimerBlock          = 0,
+                         eventTimerChannel        = 0;
+
+ /******************************************************************************/
+ 
+  if (apvEventTimerBlockBaseAddress == NULL)
+    {
+    apvEventTimerError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+  else
+    {
+    eventTimerBlock   = (timerChannel - ID_TC0) / TCCHANNEL_NUMBER;
+    eventTimerChannel = (timerChannel - ID_TC0) % TCCHANNEL_NUMBER;
+
+    if ((eventTimerBlock >= TCCHANNEL_NUMBER) || (eventTimerChannel >= TCCHANNEL_NUMBER))
+      {
+      apvEventTimerError = APV_ERROR_CODE_PARAMETER_OUT_OF_RANGE;
+      }
+    else
+      {
+      if ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannelInUse[eventTimerChannel] == false)
+        {
+        apvEventTimerError = APV_ERROR_CODE_EVENT_TIMER_INITIALISATION_ERROR;
+        }
+      else
+        {
+        if (apvEventTimerSwitch == false)
+          {
+          ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_CCR = TC_CCR_CLKDIS; // 0b1 | 0b0
+          }
+        else
+          {
+          ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_CCR = (~((uint32_t)TC_CCR_CLKDIS)); // EXPLICITLY clear CLKDIS first
+
+          ((apvEventTimerBlockBaseAddress + eventTimerBlock)->apvEventTimerChannels[eventTimerChannel])->TC_CCR = TC_CCR_CLKEN; // 0b0 | 0b1
+          }
+        }
+      }
+    }
+
+ /******************************************************************************/
+
+  return(apvEventTimerError);
+
+/******************************************************************************/
+   } /* end of apvSwitchWaveformEventTimer                                    */
 
 /******************************************************************************/
 /* apvEventTimerChannel0CallBack() :                                          */
@@ -303,6 +404,9 @@ APV_ERROR_CODE apvConfigureWaveformEventTimer(uint16_t                          
 void apvEventTimerChannel0CallBack(uint32_t apvEventTimerIndex)
   {
 /******************************************************************************/
+
+  apvEventTimerHotShot.Flags.APV_EVENT_TIMER_CHANNEL_0_FLAG = APV_EVENT_TIMER_FLAG_SET;
+
 /******************************************************************************/
   } /* end of apvEventTimerChannel0CallBack                                   */
 

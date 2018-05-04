@@ -124,10 +124,14 @@ extern APV_ERROR_CODE apvAssignEventTimer(uint16_t                timerChannel,
 extern APV_ERROR_CODE apvConfigureWaveformEventTimer(uint16_t                           timerChannel,
                                                      apvEventTimersBlock_t             *apvEventTimerBlockBaseAddress,
                                                      apvEventTimerChannelClockSource_t  channelClock,
-                                                     uint32_t                           timeBaseTarget, // nanoseconds,
+                                                     uint32_t                           timeBaseTarget, // nanoseconds
+                                                     bool                               interruptEnable,
                                                      apvEventTimerChannelClockExtC0_t   externalClock0,
                                                      apvEventTimerChannelClockExtC1_t   externalClock1,   
                                                      apvEventTimerChannelClockExtC2_t   externalClock2);
+extern APV_ERROR_CODE apvSwitchWaveformEventTimer(uint16_t                           timerChannel,
+                                                  apvEventTimersBlock_t             *apvEventTimerBlockBaseAddress,
+                                                  bool                               apvEventTimerSwitch);
 
 extern void           apvEventTimerChannel0CallBack(uint32_t apvEventTimerIndex);
 extern void           apvEventTimerChannel1CallBack(uint32_t apvEventTimerIndex);

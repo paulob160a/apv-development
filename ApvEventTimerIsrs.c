@@ -36,12 +36,15 @@ void TC0_Handler(void)
   {
 /******************************************************************************/
 
-  uint32_t apvTimerBlock   = (ID_TC0 - APV_EVENT_TIMER_BASE_ID) / TCCHANNEL_NUMBER;
-  uint32_t apvTimerChannel = (ID_TC0 - APV_EVENT_TIMER_BASE_ID) % TCCHANNEL_NUMBER;
+           uint32_t apvTimerBlock   = (ID_TC0 - APV_EVENT_TIMER_BASE_ID) / TCCHANNEL_NUMBER;
+           uint32_t apvTimerChannel = (ID_TC0 - APV_EVENT_TIMER_BASE_ID) % TCCHANNEL_NUMBER;
+  volatile uint32_t timerStatus    = 0;
 
 /******************************************************************************/
 
   apvEventTimerBlock[apvTimerBlock].apvEventTimerChannelCallBack[apvTimerChannel](ID_TC0);
+
+  timerStatus = apvEventTimerBlock[apvTimerBlock].apvEventTimerChannels[apvTimerChannel]->TC_SR;
 
 /******************************************************************************/
   } /* end of TC0_Handler                                                     */
