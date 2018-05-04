@@ -22,7 +22,7 @@
 /* Definitions :                                                              */
 /******************************************************************************/
 
-#define APV_EVENT_TIMER_GENERAL_PURPOSE_TIME_BASE (APV_EVENT_TIMER_TIMEBASE_MINIMUM * ((uint32_t)100000000)) // 1000000000 nanoseconds (1 second)
+#define APV_EVENT_TIMER_GENERAL_PURPOSE_TIME_BASE (APV_EVENT_TIMER_TIMEBASE_MINIMUM * ((uint32_t)100000)) // 1000000 nanoseconds (1 millisecond)
 
 #define APV_EVENT_TIMER_CHANNEL_TIME_BASE_MAXIMUM ((uint32_t)((int32_t)-1))
 
