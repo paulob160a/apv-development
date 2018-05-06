@@ -26,6 +26,25 @@
 /* Definitions :                                                              */
 /******************************************************************************/
 
+// The physcial addresses of the four peripheral I/O controller blocks
+#define APV_PIO_BLOCK_A ((Pio *)0x400E0E00U)
+#define APV_PIO_BLOCK_B ((Pio *)0x400E1000U)
+#define APV_PIO_BLOCK_C ((Pio *)0x400E1200U)
+#define APV_PIO_BLOCK_D ((Pio *)0x400E1400U)
+
+/******************************************************************************/
+/* Type Definitions :                                                         */
+/******************************************************************************/
+
+typedef enum apvPeripheralLineGroup_tTag
+  {
+  APV_PERIPHERAL_LINE_GROUP_A = 0,
+  APV_PERIPHERAL_LINE_GROUP_B,
+  APV_PERIPHERAL_LINE_GROUP_C,
+  APV_PERIPHERAL_LINE_GROUP_D,
+  APV_PERIPHERAL_LINE_GROUPS
+  } apvPeripheralLineGroup_;
+
 typedef enum apvPeripheralId_tTag
   {
   APV_PERIPHERAL_ID_SUPC   = ID_SUPC,
@@ -76,17 +95,21 @@ typedef enum apvPeripheralId_tTag
 /* Global Variable Definitions :                                              */
 /******************************************************************************/
 
-extern Pmc  ApvPeripheralControlBlock; // shadow peripheral control block
-extern Pmc *ApvPeripheralControlBlock_p;
+extern Pmc  ApvPeripheralControlBlock;   // shadow peripheral control block
+extern Pmc *ApvPeripheralControlBlock_p; // physical block address
+extern Pio  ApvPeripheralLineControlBlock[APV_PERIPHERAL_LINE_GROUPS];   // shadow PIO control blocks
+extern Pio *ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUPS]; // physical block addresses
 
 /******************************************************************************/
 /* Function Declarations :                                                    */
 /******************************************************************************/
 
-APV_ERROR_CODE apvSwitchPeripheralClock(apvPeripheralId_t peripheralId,
-                                        bool              peripheralSwitch);
-APV_ERROR_CODE apvSwitchNvicDeviceIrq(apvPeripheralId_t peripheralIrqId,
-                                      bool              peripheralIrqSwitch);
+extern APV_ERROR_CODE apvSwitchPeripheralClock(apvPeripheralId_t peripheralId,
+                                               bool              peripheralSwitch);
+extern APV_ERROR_CODE apvSwitchPeripheralLines(apvPeripheralId_t peripheralLineId,
+                                               bool              peripheralLineSwitch);
+extern APV_ERROR_CODE apvSwitchNvicDeviceIrq(apvPeripheralId_t peripheralIrqId,
+                                             bool              peripheralIrqSwitch);
 
 /******************************************************************************/
 

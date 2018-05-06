@@ -66,7 +66,9 @@ APV_SERIAL_ERROR_CODE apvSerialCommsManager(APV_PRIMARY_SERIAL_PORT apvPrimarySe
       case APV_PRIMARY_SERIAL_PORT_USART3 : // NOT IMPLEMENTED
                                             break;
       case APV_PRIMARY_SERIAL_PORT_UART   : // THIS IS THE DEFAULT CHOICE
-      default                             : apvPrimarySerialCommsInterruptHandler = UART_Handler;
+      default                             : apvPrimarySerialCommsInterruptHandler = UART_Handler; // attach the UART handler to the primary serial port
+
+                                            
                                             break;
       }
     }
@@ -91,7 +93,7 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
 
 /******************************************************************************/
 /* UART Handler :                                                             */
-/*  - UART interrupt handler (replaces the "weak" default definition          */
+/*  - UART interrupt handler (replaces the "weak" default definition)         */
 /******************************************************************************/
 
 void UART_Handler(void)

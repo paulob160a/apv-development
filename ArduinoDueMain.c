@@ -38,9 +38,6 @@ int main(void)
 
 /******************************************************************************/
 
-  // Default to using the UART for primary serial comms
-  apvSerialErrorCode = apvSerialCommsManager(APV_PRIMARY_SERIAL_PORT_UART);
-
   apvSerialErrorCode = apvInitialiseEventTimerBlocks(&apvEventTimerBlock[APV_EVENT_TIMER_0],
                                                       TCCHANNEL_NUMBER);
 
@@ -64,12 +61,21 @@ int main(void)
   apvSerialErrorCode = apvSwitchNvicDeviceIrq(APV_EVENT_TIMER_GENERAL_PURPOSE_ID,
                                               true);
 
-  apvSerialErrorCode = apvSwitchPeripheralClock(ID_TC0,
+  apvSerialErrorCode = apvSwitchPeripheralClock(ID_TC0, // switch on the timebase peripheral clock
                                                 true);
 
   apvSerialErrorCode = apvSwitchWaveformEventTimer( APV_EVENT_TIMER_GENERAL_PURPOSE_ID,
                                                    &apvEventTimerBlock[APV_EVENT_TIMER_0],
                                                     true);
+
+  // Default to using the UART for primary serial comms
+  apvSerialErrorCode = apvSerialCommsManager(APV_PRIMARY_SERIAL_PORT_UART);
+
+ apvSerialErrorCode = apvSwitchPeripheralLines(ID_UART, // switch on the primary serial port peripheral
+                                                true);
+
+  apvSerialErrorCode = apvSwitchPeripheralClock(ID_UART, // switch on the primary serial port peripheral clock
+                                                true);
 
 /******************************************************************************/
 
