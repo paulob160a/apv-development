@@ -1,0 +1,118 @@
+<!DOCTYPE CrossStudio_Session_File>
+<session>
+ <Bookmarks/>
+ <Breakpoints>
+  <Exceptions set="MemManage;UsageFault_Coprocessor;UsageFault_CheckingError;UsageFault_StateError;BusFault;ExceptionEntryReturnFault;HardFault" />
+ </Breakpoints>
+ <ExecutionProfileWindow/>
+ <FrameBufferWindow>
+  <FrameBufferWindow addressText="" bufferWidth="-1" bufferHeight="-1" addressSpace="" />
+ </FrameBufferWindow>
+ <Memory1>
+  <MemoryWindow autoEvaluate="0" addressText="" addressOrder="0" refreshPeriod="0" columnsText="" sizeText="" viewMode="0" dataSize="1" radix="16" name="BeagleBone_Sitara_Base_Code" addressSpace="" />
+  <MemoryWindow autoEvaluate="0" addressText="0x400801C0" addressOrder="0" refreshPeriod="1000" columnsText="4" sizeText="" viewMode="0" dataSize="4" radix="16" name="ArduinoDue001" addressSpace="" />
+ </Memory1>
+ <Memory2>
+  <MemoryWindow autoEvaluate="0" addressText="" addressOrder="0" refreshPeriod="0" columnsText="" sizeText="" viewMode="0" dataSize="1" radix="16" name="BeagleBone_Sitara_Base_Code" addressSpace="" />
+  <MemoryWindow autoEvaluate="0" addressText="0x400e0e00" addressOrder="0" refreshPeriod="1000" columnsText="4" sizeText="" viewMode="0" dataSize="4" radix="16" name="ArduinoDue001" addressSpace="" />
+ </Memory2>
+ <Memory3>
+  <MemoryWindow autoEvaluate="0" addressText="" addressOrder="0" refreshPeriod="0" columnsText="" sizeText="" viewMode="0" dataSize="1" radix="16" name="BeagleBone_Sitara_Base_Code" addressSpace="" />
+  <MemoryWindow autoEvaluate="0" addressText="0x400E0610" addressOrder="0" refreshPeriod="0" columnsText="" sizeText="" viewMode="0" dataSize="4" radix="16" name="ArduinoDue001" addressSpace="" />
+ </Memory3>
+ <Memory4>
+  <MemoryWindow autoEvaluate="0" addressText="" addressOrder="0" refreshPeriod="0" columnsText="" sizeText="" viewMode="0" dataSize="1" radix="16" name="BeagleBone_Sitara_Base_Code" addressSpace="" />
+  <MemoryWindow autoEvaluate="0" addressText="" addressOrder="0" refreshPeriod="0" columnsText="" sizeText="" viewMode="0" dataSize="1" radix="16" name="ArduinoDue001" addressSpace="" />
+ </Memory4>
+ <Project>
+  <ProjectSessionItem path="ArduinoDue001" name="unnamed" />
+  <ProjectSessionItem path="ArduinoDue001;ArduinoDue001" name="unnamed" />
+  <ProjectSessionItem path="ArduinoDue001;ArduinoDue001;CMSIS Files" name="unnamed" />
+  <ProjectSessionItem path="ArduinoDue001;ArduinoDue001;Include" name="unnamed" />
+  <ProjectSessionItem path="ArduinoDue001;ArduinoDue001;Source" name="unnamed" />
+  <ProjectSessionItem path="ArduinoDue001;ArduinoDue001;System Files" name="unnamed" />
+ </Project>
+ <Register1>
+  <RegisterWindow openNodes="CPU - Current Context" binaryNodes="" unsignedNodes="" decimalNodes="" octalNodes="" asciiNodes="" visibleNodes="CPU - Current Context/r0;CPU - Current Context/r1;CPU - Current Context/r2;CPU - Current Context/r3;CPU - Current Context/r4;CPU - Current Context/r5;CPU - Current Context/r6;CPU - Current Context/r7;CPU - Current Context/r8;CPU - Current Context/r9;CPU - Current Context/r10;CPU - Current Context/r11;CPU - Current Context/r12;CPU - Current Context/sp(r13);CPU - Current Context/lr(r14);CPU - Current Context/pc(r15);CPU - Current Context/apsr;CPU/r0;CPU/r1;CPU/r2;CPU/r3;CPU/r4;CPU/r5;CPU/r6;CPU/r7;CPU/r8;CPU/r9;CPU/r10;CPU/r11;CPU/r12;CPU/r13;CPU/r14;CPU/r15;CPU/cpsr;CPU/r8_fiq;CPU/r9_fiq;CPU/r10_fiq;CPU/r11_fiq;CPU/r12_fiq;CPU/r13_fiq;CPU/r14_fiq;CPU/spsr_fiq;CPU/r13_svc;CPU/r14_svc;CPU/spsr_svc;CPU/r13_abt;CPU/r14_abt;CPU/spsr_abt;CPU/r13_irq;CPU/r14_irq;CPU/spsr_irq;CPU/r13_und;CPU/r14_und;CPU/spsr_und;CPU/r13_mon;CPU/r14_mon;CPU/spsr_mon" name="BeagleBone_Sitara_Base_Code" />
+  <RegisterWindow openNodes="CPU - Current Context" binaryNodes="" unsignedNodes="" decimalNodes="" octalNodes="" asciiNodes="" visibleNodes="CPU - Current Context/r0;CPU - Current Context/r1;CPU - Current Context/r2;CPU - Current Context/r3;CPU - Current Context/r4;CPU - Current Context/r5;CPU - Current Context/r6;CPU - Current Context/r7;CPU - Current Context/r8;CPU - Current Context/r9;CPU - Current Context/r10;CPU - Current Context/r11;CPU - Current Context/r12;CPU - Current Context/sp(r13);CPU - Current Context/lr(r14);CPU - Current Context/pc(r15);CPU - Current Context/apsr;CPU/r0;CPU/r1;CPU/r2;CPU/r3;CPU/r4;CPU/r5;CPU/r6;CPU/r7;CPU/r8;CPU/r9;CPU/r10;CPU/r11;CPU/r12;CPU/sp(r13);CPU/lr(r14);CPU/pc(r15);CPU/xpsr;CPU/msp;CPU/psp;CPU/cfbp" name="ArduinoDue001" />
+ </Register1>
+ <Register2>
+  <RegisterWindow openNodes="CPU - Current Context" binaryNodes="" unsignedNodes="" decimalNodes="" octalNodes="" asciiNodes="" visibleNodes="CPU - Current Context/r0;CPU - Current Context/r1;CPU - Current Context/r2;CPU - Current Context/r3;CPU - Current Context/r4;CPU - Current Context/r5;CPU - Current Context/r6;CPU - Current Context/r7;CPU - Current Context/r8;CPU - Current Context/r9;CPU - Current Context/r10;CPU - Current Context/r11;CPU - Current Context/r12;CPU - Current Context/sp(r13);CPU - Current Context/lr(r14);CPU - Current Context/pc(r15);CPU - Current Context/apsr;CPU/r0;CPU/r1;CPU/r2;CPU/r3;CPU/r4;CPU/r5;CPU/r6;CPU/r7;CPU/r8;CPU/r9;CPU/r10;CPU/r11;CPU/r12;CPU/r13;CPU/r14;CPU/r15;CPU/cpsr;CPU/r8_fiq;CPU/r9_fiq;CPU/r10_fiq;CPU/r11_fiq;CPU/r12_fiq;CPU/r13_fiq;CPU/r14_fiq;CPU/spsr_fiq;CPU/r13_svc;CPU/r14_svc;CPU/spsr_svc;CPU/r13_abt;CPU/r14_abt;CPU/spsr_abt;CPU/r13_irq;CPU/r14_irq;CPU/spsr_irq;CPU/r13_und;CPU/r14_und;CPU/spsr_und;CPU/r13_mon;CPU/r14_mon;CPU/spsr_mon" name="BeagleBone_Sitara_Base_Code" />
+  <RegisterWindow openNodes="CPU - Current Context" binaryNodes="" unsignedNodes="" decimalNodes="" octalNodes="" asciiNodes="" visibleNodes="CPU - Current Context/r0;CPU - Current Context/r1;CPU - Current Context/r2;CPU - Current Context/r3;CPU - Current Context/r4;CPU - Current Context/r5;CPU - Current Context/r6;CPU - Current Context/r7;CPU - Current Context/r8;CPU - Current Context/r9;CPU - Current Context/r10;CPU - Current Context/r11;CPU - Current Context/r12;CPU - Current Context/sp(r13);CPU - Current Context/lr(r14);CPU - Current Context/pc(r15);CPU - Current Context/apsr;CPU/r0;CPU/r1;CPU/r2;CPU/r3;CPU/r4;CPU/r5;CPU/r6;CPU/r7;CPU/r8;CPU/r9;CPU/r10;CPU/r11;CPU/r12;CPU/sp(r13);CPU/lr(r14);CPU/pc(r15);CPU/xpsr;CPU/msp;CPU/psp;CPU/cfbp" name="ArduinoDue001" />
+ </Register2>
+ <Register3>
+  <RegisterWindow openNodes="CPU - Current Context" binaryNodes="" unsignedNodes="" decimalNodes="" octalNodes="" asciiNodes="" visibleNodes="CPU - Current Context/r0;CPU - Current Context/r1;CPU - Current Context/r2;CPU - Current Context/r3;CPU - Current Context/r4;CPU - Current Context/r5;CPU - Current Context/r6;CPU - Current Context/r7;CPU - Current Context/r8;CPU - Current Context/r9;CPU - Current Context/r10;CPU - Current Context/r11;CPU - Current Context/r12;CPU - Current Context/sp(r13);CPU - Current Context/lr(r14);CPU - Current Context/pc(r15);CPU - Current Context/apsr;CPU/r0;CPU/r1;CPU/r2;CPU/r3;CPU/r4;CPU/r5;CPU/r6;CPU/r7;CPU/r8;CPU/r9;CPU/r10;CPU/r11;CPU/r12;CPU/r13;CPU/r14;CPU/r15;CPU/cpsr;CPU/r8_fiq;CPU/r9_fiq;CPU/r10_fiq;CPU/r11_fiq;CPU/r12_fiq;CPU/r13_fiq;CPU/r14_fiq;CPU/spsr_fiq;CPU/r13_svc;CPU/r14_svc;CPU/spsr_svc;CPU/r13_abt;CPU/r14_abt;CPU/spsr_abt;CPU/r13_irq;CPU/r14_irq;CPU/spsr_irq;CPU/r13_und;CPU/r14_und;CPU/spsr_und;CPU/r13_mon;CPU/r14_mon;CPU/spsr_mon" name="BeagleBone_Sitara_Base_Code" />
+  <RegisterWindow openNodes="CPU - Current Context" binaryNodes="" unsignedNodes="" decimalNodes="" octalNodes="" asciiNodes="" visibleNodes="CPU - Current Context/r0;CPU - Current Context/r1;CPU - Current Context/r2;CPU - Current Context/r3;CPU - Current Context/r4;CPU - Current Context/r5;CPU - Current Context/r6;CPU - Current Context/r7;CPU - Current Context/r8;CPU - Current Context/r9;CPU - Current Context/r10;CPU - Current Context/r11;CPU - Current Context/r12;CPU - Current Context/sp(r13);CPU - Current Context/lr(r14);CPU - Current Context/pc(r15);CPU - Current Context/apsr;CPU/r0;CPU/r1;CPU/r2;CPU/r3;CPU/r4;CPU/r5;CPU/r6;CPU/r7;CPU/r8;CPU/r9;CPU/r10;CPU/r11;CPU/r12;CPU/sp(r13);CPU/lr(r14);CPU/pc(r15);CPU/xpsr;CPU/msp;CPU/psp;CPU/cfbp" name="ArduinoDue001" />
+ </Register3>
+ <Register4>
+  <RegisterWindow openNodes="CPU - Current Context" binaryNodes="" unsignedNodes="" decimalNodes="" octalNodes="" asciiNodes="" visibleNodes="CPU - Current Context/r0;CPU - Current Context/r1;CPU - Current Context/r2;CPU - Current Context/r3;CPU - Current Context/r4;CPU - Current Context/r5;CPU - Current Context/r6;CPU - Current Context/r7;CPU - Current Context/r8;CPU - Current Context/r9;CPU - Current Context/r10;CPU - Current Context/r11;CPU - Current Context/r12;CPU - Current Context/sp(r13);CPU - Current Context/lr(r14);CPU - Current Context/pc(r15);CPU - Current Context/apsr;CPU/r0;CPU/r1;CPU/r2;CPU/r3;CPU/r4;CPU/r5;CPU/r6;CPU/r7;CPU/r8;CPU/r9;CPU/r10;CPU/r11;CPU/r12;CPU/r13;CPU/r14;CPU/r15;CPU/cpsr;CPU/r8_fiq;CPU/r9_fiq;CPU/r10_fiq;CPU/r11_fiq;CPU/r12_fiq;CPU/r13_fiq;CPU/r14_fiq;CPU/spsr_fiq;CPU/r13_svc;CPU/r14_svc;CPU/spsr_svc;CPU/r13_abt;CPU/r14_abt;CPU/spsr_abt;CPU/r13_irq;CPU/r14_irq;CPU/spsr_irq;CPU/r13_und;CPU/r14_und;CPU/spsr_und;CPU/r13_mon;CPU/r14_mon;CPU/spsr_mon" name="BeagleBone_Sitara_Base_Code" />
+  <RegisterWindow openNodes="CPU - Current Context" binaryNodes="" unsignedNodes="" decimalNodes="" octalNodes="" asciiNodes="" visibleNodes="CPU - Current Context/r0;CPU - Current Context/r1;CPU - Current Context/r2;CPU - Current Context/r3;CPU - Current Context/r4;CPU - Current Context/r5;CPU - Current Context/r6;CPU - Current Context/r7;CPU - Current Context/r8;CPU - Current Context/r9;CPU - Current Context/r10;CPU - Current Context/r11;CPU - Current Context/r12;CPU - Current Context/sp(r13);CPU - Current Context/lr(r14);CPU - Current Context/pc(r15);CPU - Current Context/apsr;CPU/r0;CPU/r1;CPU/r2;CPU/r3;CPU/r4;CPU/r5;CPU/r6;CPU/r7;CPU/r8;CPU/r9;CPU/r10;CPU/r11;CPU/r12;CPU/sp(r13);CPU/lr(r14);CPU/pc(r15);CPU/xpsr;CPU/msp;CPU/psp;CPU/cfbp" name="ArduinoDue001" />
+ </Register4>
+ <TargetWindow programAction="" uploadFileType="" programLoadAddress="" programSize="" uploadFileName="" uploadMemoryInterface="" programFileName="" uploadStartAddress="" programFileType="" uploadSize="" programMemoryInterface="" />
+ <TraceWindow>
+  <Trace enabled="Yes" />
+ </TraceWindow>
+ <Watch1>
+  <Watches active="1" update="Never" >
+   <Watchpoint evalMode="0" linenumber="40" numelements="0" radix="-1" name="apvErrorCode" list="" expression="apvErrorCode" filename="ArduinoDueMain.c" />
+   <Watchpoint evalMode="1" linenumber="71" numelements="0" radix="-1" name="apvPrimarySerialCommsInterruptHandler" list="" expression="apvPrimarySerialCommsInterruptHandler" filename="ArduinoDueSerial.c" />
+   <Watchpoint evalMode="0" linenumber="86" numelements="0" radix="16" name="apvRunTimeCounter" list="" expression="apvRunTimeCounter" filename="ArduinoDueMain.c" />
+   <Watchpoint evalMode="1" linenumber="136" numelements="0" radix="16" name="apvEventTimerBlockBaseAddress" list="" expression="apvEventTimerBlockBaseAddress" filename="ApvEventTimers.c" />
+   <Watchpoint evalMode="0" linenumber="118" numelements="0" radix="-1" name="eventTimerBlock" list="" expression="eventTimerBlock" filename="ApvEventTimers.c" />
+   <Watchpoint evalMode="0" linenumber="119" numelements="0" radix="-1" name="eventTimerChannel" list="" expression="eventTimerChannel" filename="ApvEventTimers.c" />
+   <Watchpoint evalMode="1" linenumber="59" numelements="0" radix="-1" name="apvEventTimerBlock" list="" expression="apvEventTimerBlock" filename="ApvEventTimers.c" />
+   <Watchpoint evalMode="0" linenumber="80" numelements="0" radix="-1" name="ApvPeripheralControlBlock" list="" expression="ApvPeripheralControlBlock" filename="ApvPeripheralControl.c" />
+   <Watchpoint evalMode="1" linenumber="29" numelements="0" radix="-1" name="ApvPeripheralControlBlock_p" list="" expression="ApvPeripheralControlBlock_p" filename="ApvPeripheralControl.c" />
+   <Watchpoint evalMode="2" linenumber="33" numelements="4" radix="-1" name="ApvPeripheralLineControlBlock_p" list="" expression="ApvPeripheralLineControlBlock_p" filename="ApvPeripheralControl.c" />
+  </Watches>
+ </Watch1>
+ <Watch2>
+  <Watches active="0" update="Never" />
+ </Watch2>
+ <Watch3>
+  <Watches active="0" update="Never" />
+ </Watch3>
+ <Watch4>
+  <Watches active="0" update="Never" />
+ </Watch4>
+ <Files>
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/SAM3XA_Startup.s" y="142" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/SAM3XA_Startup.s" left="0" selected="0" name="unnamed" top="0" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="7" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/CMSIS/Device/ATMEL/sam3xa/source/system_sam3xa.c" y="122" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/CMSIS/Device/ATMEL/sam3xa/source/system_sam3xa.c" left="0" selected="0" name="unnamed" top="174" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/CMSIS/Device/ATMEL/sam3xa/include/system_sam3xa.h" y="0" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/CMSIS/Device/ATMEL/sam3xa/include/system_sam3xa.h" left="0" selected="0" name="unnamed" top="21" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ArduinoDueMain.c" y="32" path="ArduinoDueMain.c" left="0" selected="0" name="unnamed" top="13" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="22" debugPath="ArduinoDueSerial.c" y="40" path="ArduinoDueSerial.c" left="0" selected="0" name="unnamed" top="45" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvSerial.h" y="0" path="ApvSerial.h" left="0" selected="0" name="unnamed" top="16" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvCrcGenerator.c" y="16" path="ApvCrcGenerator.c" left="0" selected="0" name="unnamed" top="69" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvCrcGenerator.h" y="41" path="ApvCrcGenerator.h" left="0" selected="0" name="unnamed" top="0" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="36" debugPath="ApvError.h" y="43" path="ApvError.h" left="0" selected="0" name="unnamed" top="12" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvMessageHandling.c" y="153" path="ApvMessageHandling.c" left="0" selected="0" name="unnamed" top="135" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvMessageHandling.h" y="189" path="ApvMessageHandling.h" left="0" selected="0" name="unnamed" top="75" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvUtilities.h" y="22" path="ApvUtilities.h" left="0" selected="0" name="unnamed" top="18" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvCommsUtilities.h" y="51" path="ApvCommsUtilities.h" left="0" selected="0" name="unnamed" top="0" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ArduinoDueMain" y="0" path="ArduinoDueMain" left="0" selected="0" name="unnamed" top="0" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ar19973.c" y="0" path="ar19973.c" left="0" selected="0" name="unnamed" top="0" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvUtilities.c" y="45" path="ApvUtilities.c" left="0" selected="0" name="unnamed" top="26" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvCommsUtilities.c" y="103" path="ApvCommsUtilities.c" left="0" selected="0" name="unnamed" top="82" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ar19937.h" y="0" path="ar19937.h" left="0" selected="0" name="unnamed" top="0" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvStateMachines.c" y="34" path="ApvStateMachines.c" left="0" selected="0" name="unnamed" top="45" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvStateMachines.h" y="37" path="ApvStateMachines.h" left="0" selected="0" name="unnamed" top="6" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/samples/Atmel_SAM3X_EK/uart.c" y="0" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/samples/Atmel_SAM3X_EK/uart.c" left="0" selected="0" name="unnamed" top="0" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/CMSIS/Device/ATMEL/sam3xa/include/sam3x8e.h" y="264" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/CMSIS/Device/ATMEL/sam3xa/include/sam3x8e.h" left="0" selected="0" name="unnamed" top="485" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="C:/Program Files (x86)/Rowley Associates Limited/CrossWorks for ARM 3.7/source/thumb_crt0.s" y="0" path="C:/Program Files (x86)/Rowley Associates Limited/CrossWorks for ARM 3.7/source/thumb_crt0.s" left="0" selected="0" name="unnamed" top="0" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvEventTimers.c" y="63" path="ApvEventTimers.c" left="0" selected="0" name="unnamed" top="38" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="46" debugPath="ApvEventTimers.h" y="100" path="ApvEventTimers.h" left="0" selected="0" name="unnamed" top="0" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/system_sam.c" y="0" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/system_sam.c" left="0" selected="0" name="unnamed" top="0" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/SAM_Startup.s" y="0" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/SAM_Startup.s" left="0" selected="0" name="unnamed" top="0" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvEventTimerIsrs.c" y="21" path="ApvEventTimerIsrs.c" left="0" selected="0" name="unnamed" top="7" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvEventTimersIsrs.h" y="18" path="ApvEventTimersIsrs.h" left="0" selected="0" name="unnamed" top="0" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/CMSIS/Device/ATMEL/sam3xa/include/component/tc.h" y="54" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/CMSIS/Device/ATMEL/sam3xa/include/component/tc.h" left="0" selected="0" name="unnamed" top="35" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvSystemTime.h" y="24" path="ApvSystemTime.h" left="0" selected="0" name="unnamed" top="6" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvSystemTime.c" y="20" path="ApvSystemTime.c" left="0" selected="0" name="unnamed" top="0" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="108" debugPath="ApvPeripheralControl.c" y="230" path="ApvPeripheralControl.c" left="0" selected="1" name="unnamed" top="201" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="11" debugPath="ApvPeripheralControl.h" y="100" path="ApvPeripheralControl.h" left="0" selected="0" name="unnamed" top="77" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/CMSIS_3/CMSIS/Include/core_cmFunc.h" y="341" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/CMSIS_3/CMSIS/Include/core_cmFunc.h" left="0" selected="0" name="unnamed" top="321" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvPeripheralControl.h" y="22" path="ApvPeripheralControl.h" left="0" selected="0" name="unnamed" top="0" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/CMSIS/Device/ATMEL/sam3xa/include/component/pio.h" y="139" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/CMSIS/Device/ATMEL/sam3xa/include/component/pio.h" left="0" selected="0" name="unnamed" top="120" />
+ </Files>
+ <ARMCrossStudioWindow activeProject="ArduinoDue001" autoConnectTarget="SEGGER J-Link" debugSearchFileMap="" fileDialogInitialDirectory="C:/Users/Paul/Documents/CrossWorks Projects/ArduinoDue001" fileDialogDefaultFilter="*.c" autoConnectCapabilities="388991" debugSearchPath="" buildConfiguration="THUMB Flash Debug" />
+</session>
