@@ -16,7 +16,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "sam3x8e.h"
+#include "ApvError.h"
 #include "ApvSerial.h"
+#include "ApvPeripheralControl.h"
 
 /******************************************************************************/
 /* Global Variables :                                                         */
@@ -67,8 +69,6 @@ APV_SERIAL_ERROR_CODE apvSerialCommsManager(APV_PRIMARY_SERIAL_PORT apvPrimarySe
                                             break;
       case APV_PRIMARY_SERIAL_PORT_UART   : // THIS IS THE DEFAULT CHOICE
       default                             : apvPrimarySerialCommsInterruptHandler = UART_Handler; // attach the UART handler to the primary serial port
-
-                                            
                                             break;
       }
     }
@@ -88,6 +88,16 @@ APV_SERIAL_ERROR_CODE apvSerialCommsManager(APV_PRIMARY_SERIAL_PORT apvPrimarySe
 void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
   {
 /******************************************************************************/
+
+  volatile uint8_t receiveBuffer;
+
+/******************************************************************************/
+
+  if (apvPrimarySerialPort == APV_PRIMARY_SERIAL_PORT_UART)
+    {
+    apvUartCharacterReceive(&receiveBuffer);
+    }
+
 /******************************************************************************/
   } /* end of apvPrimarySerialCommsHandler                                    */
 

@@ -32,6 +32,11 @@
 #define APV_PIO_BLOCK_C ((Pio *)0x400E1200U)
 #define APV_PIO_BLOCK_D ((Pio *)0x400E1400U)
 
+// The UART minimum baud rate for this project is defined here as 9600
+#define APV_UART_BAUD_RATE_9600      ((uint32_t)9600)
+// The UART always divides MCK by 16
+#define APV_UART_MCK_FIXED_DIVIDE_16 ((uint32_t)16)
+
 /******************************************************************************/
 /* Type Definitions :                                                         */
 /******************************************************************************/
@@ -91,14 +96,64 @@ typedef enum apvPeripheralId_tTag
   APV_PERIPHERAL_IDS
   } apvPeripheralId_t;
 
+typedef enum apvUartControlAction_tTag
+  {
+  APV_UART_CONTROL_ACTION_RESET = 0,
+  APV_UART_CONTROL_ACTION_ENABLE,
+  APV_UART_CONTROL_ACTION_DISABLE,
+  APV_UART_CONTROL_ACTION_RESET_STATUS,
+  APV_UART_CONTROL_ACTIONS
+  } apvUartControlAction_t;
+
+typedef enum apvUartParity_tTag
+  {
+  APV_UART_PARITY_EVEN = 0,
+  APV_UART_PARITY_ODD,
+  APV_UART_PARITY_SPACE,
+  APV_UART_PARITY_MARK,
+  APV_UART_PARITY_NONE,
+  APV_UART_PARITY_SET
+  } apvUartParity_t;
+
+typedef enum apvUartChannelMode_tTag
+  {
+  APV_UART_CHANNEL_MODE_NORMAL = 0,
+  APV_UART_CHANNEL_MODE_AUTOMATIC,
+  APV_UART_CHANNEL_MODE_LOCAL_LOOPBACK,
+  APV_UART_CHANNEL_MODE_REMOTE_LOOPBACK,
+  APV_UART_CHANNEL_MODE_SET
+  } apvUartChannelMode_t;
+
+typedef enum apvUartBaudRateSelection_tTag
+  {
+  APV_UART_BAUD_RATE_SELECT_9600 = 0,
+  APV_UART_BAUD_RATE_SELECT_19200,
+  APV_UART_BAUD_RATE_SELECT_38400,
+  APV_UART_BAUD_RATE_SELECT_57600,
+  APV_UART_BAUD_RATE_SELECT_76800,
+  APV_UART_BAUD_RATE_SELECT_96000,
+  APV_UART_BAUD_RATE_SELECT_152000,
+  APV_UART_BAUD_RATE_SELECT_SET
+  } apvUartBaudRateSelection_t;
+
+typedef enum apvUartInterruptSelect_tTag
+  {
+  APV_UART_INTERRUPT_SELECT_TRANSMIT = 0,
+  APV_UART_INTERRUPT_SELECT_RECEIVE,
+  APV_UART_INTERRUPT_SELECT_DUPLEX,
+  APV_UART_INTERRUPT_SELECT_SET
+  } apvUartInterruptSelect_t;
+
 /******************************************************************************/
 /* Global Variable Definitions :                                              */
 /******************************************************************************/
 
-extern Pmc  ApvPeripheralControlBlock;   // shadow peripheral control block
-extern Pmc *ApvPeripheralControlBlock_p; // physical block address
+extern Pmc  ApvPeripheralControlBlock;                                   // shadow peripheral control block
+extern Pmc *ApvPeripheralControlBlock_p;                                 // physical block address
 extern Pio  ApvPeripheralLineControlBlock[APV_PERIPHERAL_LINE_GROUPS];   // shadow PIO control blocks
 extern Pio *ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUPS]; // physical block addresses
+extern Uart  ApvUartControlBlock;                                        // shadow UART control block
+extern Uart *ApvUartControlBlock_p;                                      // physical block address
 
 /******************************************************************************/
 /* Function Declarations :                                                    */
@@ -110,6 +165,14 @@ extern APV_ERROR_CODE apvSwitchPeripheralLines(apvPeripheralId_t peripheralLineI
                                                bool              peripheralLineSwitch);
 extern APV_ERROR_CODE apvSwitchNvicDeviceIrq(apvPeripheralId_t peripheralIrqId,
                                              bool              peripheralIrqSwitch);
+extern APV_ERROR_CODE apvConfigureUart(apvUartParity_t            uartParity,
+                                       apvUartChannelMode_t       uartChannelMode,
+                                       apvUartBaudRateSelection_t uartBaudRate);
+extern APV_ERROR_CODE apvControlUart(apvUartControlAction_t uartControlAction);
+extern APV_ERROR_CODE apvUartCharacterTransmit(uint8_t transmitBuffer);
+extern APV_ERROR_CODE apvUartCharacterReceive(uint8_t *receiveBuffer);
+extern APV_ERROR_CODE apvUartSwitchInterrupt(apvUartInterruptSelect_t interruptSelect,
+                                             bool                     interruptSwitch);
 
 /******************************************************************************/
 

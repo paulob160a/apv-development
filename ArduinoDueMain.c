@@ -57,7 +57,7 @@ int main(void)
                                                        APV_EVENT_TIMER_CHANNEL_TIMER_XC1_NONE,   
                                                        APV_EVENT_TIMER_CHANNEL_TIMER_XC2_NONE);
 
-  // SWITCH ON THE NVC/TIMER IRQ
+  // SWITCH ON THE NVIC/TIMER IRQ
   apvSerialErrorCode = apvSwitchNvicDeviceIrq(APV_EVENT_TIMER_GENERAL_PURPOSE_ID,
                                               true);
 
@@ -76,6 +76,40 @@ int main(void)
 
   apvSerialErrorCode = apvSwitchPeripheralClock(ID_UART, // switch on the primary serial port peripheral clock
                                                 true);
+
+#ifdef _APV_UART_TEST_MODE_
+  {
+#define ASCII_CAP_A ((uint8_t)'A')
+
+  uint8_t transmitBuffer = 0;
+
+  apvSerialErrorCode = apvConfigureUart(APV_UART_PARITY_NONE,
+                                        APV_UART_CHANNEL_MODE_LOCAL_LOOPBACK,
+                                        APV_UART_BAUD_RATE_SELECT_19200);
+
+  apvSerialErrorCode = apvControlUart(APV_UART_CONTROL_ACTION_RESET);
+  apvSerialErrorCode = apvControlUart(APV_UART_CONTROL_ACTION_ENABLE);
+
+  // SWITCH ON THE NVIC/UART IRQ
+  apvSerialErrorCode = apvUartSwitchInterrupt(APV_UART_INTERRUPT_SELECT_RECEIVE,
+                                              true);
+
+  apvSerialErrorCode = apvSwitchNvicDeviceIrq(APV_PERIPHERAL_ID_UART,
+                                              true);
+
+  transmitBuffer = ASCII_CAP_A;
+
+  apvSerialErrorCode = apvUartCharacterTransmit(transmitBuffer);
+  }
+
+#else
+  apvSerialErrorCode = apvConfigureUart(APV_UART_PARITY_NONE,
+                                        APV_UART_CHANNEL_MODE_NORMAL,
+                                        APV_UART_BAUD_RATE_SELECT_19200);
+
+  apvSerialErrorCode = apvControlUart(APV_UART_CONTROL_ACTION_RESET);
+  apvSerialErrorCode = apvControlUart(APV_UART_CONTROL_ACTION_ENABLE);
+#endif
 
 /******************************************************************************/
 

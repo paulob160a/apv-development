@@ -38,6 +38,9 @@ Pio *ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUPS] = // physical b
   APV_PIO_BLOCK_D
   };
 
+Uart  ApvUartControlBlock;              // shadow UART control block
+Uart *ApvUartControlBlock_p = UART;     // physical block address
+
 /******************************************************************************/
 /* Function Definitions :                                                     */
 /******************************************************************************/
@@ -172,7 +175,7 @@ APV_ERROR_CODE apvSwitchNvicDeviceIrq(apvPeripheralId_t peripheralIrqId,
 /*  --> peripheralIrqId      : peripheral ID. By some miracle this maps to    */
 /*                             the IRQ identifier as well                     */
 /*  --> peripheralLineSwitch : [ false == peripheral lines disabled |         */
-/*                               true == peripheral lines enabled ]           */
+/*                               true  == peripheral lines enabled ]          */
 /*                                                                            */
 /*  - enable/disable the PIO lines associated with a peripheral. NOTE the     */
 /*    Atmel way is to DISABLE the PIO on a line i.e ENABLE the peripheral and */
@@ -249,6 +252,297 @@ APV_ERROR_CODE apvSwitchPeripheralLines(apvPeripheralId_t peripheralLineId,
 
 /******************************************************************************/
   } /* end of apvSwitchPeripheralLines                                        */
+
+/******************************************************************************/
+/* apvConfigureUart() :                                                       */
+/*  --> uartParity :      [ APV_UART_PARITY_EVEN  = 0 |                       */
+/*                          APV_UART_PARITY_ODD   = 1 |                       */
+/*                          APV_UART_PARITY_SPACE = 2 |                       */
+/*                          APV_UART_PARITY_MARK  = 3 |                       */
+/*                          APV_UART_PARITY_NONE  = 4 ]                       */
+/*  --> uartChannelMode : [ APV_UART_CHANNEL_MODE_NORMAL          = 0 |       */
+/*                          APV_UART_CHANNEL_MODE_AUTOMATIC       = 1 |       */
+/*                          APV_UART_CHANNEL_MODE_LOCAL_LOOPBACK  = 2 |       */
+/*                          APV_UART_CHANNEL_MODE_REMOTE_LOOPBACK = 3 ]       */
+/*  --> uartBaudRate    : [ APV_UART_BAUD_RATE_SELECT_9600   = 0 |            */
+/*                          APV_UART_BAUD_RATE_SELECT_19200  = 1 |            */
+/*                          APV_UART_BAUD_RATE_SELECT_38400  = 2 |            */
+/*                          APV_UART_BAUD_RATE_SELECT_57600  = 3 |            */
+/*                          APV_UART_BAUD_RATE_SELECT_76800  = 4 |            */
+/*                          APV_UART_BAUD_RATE_SELECT_96000  = 5 |            */
+/*                          APV_UART_BAUD_RATE_SELECT_152000 = 6 ]            */
+/*  <-- uartErrorCode   : error codes                                         */
+/*                                                                            */
+/*  - prepare the UART for duplex serial comms                                */
+/*                                                                            */
+/* Reference : "Atmel-11057C-ATARM-SAM3X-SAM3A-Datasheet_23-Mar-15", p750     */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvConfigureUart(apvUartParity_t            uartParity,
+                                apvUartChannelMode_t       uartChannelMode,
+                                apvUartBaudRateSelection_t uartBaudRate)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE uartErrorCode   = APV_ERROR_CODE_NONE;
+
+  uint32_t       targetRegister = 0;
+
+/******************************************************************************/
+
+  if (uartParity >= APV_UART_PARITY_SET)
+    {
+    uartErrorCode = APV_ERROR_CODE_PARAMETER_OUT_OF_RANGE;
+    }
+  else
+    {
+    if (uartChannelMode >= APV_UART_CHANNEL_MODE_SET)
+      {
+      uartErrorCode = APV_ERROR_CODE_PARAMETER_OUT_OF_RANGE;
+      }
+    else
+      {
+      if (uartBaudRate >= APV_UART_BAUD_RATE_SELECT_SET)
+        {
+        uartErrorCode = APV_ERROR_CODE_PARAMETER_OUT_OF_RANGE;
+        }
+      else
+        {
+        targetRegister = (uartParity << UART_MR_PAR_Pos) | (uartChannelMode << UART_MR_CHMODE_Pos); // build the mode register setting
+        ApvUartControlBlock.UART_MR    = targetRegister;                                            // shadow-assign the setting
+
+        ApvUartControlBlock_p->UART_MR = targetRegister;                                            // assign the actual setting
+
+        // Compute the baud-rate generator register setting
+        targetRegister = APV_EVENT_TIMER_TIMEBASE_BASECLOCK / APV_UART_MCK_FIXED_DIVIDE_16; // MCK / 16 ALWAYS!
+
+        targetRegister = targetRegister / (APV_UART_BAUD_RATE_9600 * ((uint32_t)(uartBaudRate + APV_UART_BAUD_RATE_SELECT_19200)));
+
+        ApvUartControlBlock.UART_BRGR    = targetRegister;
+        ApvUartControlBlock_p->UART_BRGR = targetRegister;
+        }
+      }
+    }
+
+/******************************************************************************/
+
+  return(uartErrorCode);
+
+/******************************************************************************/
+  } /* end of apvConfigureUart                                                */
+
+/******************************************************************************/
+/* apvControlUart() :                                                         */
+/*  --> uartControlAction : [ APV_UART_CONTROL_ACTION_RESET   |               */
+/*                            APV_UART_CONTROL_ACTION_ENABLE  |               */
+/*                            APV_UART_CONTROL_ACTION_DISABLE |               */
+/*                            APV_UART_CONTROL_ACTION_RESET_STATUS ]          */
+/*  <-- uartErrorCode     : error codes                                       */
+/*                                                                            */
+/*  - control the UART as a duplex serial comms device                        */
+/*                                                                            */
+/* Reference : "Atmel-11057C-ATARM-SAM3X-SAM3A-Datasheet_23-Mar-15", p750     */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvControlUart(apvUartControlAction_t uartControlAction)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE uartErrorCode   = APV_ERROR_CODE_NONE;
+
+  uint32_t       targetRegister = 0;
+
+/******************************************************************************/
+
+  if (uartControlAction >= APV_UART_CONTROL_ACTIONS)
+    {
+    uartErrorCode = APV_ERROR_CODE_PARAMETER_OUT_OF_RANGE;
+    }
+  else
+    {
+    switch(uartControlAction)
+      {
+      case APV_UART_CONTROL_ACTION_RESET :        targetRegister                 = UART_CR_RSTRX | UART_CR_RSTTX; // duplex RESET
+                                                  ApvUartControlBlock.UART_CR    = targetRegister;
+                                                  ApvUartControlBlock_p->UART_CR = targetRegister;
+                                                  break;
+
+      case APV_UART_CONTROL_ACTION_ENABLE :       targetRegister                 = UART_CR_RXEN | UART_CR_TXEN;   // duplex ENABLE
+                                                  ApvUartControlBlock.UART_CR    = targetRegister;
+                                                  ApvUartControlBlock_p->UART_CR = targetRegister;
+                                                  break;
+
+      case APV_UART_CONTROL_ACTION_DISABLE :      targetRegister                 = UART_CR_RXDIS | UART_CR_TXDIS; // duplex DISABLE
+                                                  ApvUartControlBlock.UART_CR    = targetRegister;
+                                                  ApvUartControlBlock_p->UART_CR = targetRegister;
+                                                  break;
+
+      case APV_UART_CONTROL_ACTION_RESET_STATUS : targetRegister                 = UART_CR_RSTSTA;                // duplex RESET STATUS
+                                                  ApvUartControlBlock.UART_CR    = targetRegister;
+                                                  ApvUartControlBlock_p->UART_CR = targetRegister;
+                                                  break;
+
+      default                                   : uartErrorCode = APV_ERROR_CODE_MESSAGE_DEFINITION_ERROR;
+                                                  break;
+      }
+    }
+
+/******************************************************************************/
+
+  return(uartErrorCode);
+
+/******************************************************************************/
+  } /* end of apvControlUart                                                  */
+
+/******************************************************************************/
+/* apvUartCharacterTransmit() :                                               */
+/*  --> transmitBuffer : holding cell for an 8-bit character code             */
+/*  <-- uartErrorCode  : error codes                                          */
+/*                                                                            */
+/*  - load a 'transmit-side' (Arduino Tx) character into the UART transmit    */
+/*    holding register                                                        */
+/*                                                                            */
+/* Reference : "Atmel-11057C-ATARM-SAM3X-SAM3A-Datasheet_23-Mar-15", p750     */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvUartCharacterTransmit(uint8_t transmitBuffer)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE uartErrorCode   = APV_ERROR_CODE_NONE;
+
+/******************************************************************************/
+
+  ApvUartControlBlock.UART_THR    = transmitBuffer;
+  ApvUartControlBlock_p->UART_THR = transmitBuffer;
+
+/******************************************************************************/
+
+  return(uartErrorCode);
+
+/******************************************************************************/
+  } /* end of apvUartCharacterTransmit                                        */
+
+/******************************************************************************/
+/* apvUartCharacterTransmit() :                                               */
+/*  --> receiveBuffer : holding cell for an 8-bit character code              */
+/*  <-- uartErrorCode : error codes                                           */
+/*                                                                            */
+/*  - load a 'receive-side' (Arduino Rx) character into the UART receiver     */
+/*    holding register                                                        */
+/*                                                                            */
+/* Reference : "Atmel-11057C-ATARM-SAM3X-SAM3A-Datasheet_23-Mar-15", p750     */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvUartCharacterReceive(uint8_t *receiveBuffer)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE uartErrorCode = APV_ERROR_CODE_NONE;
+
+/******************************************************************************/
+
+  *receiveBuffer = ApvUartControlBlock_p->UART_RHR;
+
+/******************************************************************************/
+
+  return(uartErrorCode);
+
+/******************************************************************************/
+  } /* end of apvUartCharacterReceive                                         */
+
+/******************************************************************************/
+/* apvUartEnableInterrupt() :                                                 */
+/*  --> apvUartInterruptSelect_t : [ APV_UART_INTERRUPT_SELECT_TRANSMIT |     */
+/*                                   APV_UART_INTERRUPT_SELECT_RECEIVE  |     */
+/*                                   APV_UART_INTERRUPT_SELECT_DUPLEX ]       */
+/*  --> interruptSwitch          : [ false == DISABLE INTERRUPT |             */
+/*                                   true  == ENABLE  INTERRUPT ]             */
+/*  <-- uartErrorCode            : error codes                                */
+/*                                                                            */
+/*  - switch the UART transmit and/or receive interrupts on or off            */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvUartSwitchInterrupt(apvUartInterruptSelect_t interruptSelect,
+                                      bool                     interruptSwitch)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE uartErrorCode  = APV_ERROR_CODE_NONE;
+
+  uint32_t       targetRegister = 0;
+
+/******************************************************************************/
+
+  if (interruptSelect >= APV_UART_INTERRUPT_SELECT_SET)
+    {
+    uartErrorCode = APV_ERROR_CODE_PARAMETER_OUT_OF_RANGE;
+    }
+  else
+    {
+    switch(interruptSelect)
+      {
+      case APV_UART_INTERRUPT_SELECT_TRANSMIT : targetRegister                    = UART_IER_TXRDY;
+
+                                                if (interruptSwitch == true)
+                                                  {
+                                                  ApvUartControlBlock.UART_IER    = targetRegister;
+                                                  ApvUartControlBlock_p->UART_IER = targetRegister;
+                                                  }
+                                                else
+                                                  {
+                                                  ApvUartControlBlock.UART_IDR    = targetRegister;
+                                                  ApvUartControlBlock_p->UART_IDR = targetRegister;
+                                                  }
+
+                                                break;
+
+      case APV_UART_INTERRUPT_SELECT_RECEIVE  : targetRegister                    = UART_IER_RXRDY;
+
+                                                if (interruptSwitch == true)
+                                                  {
+                                                  ApvUartControlBlock.UART_IER    = targetRegister;
+                                                  ApvUartControlBlock_p->UART_IER = targetRegister;
+                                                  }
+                                                else
+                                                  {
+                                                  ApvUartControlBlock.UART_IDR    = targetRegister;
+                                                  ApvUartControlBlock_p->UART_IDR = targetRegister;
+                                                  }
+
+                                                break;
+
+      case APV_UART_INTERRUPT_SELECT_DUPLEX   : targetRegister                    = UART_IER_TXRDY | UART_IER_RXRDY;
+
+                                                if (interruptSwitch == true)
+                                                  {
+                                                  ApvUartControlBlock.UART_IER    = targetRegister;
+                                                  ApvUartControlBlock_p->UART_IER = targetRegister;
+                                                  }
+                                                else
+                                                  {
+                                                  ApvUartControlBlock.UART_IDR    = targetRegister;
+                                                  ApvUartControlBlock_p->UART_IDR = targetRegister;
+                                                  }
+
+                                                break;
+
+      default                                 : uartErrorCode = APV_ERROR_CODE_MESSAGE_DEFINITION_ERROR;
+                                                break;
+      }
+    }
+
+/******************************************************************************/
+
+  return(uartErrorCode);
+
+/******************************************************************************/
+  } /* end of apvUartSwitchInterrupt                                          */
 
 /******************************************************************************/
 /* (C) PulsingCoreSoftware Limited 2018 (C)                                   */
