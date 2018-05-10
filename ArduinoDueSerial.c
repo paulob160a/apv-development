@@ -89,13 +89,28 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
   {
 /******************************************************************************/
 
-  volatile uint8_t receiveBuffer;
+  volatile uint8_t receiveBuffer     = 0;
+           bool    transmitInterrupt = false,
+                   receiveInterrupt  = false;
 
 /******************************************************************************/
 
   if (apvPrimarySerialPort == APV_PRIMARY_SERIAL_PORT_UART)
     {
-    apvUartCharacterReceive(&receiveBuffer);
+    if (ApvUartControlBlock_p->UART_SR | UART_SR_RXRDY)
+      {
+      // Read the new character
+      apvUartCharacterReceive(&receiveBuffer);
+
+      receiveInterrupt = true;
+      }
+    else
+      {
+      if (ApvUartControlBlock_p->UART_SR | UART_SR_TXRDY)
+        {
+        transmitInterrupt = true;
+        }
+      }
     }
 
 /******************************************************************************/
@@ -116,6 +131,8 @@ void UART_Handler(void)
     // This is the primary serial comms handler
     apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT_UART);
     }
+
+  NVIC_ClearPendingIRQ(UART_IRQn);
 
 /******************************************************************************/
   } /* end of UART_Handler                                                    */

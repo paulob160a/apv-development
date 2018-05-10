@@ -17,7 +17,10 @@
 /* Definitions :                                                              */
 /******************************************************************************/
 
-#define APV_MESSAGE_BUFFER_EMPTY ((uint16_t)0)
+#define APV_MESSAGE_BUFFER_EMPTY       ((uint16_t)0)
+
+// Error code group offsets
+#define APV_SERIAL_ERROR_CODE_TRANCHE 256
 
 /******************************************************************************/
 /* Type Definitions :                                                         */

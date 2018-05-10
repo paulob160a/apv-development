@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include <sam3x8e.h>
 #include "ApvError.h"
+#include "ApvSerial.h"
 #include "ApvSystemTime.h"
 #include "ApvEventTimers.h"
 #include "ApvPeripheralControl.h"
@@ -206,8 +207,8 @@ APV_ERROR_CODE apvSwitchPeripheralLines(apvPeripheralId_t peripheralLineId,
       {
       switch(peripheralLineId)
         {
-       case APV_PERIPHERAL_ID_UART : // the UART is enabled on PIO A pins PA8 and PA9 as peripheral A
-                                     ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = PIO_ABSR_P8 | PIO_ABSR_P9;
+       case APV_PERIPHERAL_ID_UART : // the UART is enabled on PIO A pins PA8 and PA9 as peripheral A. THIS IS THE DEFAULT PIO STATE!
+                                     //ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = PIO_ABSR_P8 | PIO_ABSR_P9;
 
                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PDR  = PIO_PDR_P8  | PIO_PDR_P9;
 
@@ -416,8 +417,15 @@ APV_ERROR_CODE apvUartCharacterTransmit(uint8_t transmitBuffer)
 
 /******************************************************************************/
 
-  ApvUartControlBlock.UART_THR    = transmitBuffer;
-  ApvUartControlBlock_p->UART_THR = transmitBuffer;
+  if (ApvUartControlBlock_p->UART_SR & UART_SR_TXRDY)
+    {
+    ApvUartControlBlock.UART_THR    = transmitBuffer;
+    ApvUartControlBlock_p->UART_THR = transmitBuffer;
+    }
+  else
+    {
+    uartErrorCode = APV_SERIAL_ERROR_CODE_TRANSMITTER_NOT_READY;
+    }
 
 /******************************************************************************/
 

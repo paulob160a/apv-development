@@ -79,15 +79,19 @@ int main(void)
 
 #ifdef _APV_UART_TEST_MODE_
   {
-#define ASCII_CAP_A ((uint8_t)'A')
+#define ASCII_CAP_A        ((uint8_t)'A')
+#define ASCII_CAP_B        ((uint8_t)'B')
+#define APV_MAX_TX_COUNTER 15
 
-  uint8_t transmitBuffer = 0;
+  uint8_t transmitBuffer = 0,
+          txCounter      = 0;
 
   apvSerialErrorCode = apvConfigureUart(APV_UART_PARITY_NONE,
                                         APV_UART_CHANNEL_MODE_LOCAL_LOOPBACK,
                                         APV_UART_BAUD_RATE_SELECT_19200);
 
   apvSerialErrorCode = apvControlUart(APV_UART_CONTROL_ACTION_RESET);
+  apvSerialErrorCode = apvControlUart(APV_UART_CONTROL_ACTION_RESET_STATUS);
   apvSerialErrorCode = apvControlUart(APV_UART_CONTROL_ACTION_ENABLE);
 
   // SWITCH ON THE NVIC/UART IRQ
@@ -100,6 +104,27 @@ int main(void)
   transmitBuffer = ASCII_CAP_A;
 
   apvSerialErrorCode = apvUartCharacterTransmit(transmitBuffer);
+
+ /* apvSerialErrorCode = apvControlUart(APV_UART_CONTROL_ACTION_RESET);
+  apvSerialErrorCode = apvControlUart(APV_UART_CONTROL_ACTION_ENABLE);
+
+  apvSerialErrorCode = apvConfigureUart(APV_UART_PARITY_NONE,
+                                        APV_UART_CHANNEL_MODE_NORMAL,
+                                        APV_UART_BAUD_RATE_SELECT_19200);
+
+  // SWITCH ON THE NVIC/UART IRQ
+  apvSerialErrorCode = apvUartSwitchInterrupt(APV_UART_INTERRUPT_SELECT_RECEIVE,
+                                              true); */
+
+  transmitBuffer = ASCII_CAP_B;
+
+  for (txCounter = 0; txCounter < APV_MAX_TX_COUNTER; txCounter++)
+    {
+    if (apvUartCharacterTransmit(transmitBuffer + txCounter) != APV_ERROR_CODE_NONE)
+      {
+      txCounter = txCounter - 1;
+      }
+    }
   }
 
 #else
