@@ -17,21 +17,22 @@
 /* Include Files :                                                            */
 /******************************************************************************/
 
+#include <stdbool.h>
 #include "ApvError.h"
 
 /******************************************************************************/
 /* Type Definitions :                                                         */
 /******************************************************************************/
 
-typedef enum apvSerialErrorCodes_tTag
+/* typedef enum apvSerialErrorCodes_tTag
   {
   APV_SERIAL_ERROR_CODE_NONE = 0,
   APV_SERIAL_ERROR_CODE_PRIMARY_SERIAL_PORT_ALREADY_ASSIGNED = APV_SERIAL_ERROR_CODE_TRANCHE,
   APV_SERIAL_ERROR_CODE_TRANSMITTER_NOT_READY,
   APV_SERIAL_ERROR_CODES
-  } apvSerialErrorCodes_t;
+  } apvSerialErrorCodes_t; */
 
-typedef apvSerialErrorCodes_t APV_SERIAL_ERROR_CODE;
+typedef apvErrorCodes_t apvSerialErrorCodes_t;
 
 typedef enum apvPrimarySerialPort_tTag
   {
@@ -44,6 +45,16 @@ typedef enum apvPrimarySerialPort_tTag
   } apvPrimarySerialPort_t;
 
 typedef apvPrimarySerialPort_t APV_PRIMARY_SERIAL_PORT;
+
+/******************************************************************************/
+/* These variables are only intended to implement a simple foreground/back-   */
+/* ground loopback                                                            */
+/******************************************************************************/
+
+extern volatile uint8_t receiveBuffer;
+  
+extern volatile bool    transmitInterrupt;
+extern volatile bool    receiveInterrupt;
 
 /******************************************************************************/
 /* Function Declarations :                                                    */

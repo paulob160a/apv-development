@@ -148,12 +148,12 @@ typedef enum apvUartInterruptSelect_tTag
 /* Global Variable Definitions :                                              */
 /******************************************************************************/
 
-extern Pmc  ApvPeripheralControlBlock;                                   // shadow peripheral control block
-extern Pmc *ApvPeripheralControlBlock_p;                                 // physical block address
-extern Pio  ApvPeripheralLineControlBlock[APV_PERIPHERAL_LINE_GROUPS];   // shadow PIO control blocks
-extern Pio *ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUPS]; // physical block addresses
-extern Uart  ApvUartControlBlock;                                        // shadow UART control block
-extern Uart *ApvUartControlBlock_p;                                      // physical block address
+extern          Pmc  ApvPeripheralControlBlock;                                   // shadow peripheral control block
+extern          Pmc *ApvPeripheralControlBlock_p;                                 // physical block address
+extern          Pio  ApvPeripheralLineControlBlock[APV_PERIPHERAL_LINE_GROUPS];   // shadow PIO control blocks
+extern          Pio *ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUPS]; // physical block addresses
+extern          Uart  ApvUartControlBlock;                                        // shadow UART control block
+extern volatile Uart *ApvUartControlBlock_p;                                      // physical block address
 
 /******************************************************************************/
 /* Function Declarations :                                                    */

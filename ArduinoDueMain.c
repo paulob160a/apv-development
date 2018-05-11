@@ -10,6 +10,7 @@
 /* Include Files :                                                            */
 /******************************************************************************/
 
+#include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <sam3x8e.h>
@@ -18,6 +19,12 @@
 #include "ApvEventTimers.h"
 #include "ApvSystemTime.h"
 #include "ApvPeripheralControl.h"
+
+/******************************************************************************/
+/* Constant Definitions :                                                     */
+/******************************************************************************/
+
+const char UartTestPhrase[] = "We all live in a Yellow Submarine";
 
 /******************************************************************************/
 /* Local Function Declarations :                                              */
@@ -35,6 +42,7 @@ int main(void)
 
            APV_SERIAL_ERROR_CODE apvSerialErrorCode = APV_SERIAL_ERROR_CODE_NONE;
   volatile uint64_t              apvRunTimeCounter  = 0;
+           uint8_t               txCounter          = 0;
 
 /******************************************************************************/
 
@@ -79,14 +87,16 @@ int main(void)
 
 #ifdef _APV_UART_TEST_MODE_
   {
+#define APV_RUN_TIME_TX_MODULUS ((uint64_t)1024)
+
 #define ASCII_CAP_A        ((uint8_t)'A')
-#define ASCII_CAP_B        ((uint8_t)'B')
 #define APV_MAX_TX_COUNTER 15
 
-  uint8_t transmitBuffer = 0,
-          txCounter      = 0;
+/* #define ASCII_CAP_B        ((uint8_t)'B')
 
-  apvSerialErrorCode = apvConfigureUart(APV_UART_PARITY_NONE,
+  uint8_t transmitBuffer = 0; */
+
+/*  apvSerialErrorCode = apvConfigureUart(APV_UART_PARITY_NONE,
                                         APV_UART_CHANNEL_MODE_LOCAL_LOOPBACK,
                                         APV_UART_BAUD_RATE_SELECT_19200);
 
@@ -103,9 +113,10 @@ int main(void)
 
   transmitBuffer = ASCII_CAP_A;
 
-  apvSerialErrorCode = apvUartCharacterTransmit(transmitBuffer);
+  apvSerialErrorCode = apvUartCharacterTransmit(transmitBuffer); */
 
- /* apvSerialErrorCode = apvControlUart(APV_UART_CONTROL_ACTION_RESET);
+  apvSerialErrorCode = apvControlUart(APV_UART_CONTROL_ACTION_RESET);
+  apvSerialErrorCode = apvControlUart(APV_UART_CONTROL_ACTION_RESET_STATUS);
   apvSerialErrorCode = apvControlUart(APV_UART_CONTROL_ACTION_ENABLE);
 
   apvSerialErrorCode = apvConfigureUart(APV_UART_PARITY_NONE,
@@ -114,8 +125,12 @@ int main(void)
 
   // SWITCH ON THE NVIC/UART IRQ
   apvSerialErrorCode = apvUartSwitchInterrupt(APV_UART_INTERRUPT_SELECT_RECEIVE,
-                                              true); */
+                                              true);
 
+  apvSerialErrorCode = apvSwitchNvicDeviceIrq(APV_PERIPHERAL_ID_UART,
+                                              true);
+
+/*
   transmitBuffer = ASCII_CAP_B;
 
   for (txCounter = 0; txCounter < APV_MAX_TX_COUNTER; txCounter++)
@@ -124,7 +139,7 @@ int main(void)
       {
       txCounter = txCounter - 1;
       }
-    }
+    } */
   }
 
 #else
@@ -152,6 +167,29 @@ int main(void)
          }
 
        __enable_irq();
+
+       if (receiveInterrupt == true)
+         {
+         if (apvUartCharacterTransmit(receiveBuffer) == APV_ERROR_CODE_NONE)
+           {
+           receiveInterrupt = false;
+           }
+         }
+
+#ifdef _APV_UART_TEST_MODE_
+        if (!(apvRunTimeCounter % APV_RUN_TIME_TX_MODULUS))
+           {
+           if (apvUartCharacterTransmit(UartTestPhrase[txCounter]) == APV_ERROR_CODE_NONE)
+             {
+             txCounter = txCounter + 1;
+
+             if (txCounter > strlen(UartTestPhrase))
+               {
+               txCounter = 0;
+               }
+             }
+           }
+#endif
       }
     }
 

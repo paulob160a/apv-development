@@ -27,8 +27,18 @@
 /* Static Variables :                                                         */
 /******************************************************************************/
 
-static bool apvSerialCommsManagerAssigned                  = false;
-static void (*apvPrimarySerialCommsInterruptHandler)(void) = NULL;
+static    bool  apvSerialCommsManagerAssigned                  = false;
+static    void  (*apvPrimarySerialCommsInterruptHandler)(void) = NULL;
+ 
+/******************************************************************************/
+/* These variables are only intended to implement a simple foreground/back-   */
+/* ground loopback                                                            */
+/******************************************************************************/
+
+volatile uint8_t receiveBuffer                                 = 0;
+  
+volatile bool    transmitInterrupt = false,
+                 receiveInterrupt  = false;
 
 /******************************************************************************/
 /* Function Definitions :                                                     */
@@ -89,15 +99,15 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
   {
 /******************************************************************************/
 
-  volatile uint8_t receiveBuffer     = 0;
-           bool    transmitInterrupt = false,
-                   receiveInterrupt  = false;
+  uint32_t statusRegister = 0;
 
 /******************************************************************************/
 
   if (apvPrimarySerialPort == APV_PRIMARY_SERIAL_PORT_UART)
     {
-    if (ApvUartControlBlock_p->UART_SR | UART_SR_RXRDY)
+    statusRegister = ApvUartControlBlock_p->UART_SR;
+
+    if ((statusRegister & UART_SR_RXRDY) == UART_SR_RXRDY)
       {
       // Read the new character
       apvUartCharacterReceive(&receiveBuffer);
@@ -106,7 +116,7 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
       }
     else
       {
-      if (ApvUartControlBlock_p->UART_SR | UART_SR_TXRDY)
+      if ((statusRegister & UART_SR_TXRDY) == UART_SR_TXRDY)
         {
         transmitInterrupt = true;
         }

@@ -39,8 +39,8 @@ Pio *ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUPS] = // physical b
   APV_PIO_BLOCK_D
   };
 
-Uart  ApvUartControlBlock;              // shadow UART control block
-Uart *ApvUartControlBlock_p = UART;     // physical block address
+         Uart  ApvUartControlBlock;              // shadow UART control block
+volatile Uart *ApvUartControlBlock_p = UART;     // physical block address
 
 /******************************************************************************/
 /* Function Definitions :                                                     */
@@ -207,10 +207,13 @@ APV_ERROR_CODE apvSwitchPeripheralLines(apvPeripheralId_t peripheralLineId,
       {
       switch(peripheralLineId)
         {
-       case APV_PERIPHERAL_ID_UART : // the UART is enabled on PIO A pins PA8 and PA9 as peripheral A. THIS IS THE DEFAULT PIO STATE!
+       case APV_PERIPHERAL_ID_UART : // The UART is enabled on PIO A pins PA8 and PA9 as peripheral A. THIS IS THE DEFAULT PIO STATE!
                                      //ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = PIO_ABSR_P8 | PIO_ABSR_P9;
 
                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PDR  = PIO_PDR_P8  | PIO_PDR_P9;
+
+                                     // Enable the pull-ups on Tx and RX
+                                     ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PUER = PIO_PUER_P8 | PIO_PUER_P9;
 
                                      // Check the status of the attempted configuration; 0 == peripheral selected
                                      if (((ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PSR | PIO_PDR_P8) == PIO_PDR_P8) || 
@@ -414,13 +417,20 @@ APV_ERROR_CODE apvUartCharacterTransmit(uint8_t transmitBuffer)
 /******************************************************************************/
 
   APV_ERROR_CODE uartErrorCode   = APV_ERROR_CODE_NONE;
+  uint32_t       statusRegister  = 0;
 
 /******************************************************************************/
 
-  if (ApvUartControlBlock_p->UART_SR & UART_SR_TXRDY)
+   __disable_irq();
+
+  statusRegister = ApvUartControlBlock_p->UART_SR;
+
+  __enable_irq();
+
+  if ((statusRegister & UART_SR_TXEMPTY) && (statusRegister & UART_SR_TXRDY))
     {
-    ApvUartControlBlock.UART_THR    = transmitBuffer;
     ApvUartControlBlock_p->UART_THR = transmitBuffer;
+    ApvUartControlBlock.UART_THR    = transmitBuffer;
     }
   else
     {
@@ -493,6 +503,17 @@ APV_ERROR_CODE apvUartSwitchInterrupt(apvUartInterruptSelect_t interruptSelect,
     }
   else
     {
+    // First disable ALL UART interrupt sources
+    targetRegister = UART_IDR_RXRDY | UART_IDR_TXRDY | UART_IDR_ENDRX   | UART_IDR_ENDTX  | UART_IDR_OVRE | 
+                     UART_IDR_FRAME | UART_IDR_PARE  | UART_IDR_TXEMPTY | UART_IDR_TXBUFE | UART_IDR_RXBUFF;
+
+    ApvUartControlBlock_p->UART_IDR = targetRegister;
+
+    // Disable all PDC UART transfers
+    targetRegister = UART_PTCR_TXTDIS | UART_PTCR_RXTDIS;
+
+    ApvUartControlBlock_p->UART_PTCR = targetRegister;
+
     switch(interruptSelect)
       {
       case APV_UART_INTERRUPT_SELECT_TRANSMIT : targetRegister                    = UART_IER_TXRDY;
