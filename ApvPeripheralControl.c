@@ -445,6 +445,70 @@ APV_ERROR_CODE apvUartCharacterTransmit(uint8_t transmitBuffer)
   } /* end of apvUartCharacterTransmit                                        */
 
 /******************************************************************************/
+/* apvUartCharacterTransmitPrime() :                                          */
+/*  --> uartControlBlock : physical address of the UART peripheral            */
+/*  --> transmitBuffer   : pointer to a simple serial buffer structure        */
+/*  <-- uartErrorCode    : error codes                                        */
+/*                                                                            */
+/*  - initiate interrupt-driven UART transmission                             */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvUartCharacterTransmitPrime(Uart                      *uartControlBlock,
+                                             apvSerialTransmitBuffer_t *transmitBuffer)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE uartErrorCode   = APV_ERROR_CODE_NONE;
+  uint32_t       statusRegister  = 0;
+  bool           initiateTx      = false;
+
+/******************************************************************************/
+  
+  if ((transmitBuffer == NULL) || (uartControlBlock == NULL))
+    {
+    uartErrorCode = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+  else
+    {
+    __disable_irq();
+
+    // Is the transmit buffer empty ?
+    if (transmitBuffer->serialTransmitBufferIndex == 0)
+      {
+      if (transmitBuffer->serialTransmitBufferLength > 0)
+        { // Is the transmit buffer length > 0 ?
+        initiateTx = true; // START TRANSMISSION!
+        }
+      }
+
+    __enable_irq();
+
+    if (initiateTx == true)
+      {
+      statusRegister = uartControlBlock->UART_SR;
+
+      // If all Tx transmit operations have stopped, load and go
+      if ((statusRegister & UART_SR_TXEMPTY) && (statusRegister & UART_SR_TXRDY))
+        {
+        // Switch on the Tx interrupt
+        uartControlBlock->UART_IER    = UART_IER_TXRDY;
+
+        // Load the first character and leave the rest to the ISR
+        uartControlBlock->UART_THR    = transmitBuffer->serialTransmitBuffer[transmitBuffer->serialTransmitBufferIndex];
+        ApvUartControlBlock.UART_THR  = transmitBuffer->serialTransmitBuffer[transmitBuffer->serialTransmitBufferIndex]; // shadow
+        }
+      }
+    }
+
+/******************************************************************************/
+
+  return(uartErrorCode);
+
+/******************************************************************************/
+  }
+
+/******************************************************************************/
 /* apvUartCharacterTransmit() :                                               */
 /*  --> receiveBuffer : holding cell for an 8-bit character code              */
 /*  <-- uartErrorCode : error codes                                           */

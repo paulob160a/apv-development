@@ -40,9 +40,11 @@ int main(void)
   {
 /******************************************************************************/
 
-           APV_SERIAL_ERROR_CODE apvSerialErrorCode = APV_SERIAL_ERROR_CODE_NONE;
-  volatile uint64_t              apvRunTimeCounter  = 0;
-           uint8_t               txCounter          = 0;
+           APV_SERIAL_ERROR_CODE apvSerialErrorCode  = APV_SERIAL_ERROR_CODE_NONE;
+  volatile uint64_t              apvRunTimeCounter   = 0;
+//           uint8_t               txCounter           = 0;
+
+           uint16_t              transmitBufferIndex = 0;
 
 /******************************************************************************/
 
@@ -84,6 +86,11 @@ int main(void)
 
   apvSerialErrorCode = apvSwitchPeripheralClock(ID_UART, // switch on the primary serial port peripheral clock
                                                 true);
+
+  apvSerialErrorCode = apvSerialBufferInitialise(&transmitBuffer,
+                                                  (uint16_t)strlen(UartTestPhrase),
+                                                 &UartTestPhrase[0],
+                                                  (uint16_t)strlen(UartTestPhrase));
 
 #ifdef _APV_UART_TEST_MODE_
   {
@@ -179,7 +186,20 @@ int main(void)
 #ifdef _APV_UART_TEST_MODE_
         if (!(apvRunTimeCounter % APV_RUN_TIME_TX_MODULUS))
            {
-           if (apvUartCharacterTransmit(UartTestPhrase[txCounter]) == APV_ERROR_CODE_NONE)
+           __disable_irq();
+
+           transmitBufferIndex = transmitBuffer_p->serialTransmitBufferIndex;
+
+           // Start/reinstate the transmit interrupt if the transmit buffer is exhausted
+           if (transmitBufferIndex == 0)
+             {
+             apvUartCharacterTransmitPrime(ApvUartControlBlock_p,
+                                           transmitBuffer_p);
+             }
+
+           __enable_irq();
+
+ /*          if (apvUartCharacterTransmit(UartTestPhrase[txCounter]) == APV_ERROR_CODE_NONE)
              {
              txCounter = txCounter + 1;
 
@@ -187,7 +207,7 @@ int main(void)
                {
                txCounter = 0;
                }
-             }
+             } */
            }
 #endif
       }
