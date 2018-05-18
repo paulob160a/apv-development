@@ -18,10 +18,203 @@
 #include "ar19937.h"
 #include "ApvUtilities.h"
 #include "ApvCommsUtilities.h"
+#include "ApvMessageHandling.h"
 #include "ApvCrcGenerator.h"
 
 /******************************************************************************/
 /* Function Definitions :                                                     */
+/******************************************************************************/
+/* apvRingBufferSetInitialise() :                                             */
+/*  --> ringBufferIndirect    : points to an array of ring buffer pointers    */
+/*  --> ringBufferSet         : points to an array of ring buffers            */
+/*  --> ringBufferSetElements : the number of ring buffers in the set         */
+/*  --> ringBufferLength      : nominal ring-buffers' length                  */
+/*  <-- ringBufferSetError    : error codes                                   */
+/*                                                                            */
+/* - create a controlled set of ring buffers. The ring buffer set must exist  */
+/*   as (i) a set of fully-instantiated objects (ii) a set of pointers to the */
+/*   fully-instantiated objects. The assumption is for any process initially  */
+/*   a set of "free" ring buffers is created and initialised from which any   */
+/*   number of buffers can be pulled and later returned                       */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvRingBufferSetInitialise(apvRingBuffer_t **ringBufferIndirectSet,
+                                          apvRingBuffer_t  *ringBufferSet,
+                                          uint8_t           ringBufferSetElements,
+                                          uint16_t          ringBufferLength)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE ringBufferSetError = APV_ERROR_CODE_NONE;
+
+/******************************************************************************/
+
+  if ((ringBufferIndirectSet == NULL) || (ringBufferSet == NULL) || (ringBufferSetElements == 0))
+    {
+    ringBufferSetError = APV_ERROR_CODE_RING_BUFFER_DEFINITION_ERROR;
+    }
+  else
+    {
+    do
+      {
+      ringBufferSetElements = ringBufferSetElements - 1;
+
+      // In reverse-order initialise the actual ring-buffers
+      if ((ringBufferSetError = apvRingBufferInitialise((ringBufferSet + ringBufferSetElements), ringBufferLength)) != APV_ERROR_CODE_NONE)
+        {
+        break;
+        }
+      else
+        {
+        // Assign the address of the ring buffer to the controlling list
+        *(ringBufferIndirectSet + ringBufferSetElements) = ringBufferSet + ringBufferSetElements;
+        }
+      }
+    while (ringBufferSetElements > 0);
+    }
+
+/******************************************************************************/
+
+  return(ringBufferSetError);
+
+/******************************************************************************/
+  } /* end of apvRingBufferSetInitialise                                      */
+
+/******************************************************************************/
+/* apvRingBufferSetPullBuffer() :                                             */
+/*  --> ringBufferIndirect    : points to an array of ring buffer pointers    */
+/*  --> ringBuffer            : points to a free ring buffer                  */
+/*  --> ringBufferSetElements : the number of ring buffers in the set         */
+/*  --> interruptControl      : optional interrupt-enable/disable switch      */
+/*                                                                            */
+/* - get a ring-buffer from the "free" set. The assumption is any buffer set  */
+/*   will be "small" enough that a straightforward linear search is fast      */
+/*   enough when finding an unused buffer                                     */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvRingBufferSetPullBuffer(apvRingBuffer_t **ringBufferIndirectSet,
+                                          apvRingBuffer_t **ringBuffer,
+                                          uint8_t           ringBufferSetElements,
+                                          bool              interruptControl)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE ringBufferSetError = APV_ERROR_CODE_NONE;
+
+/******************************************************************************/
+
+  if ((ringBufferIndirectSet == NULL) || (ringBuffer == NULL) || (ringBufferSetElements == 0))
+    {
+    ringBufferSetError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+  else
+    {
+    if (interruptControl == true)
+     {
+     APV_CRITICAL_REGION_ENTRY();
+     }
+
+    do
+      {
+      if (*(ringBufferIndirectSet + (ringBufferSetElements - 1)) != APV_RING_BUFFER_LIST_EMPTY_POINTER)
+        {
+        *ringBuffer                                            = *(ringBufferIndirectSet + (ringBufferSetElements - 1));
+        *(ringBufferIndirectSet + (ringBufferSetElements - 1)) =  APV_RING_BUFFER_LIST_EMPTY_POINTER;
+
+        break;
+        }
+
+      ringBufferSetElements = ringBufferSetElements - 1;
+      }
+    while (ringBufferSetElements > 0);
+
+    // If there are no free ring-buffers left signal a dearth...
+    if (ringBufferSetElements == 0)
+      {
+      *ringBuffer = APV_RING_BUFFER_LIST_EMPTY_POINTER;
+      }
+
+    if (interruptControl == true)
+      {
+      APV_CRITICAL_REGION_EXIT();
+      }
+    }
+
+/******************************************************************************/
+
+  return(ringBufferSetError);
+
+/******************************************************************************/
+  } /* end of apvRingBufferSetPullBuffer                                      */
+
+/******************************************************************************/
+/* apvRingBufferSetPushBuffer() :                                             */
+/*  --> ringBufferIndirect    : points to an array of ring buffer pointers    */
+/*  --> ringBuffer            : points to a used ring buffer                  */
+/*  --> ringBufferSetElements : the number of ring buffers in the set         */
+/*  --> interruptControl      : optional interrupt-enable/disable switch      */
+/*                                                                            */
+/* - this is the reverse of "apvRingBufferSetPullBuffer()". It should always  */
+/*   be possible to return a used ring-buffer to the list                     */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvRingBufferSetPushBuffer(apvRingBuffer_t **ringBufferIndirectSet,
+                                          apvRingBuffer_t  *ringBuffer,
+                                          uint8_t           ringBufferSetElements,
+                                          bool              interruptControl)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE ringBufferSetError = APV_ERROR_CODE_NONE;
+
+/******************************************************************************/
+
+  if ((ringBufferIndirectSet == NULL) || (ringBuffer == NULL) || (ringBufferSetElements == 0))
+    {
+    ringBufferSetError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+  else
+    {
+    if (interruptControl == true)
+     {
+     APV_CRITICAL_REGION_ENTRY();
+     }
+
+    do
+      {
+      if (*(ringBufferIndirectSet + (ringBufferSetElements - 1)) == APV_RING_BUFFER_LIST_EMPTY_POINTER)
+        {
+        *(ringBufferIndirectSet + (ringBufferSetElements - 1)) = ringBuffer;
+
+        break;
+        }
+
+      ringBufferSetElements = ringBufferSetElements - 1;
+      }
+    while (ringBufferSetElements > 0);
+
+    // No unused slots are left - this is catastrophic
+    if (ringBufferSetElements == 0)
+      {
+      ringBufferSetError = APV_ERROR_CODE_RING_BUFFER_DEFINITION_ERROR;
+      }
+
+    if (interruptControl == true)
+      {
+      APV_CRITICAL_REGION_EXIT();
+      }
+    }
+
+/******************************************************************************/
+
+  return(ringBufferSetError);
+
+/******************************************************************************/
+  } /* end of apvRingBufferSetPushBuffer                                      */
+
 /******************************************************************************/
 /* apvRingBufferInitialise() :                                                */
 /*  <--> ringBuffer       : pointer to a ring-buffer structure                */
@@ -116,7 +309,7 @@ APV_ERROR_CODE apvRingBufferInitialise(apvRingBuffer_t *ringBuffer,
 /******************************************************************************/
 
 uint16_t apvRingBufferLoad(apvRingBuffer_t *ringBuffer,
-                           uint8_t         *tokens,
+                           uint32_t        *tokens,
                            uint16_t         numberOfTokensToLoad,
                            bool             interruptControl)
   {
@@ -201,7 +394,7 @@ uint16_t apvRingBufferLoad(apvRingBuffer_t *ringBuffer,
 /******************************************************************************/
 
 uint16_t apvRingBufferUnLoad(apvRingBuffer_t *ringBuffer,
-                             uint8_t         *tokens,
+                             uint32_t        *tokens,
                              uint16_t         numberOfTokensToUnLoad,
                              bool             interruptControl)
   {
@@ -270,15 +463,19 @@ uint16_t apvRingBufferUnLoad(apvRingBuffer_t *ringBuffer,
 
 /******************************************************************************/
 /* apvCreateTestMessage() :                                                   */
-/*  <--> testMessage       : pointer to the receiving message buffer          */
-/*  <--> testPayLoadLength : number of tokens on the payload i.e. non-framing */
-/*                           tokens. Returns the actual payload length        */
-/*                           including <SOM>s and stuffing flags              */
-/*   <-- testMessageLength : the final fully-framed message length            */
-/*   --> testMessageFault  : insert a fault in message after the CRC has been */
-/*                           calculated                                       */
-/*   --> testSomFault      : insert a random <SOM> into the message           */
-/*   <-- testError         : error codes                                      */
+/*  <--> testMessage          : pointer to the receiving message buffer       */
+/*  -->  testMessageSomLength : the number of <SOM>s to prefix the message    */
+/*  <--> testMessagePayLoadLength : number of tokens on the payload i.e. non- */
+/*                                  framing tokens. Returns the actual        */
+/*                                  payload length including <SOM>s and       */
+/*                                  stuffing flags                            */
+/*   <-- testMessageLength    : the final fully-framed message length         */
+/*   --> testMessageInsertSom : add flagged <SOM>s to the payload             */
+/*   --> testMessageSoms      : the MAXIMUM number of flagged <SOM>s to add   */
+/*   --> testMessageFault     : insert a fault in message after the CRC has   */
+/*                              been calculated                               */
+/*   --> testSomFault         : insert a random <SOM> into the message        */
+/*   <-- testError            : error codes                                   */
 /*                                                                            */
 /* - construct correct or faulty messages to test the messaging state-machine */
 /*                                                                            */
@@ -398,7 +595,7 @@ APV_ERROR_CODE apvCreateTestMessage(uint8_t  *testMessage,
     *testMessageLength = *testMessageLength + 1;
 
     // Finally load the actual payload length and the <EOM> token and return the actual payload length
-    *(testMessage + payLoadLengthPointer) = payLoadLength;
+    *(testMessage + payLoadLengthPointer) = (uint8_t)payLoadLength;
 
     *(testMessage + *testMessageLength) = APV_MESSAGING_END_OF_MESSAGE;
 
@@ -430,7 +627,8 @@ void apvRingBufferPrint(apvRingBuffer_t *ringBuffer)
   {
 /******************************************************************************/
 
-  int i = 0;
+  int  i       = 0;
+  bool printOn = false;
 
 /******************************************************************************/
 
@@ -443,15 +641,22 @@ void apvRingBufferPrint(apvRingBuffer_t *ringBuffer)
     {
     if (&ringBuffer->apvCommsRingBuffer[i] == ringBuffer->apvCommsRingBufferHead)
       {
-      printf("H->");
+      printf("<-H");
+
+      printOn = false;
       }
 
     if (&ringBuffer->apvCommsRingBuffer[i] == ringBuffer->apvCommsRingBufferTail)
       {
       printf("T->");
+
+      printOn = true;
       }
 
-    printf("[%02x]", (uint8_t)ringBuffer->apvCommsRingBuffer[i]);
+    if (printOn == true)
+      {
+      printf("[%02x]", (uint8_t)ringBuffer->apvCommsRingBuffer[i]);
+      }
     }
 
   printf("\n Load = %08x", ringBuffer->apvCommsRingBufferLoad);
@@ -467,6 +672,4 @@ void apvRingBufferPrint(apvRingBuffer_t *ringBuffer)
 /******************************************************************************/
   } /* end of apvRingBufferPrint                                              */
 
-/******************************************************************************/
-/* (C) PulsingCoreSoftware Limited 2018 (C)                                   */
 /******************************************************************************/

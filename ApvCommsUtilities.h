@@ -29,8 +29,8 @@
 /* Definitions :                                                              */
 /******************************************************************************/
 
-#define APV_COMMS_RING_BUFFER_MAXIMUM_LENGTH  (64) // for now, but can be up to 65536
-#define APV_COMMS_RING_BUFFER_MINIMUM_LENGTH   (2)
+#define APV_COMMS_RING_BUFFER_MAXIMUM_LENGTH  (256) // for now, but can be up to 65536
+#define APV_COMMS_RING_BUFFER_MINIMUM_LENGTH    (2)
 
 #define APV_COMMS_LSB_LEADING_BIT_MASK        (0x1) // little-endian
 #define APV_COMMS_BYTE_WIDTH                    (8)
@@ -47,6 +47,10 @@
 #define APV_MESSAGING_START_OF_MESSAGE                 ((uint8_t)0x7e)                // SOM
 #define APV_MESSAGING_END_OF_MESSAGE                   APV_MESSAGING_START_OF_MESSAGE // EOM
 #define APV_MESSAGING_STUFFING_FLAG                    (0x1b) // using the ASCII 'ESCAPE' character for token (byte)-stuffing
+
+// Marks a ring-buffer as currently in use in the nominal "free" list
+#define APV_RING_BUFFER_LIST_EMPTY_POINTER_CODE        ((uint32_t)0xffffffff)
+#define APV_RING_BUFFER_LIST_EMPTY_POINTER             ((apvRingBuffer_t *)(APV_RING_BUFFER_LIST_EMPTY_POINTER_CODE))
 
 /******************************************************************************/
 /* Type Definitions :                                                         */
@@ -73,16 +77,28 @@ typedef uint64_t ringBufferEntryPointer_t;
 /* Function Declarations :                                                    */
 /******************************************************************************/
 
+extern APV_ERROR_CODE apvRingBufferSetInitialise(apvRingBuffer_t **ringBufferIndirectSet,
+                                                 apvRingBuffer_t  *ringBufferSet,
+                                                 uint8_t           ringBufferSetElements,
+                                                 uint16_t          ringBufferLength);
+extern APV_ERROR_CODE apvRingBufferSetPullBuffer(apvRingBuffer_t **ringBufferIndirectSet,
+                                                 apvRingBuffer_t **ringBuffer,
+                                                 uint8_t           ringBufferSetElements,
+                                                 bool              interruptControl);
+extern APV_ERROR_CODE apvRingBufferSetPushBuffer(apvRingBuffer_t **ringBufferIndirectSet,
+                                                 apvRingBuffer_t  *ringBuffer,
+                                                 uint8_t           ringBufferSetElements,
+                                                 bool              interruptControl);
 extern APV_ERROR_CODE apvRingBufferInitialise(apvRingBuffer_t *ringBuffer,
                                               uint16_t         ringBufferLength);
-extern uint16_t apvRingBufferLoad(apvRingBuffer_t *ringBuffer,
-                                  uint8_t         *tokens,
-                                  uint16_t         numberOfTokensToLoad,
-                                  bool             interruptControl);
-extern uint16_t apvRingBufferUnLoad(apvRingBuffer_t *ringBuffer,
-                                    uint8_t         *tokens,
-                                    uint16_t         numberOfTokensToUnLoad,
-                                    bool             interruptControl);
+extern uint16_t       apvRingBufferLoad(apvRingBuffer_t *ringBuffer,
+                                        uint32_t        *tokens,
+                                        uint16_t         numberOfTokensToLoad,
+                                        bool             interruptControl);
+extern uint16_t       apvRingBufferUnLoad(apvRingBuffer_t *ringBuffer,
+                                          uint32_t        *tokens,
+                                          uint16_t         numberOfTokensToUnLoad,
+                                          bool             interruptControl);
 extern APV_ERROR_CODE apvCreateTestMessage(uint8_t  *testMessage,
                                            uint16_t  testMessageSomLength,
                                            uint16_t *testMessagePayLoadLength,

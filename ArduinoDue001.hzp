@@ -73,6 +73,7 @@
       <file file_name="ApvEventTimersIsrs.h" />
       <file file_name="ApvSystemTime.h" />
       <file file_name="ApvPeripheralControl.h" />
+      <file file_name="ApvCommsUtilities.h" />
     </folder>
     <file file_name="ApvEventTimerIsrs.c" />
   </project>

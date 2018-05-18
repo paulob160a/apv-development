@@ -19,6 +19,7 @@
 
 #include <stdbool.h>
 #include "ApvError.h"
+#include "ApvCommsUtilities.h"
 
 /******************************************************************************/
 /* Constant Definitions :                                                     */
@@ -62,6 +63,27 @@ typedef struct apvSerialTransmitBuffer_tTag
   uint16_t serialTransmitBufferIndex;
   } apvSerialTransmitBuffer_t;
 
+typedef enum apvPrimaryRingBufferSet_tTag
+  {
+  APV_PRIMARY_SERIAL_RING_BUFFER_0 = 0,
+  APV_PRIMARY_SERIAL_RING_BUFFER_1,
+  APV_PRIMARY_SERIAL_RING_BUFFER_2,
+  APV_PRIMARY_SERIAL_RING_BUFFER_3,
+  APV_PRIMARY_SERIAL_RING_BUFFER_4,
+  APV_PRIMARY_SERIAL_RING_BUFFER_5,
+  APV_PRIMARY_SERIAL_RING_BUFFER_6,
+  APV_PRIMARY_SERIAL_RING_BUFFER_7,
+  APV_PRIMARY_SERIAL_RING_BUFFER_SET
+  } apvPrimaryRingBufferSet_t;
+
+/******************************************************************************/
+/* Global Variable Declarations :                                             */
+/******************************************************************************/
+
+extern apvRingBuffer_t  apvSerialPortPrimaryRingBuffer[APV_PRIMARY_SERIAL_RING_BUFFER_SET],
+                       *apvPrimarySerialCommsReceiveBuffer,
+                       *apvPrimarySerialCommsTransmitBuffer;
+
 /******************************************************************************/
 /* These variables are only intended to implement a simple foreground/back-   */
 /* ground loopback                                                            */
@@ -69,7 +91,9 @@ typedef struct apvSerialTransmitBuffer_tTag
 
 extern volatile apvSerialTransmitBuffer_t  transmitBuffer,
                                           *transmitBuffer_p;
-extern volatile uint8_t                    receiveBuffer;
+
+extern volatile uint8_t                    receiveBuffer,
+                                           transmitterBuffer;
   
 extern volatile bool                       transmitInterrupt;
 extern volatile bool                       receiveInterrupt;
@@ -78,7 +102,8 @@ extern volatile bool                       receiveInterrupt;
 /* Function Declarations :                                                    */
 /******************************************************************************/
 
-extern APV_SERIAL_ERROR_CODE apvSerialCommsManager(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort);
+extern APV_SERIAL_ERROR_CODE apvSerialCommsManager(APV_PRIMARY_SERIAL_PORT   apvPrimarySerialPort,
+                                                   apvPrimaryRingBufferSet_t apvPrimarySerialPortReceiverRingBuffers);
 extern void                  apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort);
 extern APV_SERIAL_ERROR_CODE apvSerialBufferInitialise(volatile apvSerialTransmitBuffer_t *serialBuffer,
                                                                 uint16_t                   serialBufferLength,

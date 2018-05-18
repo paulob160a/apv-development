@@ -17,7 +17,8 @@
 #define libarm_disable_irq() //printf("\n DISABLE INTERRUPTS : NESTING LEVEL %05d", apvInterruptNestingCount);
 #define libarm_enable_irq()  //printf("\n ENABLE INTERRUPTS  : NESTING LEVEL %05d", apvInterruptNestingCount);
 #else
-#include <libarm.h>
+#include <sam3x8e.h>
+#include <core_cm3.h>
 #endif
 #include "ApvUtilities.h"
 
@@ -50,7 +51,7 @@ void APV_CRITICAL_REGION_ENTRY(void)
     {
     if (apvInterruptNestingCount >= APV_INITIAL_INTERRUPT_NESTING_COUNT)
       {
-      libarm_disable_irq(); // the locking mechanism
+      __disable_irq(); // the locking mechanism
       }
 
     apvInterruptNestingCount = apvInterruptNestingCount + 1;
@@ -73,7 +74,7 @@ void APV_CRITICAL_REGION_EXIT(void)
 
   if (apvInterruptNestingCount == (APV_INITIAL_INTERRUPT_NESTING_COUNT + 1))
     {
-    libarm_enable_irq(); // the unlocking mechanism
+    __enable_irq(); // the unlocking mechanism
     }
 
   apvInterruptNestingCount = apvInterruptNestingCount - 1;
