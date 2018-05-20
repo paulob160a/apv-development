@@ -26,8 +26,9 @@
 /* Global Variables :                                                         */
 /******************************************************************************/
 
-int16_t               apvInterruptNestingCount = APV_INITIAL_INTERRUPT_NESTING_COUNT;
-APV_GLOBAL_ERROR_FLAG apvGlobalErrorFlags      = APV_GLOBAL_ERROR_FLAG_NONE;
+int16_t                apvInterruptNestingCount                     = APV_INITIAL_INTERRUPT_NESTING_COUNT;
+APV_GLOBAL_ERROR_FLAG  apvGlobalErrorFlags                          = APV_GLOBAL_ERROR_FLAG_NONE;
+uint32_t               apvInterruptCounters[APV_INTERRUPT_COUNTERS] = { 0x00000000, 0x00000000 };
 
 /******************************************************************************/
 /* Function Declarations :                                                    */

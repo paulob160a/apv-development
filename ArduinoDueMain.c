@@ -122,21 +122,33 @@ int main(void)
          apvRunTimeCounter = apvRunTimeCounter + 1;
          }
 
-       if (receiveInterrupt == true)
-         { // A new buffer of data has been received, send it out
-         uint8_t tokens = 0;
+       /******************************************************************************/
+       /* The current software configuration is all to test the transmit and receive */
+       /* UART interrupts and the ring-buffer lists and "free" buffer list that      */
+       /* support them. The whole shebang is driven round by the receiver i.e. when  */
+       /* characters turn up in the receive buffers they shold wend their way to the */
+       /* transmit buffers and back out in a loop-back                               */
+       /******************************************************************************/
 
-         // Get the first token from the ring buffer
-         apvRingBufferUnLoad( apvPrimarySerialCommsTransmitBuffer,
-                             (uint32_t *)&tokens,
-                              sizeof(uint8_t),
-                              false);
+       if (transmitInterrupt == true)
+         {
+         if (transmitInterruptTrigger == false)
+           {
+           transmitInterruptTrigger = true;
 
-         // Send it up the pipe
-         apvUartCharacterTransmitPrime( ApvUartControlBlock_p,
-                                       &tokens);
-
-         receiveInterrupt = false;
+           if (apvUartCharacterTransmitPrime( ApvUartControlBlock_p,
+                                              apvUartPortPrimaryRingBuffer_p,
+                                             &apvPrimarySerialCommsTransmitBuffer) != APV_ERROR_CODE_NONE)
+             {
+             // That didn't go well!
+             transmitInterrupt        = false;
+             transmitInterruptTrigger = false;
+             }
+           }
+         }
+       else
+         {
+         transmitInterruptTrigger == false;
          }
 
        __enable_irq();

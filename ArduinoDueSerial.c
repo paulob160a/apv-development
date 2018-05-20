@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "sam3x8e.h"
+#include "ApvUtilities.h"
 #include "ApvError.h"
 #include "ApvSerial.h"
 #include "ApvPeripheralControl.h"
@@ -42,8 +43,8 @@ apvRingBuffer_t  *apvSerialPortPrimaryRingBuffer_p[APV_PRIMARY_SERIAL_RING_BUFFE
   };
 
 // This is the transmit ring-buffer of pointers to a set of (received) ring-buffers
-apvRingBuffer_t   apvSerialPortTransmitBuffer,
-                 *apvSerialPortTransmitBuffer_p = &apvSerialPortTransmitBuffer;
+apvRingBuffer_t   apvUartPortTransmitBuffer,
+                 *apvUartPortPrimaryRingBuffer_p = &apvUartPortTransmitBuffer;
 
 apvRingBuffer_t *apvPrimarySerialCommsReceiveBuffer  = NULL;
 apvRingBuffer_t *apvPrimarySerialCommsTransmitBuffer = NULL;
@@ -68,8 +69,9 @@ volatile apvSerialTransmitBuffer_t  transmitBuffer,
 volatile uint8_t                   receiveBuffer     = 0,
                                    transmitterBuffer = 0;
   
-volatile bool                      transmitInterrupt = false,
-                                   receiveInterrupt  = false;
+volatile bool                      transmitInterrupt        = false,
+                                   transmitInterruptTrigger = false,
+                                   receiveInterrupt         = false;
 
 /******************************************************************************/
 /* Function Definitions :                                                     */
@@ -222,8 +224,8 @@ APV_SERIAL_ERROR_CODE apvSerialCommsManager(APV_PRIMARY_SERIAL_PORT   apvPrimary
                                                   else
                                                     {
                                                     // Create the small ring-buffer transmit queue (of pointers to ring-buffers)
-                                                    apvErrorCode = apvRingBufferInitialise(apvSerialPortTransmitBuffer_p,
-                                                                                           APV_PRIMARY_SERIAL_RING_BUFFER_SET);
+                                                    apvErrorCode = apvRingBufferInitialise(apvUartPortPrimaryRingBuffer_p,
+                                                                                           (APV_PRIMARY_SERIAL_RING_BUFFER_SET << 1));
                                                     }
                                                   }
 
@@ -250,8 +252,8 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
 /******************************************************************************/
 
   uint32_t statusRegister = 0;
-  uint16_t receivedTokens = 0,
-           transmitTokens = 0;
+  uint16_t receivedTokens = 0;
+  uint8_t  txRxBuffer     = 0;
 
 /******************************************************************************/
 
@@ -261,46 +263,68 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
 
     if ((statusRegister & UART_SR_RXRDY) == UART_SR_RXRDY)
       {
-      // Read the new character
-      apvUartCharacterReceive(&receiveBuffer);
+      apvInterruptCounters[APV_RECEIVE_INTERRUPT_COUNTER] = apvInterruptCounters[APV_RECEIVE_INTERRUPT_COUNTER] + 1;
 
-      // Put it into the current receiver ring buffer
+      // Read the new character
+      apvUartCharacterReceive(&txRxBuffer);
+
+      // Put it into the current receiver ring buffer if there is room
       receivedTokens = apvRingBufferLoad( apvPrimarySerialCommsReceiveBuffer,
-                                         (uint32_t *)&receiveBuffer,
+                                         (uint32_t *)&txRxBuffer,
                                           sizeof(uint8_t),
                                           false);
 
       if (receivedTokens == 0)
         { 
         // A full buffer has been received - put the current receive buffer address on the transmit queue
-        apvRingBufferLoad( apvSerialPortTransmitBuffer_p,
+        apvRingBufferLoad( apvUartPortPrimaryRingBuffer_p,
                           (uint32_t *)&apvPrimarySerialCommsReceiveBuffer,
                            sizeof(uint8_t),
                            false);
 
-        // Signal the transmitter that new characters are ready
+        /******************************************************************************/
+        /* Signal the transmitter that new characters are ready. This is used as a    */
+        /* single-trigger flag to the background to prime the transmitter and switch- */
+        /* on interrupts. Only the transmitter sectoin of the interrupt service       */
+        /* routine can cancel this flag in normal operation                           */
+        /******************************************************************************/
+
         transmitInterrupt = true;
 
         // Pull a new ring-buffer from the "free" list
         if (apvRingBufferSetPullBuffer(&apvSerialPortPrimaryRingBuffer_p[0],
-                                     &apvPrimarySerialCommsReceiveBuffer,
-                                      APV_PRIMARY_SERIAL_RING_BUFFER_SET,
-                                      false) != APV_RING_BUFFER_LIST_EMPTY_POINTER)
+                                       &apvPrimarySerialCommsReceiveBuffer,
+                                        APV_PRIMARY_SERIAL_RING_BUFFER_SET,
+                                        false) != APV_ERROR_CODE_NULL_PARAMETER)
           {
-          // Now save the latest received character
-          receivedTokens = apvRingBufferLoad( apvPrimarySerialCommsReceiveBuffer,
-                                            (uint32_t *)&receiveBuffer,
-                                              sizeof(uint8_t),
-                                              false);
+          if (apvPrimarySerialCommsReceiveBuffer != APV_RING_BUFFER_LIST_EMPTY_POINTER)
+            {
+            // Now save the latest received character
+            receivedTokens = apvRingBufferLoad( apvPrimarySerialCommsReceiveBuffer,
+                                               (uint32_t *)&txRxBuffer,
+                                                sizeof(uint8_t),
+                                                false);
 
-          receiveInterrupt = true;
+            receiveInterrupt = true;
+            }
+          else
+            { // This is not a situation that lends itself to a happy ending - switch off the Rx interrupt!
+            ApvUartControlBlock_p->UART_IDR    = UART_IDR_RXRDY;
+            ApvUartControlBlock.UART_IDR       = UART_IDR_RXRDY;
+
+            apvPrimarySerialCommsReceiveBuffer = NULL;
+
+            receiveInterrupt                   = false;
+            }
           }
         else
           { // This is not a situation that lends itself to a happy ending - switch off the Rx interrupt!
-          ApvUartControlBlock_p->UART_IDR = UART_IDR_RXRDY;
-          ApvUartControlBlock.UART_IDR    = UART_IDR_RXRDY;
+          ApvUartControlBlock_p->UART_IDR    = UART_IDR_RXRDY;
+          ApvUartControlBlock.UART_IDR       = UART_IDR_RXRDY;
 
-          receiveInterrupt = false;
+          apvPrimarySerialCommsReceiveBuffer = NULL;
+
+          receiveInterrupt                   = false;
           }
         }
       else
@@ -309,51 +333,70 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
         }
       }
 
-#ifdef _APV_UART_TEST_MODE_0
-      if ((statusRegister & UART_SR_TXEMPTY) && (statusRegister & UART_SR_TXRDY))
-        {
-        // Send the next character in the buffer
-        ApvUartControlBlock_p->UART_THR = transmitBuffer_p->serialTransmitBuffer[transmitBuffer_p->serialTransmitBufferIndex];
-        ApvUartControlBlock.UART_THR    = transmitBuffer_p->serialTransmitBuffer[transmitBuffer_p->serialTransmitBufferIndex];
-
-        if (transmitBuffer_p->serialTransmitBufferIndex < transmitBuffer_p->serialTransmitMessageLength)
-          { 
-          transmitBuffer_p->serialTransmitBufferIndex = transmitBuffer_p->serialTransmitBufferIndex + 1;
-          transmitInterrupt                           = true;
-          }
-        else
-          { // No more characters, shut down the transmit interrupt
-          transmitBuffer_p->serialTransmitBufferIndex = 0;
-                    
-          apvUartSwitchInterrupt(APV_UART_INTERRUPT_SELECT_TRANSMIT,
-                                 false);
-
-          transmitInterrupt = false;
-          }
-        }
-#endif
-    if (((statusRegister & UART_SR_TXEMPTY) == UART_SR_TXEMPTY) && ((statusRegister & UART_SR_TXRDY) == UART_SR_TXRDY))
+    // Interlock the transmitter buffer "empty" signal with the result of a successful
+    // priming of the first transmit character and buffer
+    if (((statusRegister & UART_SR_TXEMPTY) == UART_SR_TXEMPTY) && 
+        ((statusRegister & UART_SR_TXRDY)   == UART_SR_TXRDY)   &&
+         (transmitInterruptTrigger          == true))
       {
-       //NEED BETTER BUFFER HANDLING!!! USED & FREE LISTS
-      transmitTokens = apvRingBufferUnLoad( apvPrimarySerialCommsTransmitBuffer,
-                                           &transmitterBuffer,
-                                            sizeof(uint8_t),
-                                            false);
+      apvInterruptCounters[APV_TRANSMIT_INTERRUPT_COUNTER] = apvInterruptCounters[APV_TRANSMIT_INTERRUPT_COUNTER] + 1;
 
-      // Send the next character if one exists, otherwise shutdown the interrupt
-      if (transmitTokens != 0)
+      // Send the next character if one exists, otherwise look for another character on another buffer
+      if (apvRingBufferUnLoad( apvPrimarySerialCommsTransmitBuffer,
+                              (uint32_t *)&txRxBuffer,
+                               sizeof(uint8_t),
+                               false) != 0)
         {
-        ApvUartControlBlock_p->UART_THR = transmitterBuffer;
-        ApvUartControlBlock.UART_THR    = transmitterBuffer;
-
-        transmitInterrupt = true;
+        ApvUartControlBlock_p->UART_THR = txRxBuffer;
+        ApvUartControlBlock.UART_THR    = txRxBuffer;
         }
       else
         { 
-        apvUartSwitchInterrupt(APV_UART_INTERRUPT_SELECT_TRANSMIT,
-                               false);
+        // Put the latest exhausted ring-buffer back on the "free" list
+        if (apvRingBufferSetPushBuffer(&apvSerialPortPrimaryRingBuffer_p[0],
+                                        apvPrimarySerialCommsTransmitBuffer,
+                                        APV_SERIAL_BUFFER_MAXIMUM_LENGTH,
+                                        APV_PRIMARY_SERIAL_RING_BUFFER_SET,
+                                        false) != APV_ERROR_CODE_RING_BUFFER_DEFINITION_ERROR)
+          {
+          // Try and get a new transmit ring-buffer from the queue
+          if (apvRingBufferUnLoad( apvUartPortPrimaryRingBuffer_p,
+                                  (uint32_t *)&apvPrimarySerialCommsTransmitBuffer,
+                                   sizeof(uint8_t),
+                                   false) != 0)
+            {
+            // By definition if a new buffer exists it should have characters in it!
+            apvRingBufferUnLoad( apvPrimarySerialCommsTransmitBuffer,
+                                (uint32_t *)&txRxBuffer,
+                                 sizeof(uint8_t),
+                                 false);
 
-        transmitInterrupt = false;
+            ApvUartControlBlock_p->UART_THR = txRxBuffer;
+            ApvUartControlBlock.UART_THR    = txRxBuffer;
+            }
+          else
+            {
+            // There are no more characters to transmit so switch off the Tx interrupt
+            ApvUartControlBlock_p->UART_IDR     = UART_IDR_TXRDY;
+            ApvUartControlBlock.UART_IDR        = UART_IDR_TXRDY;
+
+            apvPrimarySerialCommsTransmitBuffer = NULL;
+
+            transmitInterrupt                   = false;
+            transmitInterruptTrigger            = false;
+            }
+          }
+        else
+          { 
+          // This is not a situation that lends itself to a happy ending - switch off the Tx interrupt!
+          ApvUartControlBlock_p->UART_IDR     = UART_IDR_TXRDY;
+          ApvUartControlBlock.UART_IDR        = UART_IDR_TXRDY;
+
+          apvPrimarySerialCommsTransmitBuffer = NULL;
+
+          transmitInterrupt                   = false;
+          transmitInterruptTrigger            = false;
+          }
         }
       }
     }

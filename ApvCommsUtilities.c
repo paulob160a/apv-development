@@ -41,7 +41,7 @@
 
 APV_ERROR_CODE apvRingBufferSetInitialise(apvRingBuffer_t **ringBufferIndirectSet,
                                           apvRingBuffer_t  *ringBufferSet,
-                                          uint8_t           ringBufferSetElements,
+                                          uint16_t          ringBufferSetElements,
                                           uint16_t          ringBufferLength)
   {
 /******************************************************************************/
@@ -96,7 +96,7 @@ APV_ERROR_CODE apvRingBufferSetInitialise(apvRingBuffer_t **ringBufferIndirectSe
 
 APV_ERROR_CODE apvRingBufferSetPullBuffer(apvRingBuffer_t **ringBufferIndirectSet,
                                           apvRingBuffer_t **ringBuffer,
-                                          uint8_t           ringBufferSetElements,
+                                          uint16_t          ringBufferSetElements,
                                           bool              interruptControl)
   {
 /******************************************************************************/
@@ -153,6 +153,7 @@ APV_ERROR_CODE apvRingBufferSetPullBuffer(apvRingBuffer_t **ringBufferIndirectSe
 /* apvRingBufferSetPushBuffer() :                                             */
 /*  --> ringBufferIndirect    : points to an array of ring buffer pointers    */
 /*  --> ringBuffer            : points to a used ring buffer                  */
+/*  --> ringBufferLength      : the lenght of the ring-bufer character array  */
 /*  --> ringBufferSetElements : the number of ring buffers in the set         */
 /*  --> interruptControl      : optional interrupt-enable/disable switch      */
 /*                                                                            */
@@ -163,7 +164,8 @@ APV_ERROR_CODE apvRingBufferSetPullBuffer(apvRingBuffer_t **ringBufferIndirectSe
 
 APV_ERROR_CODE apvRingBufferSetPushBuffer(apvRingBuffer_t **ringBufferIndirectSet,
                                           apvRingBuffer_t  *ringBuffer,
-                                          uint8_t           ringBufferSetElements,
+                                          uint16_t          ringBufferLength,
+                                          uint16_t          ringBufferSetElements,
                                           bool              interruptControl)
   {
 /******************************************************************************/
@@ -200,6 +202,11 @@ APV_ERROR_CODE apvRingBufferSetPushBuffer(apvRingBuffer_t **ringBufferIndirectSe
     if (ringBufferSetElements == 0)
       {
       ringBufferSetError = APV_ERROR_CODE_RING_BUFFER_DEFINITION_ERROR;
+      }
+    else
+      {
+      ringBufferSetError =  apvRingBufferInitialise(ringBuffer,
+                                                    ringBufferLength);
       }
 
     if (interruptControl == true)

@@ -17,9 +17,9 @@
 #include <stdint.h>
 #include <sam3x8e.h>
 #include "ApvError.h"
-#include "ApvSerial.h"
 #include "ApvSystemTime.h"
 #include "ApvEventTimers.h"
+#include "ApvCommsUtilities.h"
 #include "ApvPeripheralControl.h"
 
 /******************************************************************************/
@@ -446,26 +446,29 @@ APV_ERROR_CODE apvUartCharacterTransmit(uint8_t transmitBuffer)
 
 /******************************************************************************/
 /* apvUartCharacterTransmitPrime() :                                          */
-/*  --> uartControlBlock : physical address of the UART peripheral            */
-/*  --> transmitBuffer   : pointer to a simple serial buffer structure        */
-/*  <-- uartErrorCode    : error codes                                        */
+/*  --> uartControlBloc    k   : physical address of the UART peripheral      */
+/*  --> uartTransmitBufferList : pointer to the ready "filled" transmit ring- */
+/*                               buffer structure                             */
+/*  --> uartTransmitBuffer     : poibter to the active transmit ring-buffer   */
+/*  <-- uartErrorCode      : error codes                                      */
 /*                                                                            */
 /*  - initiate interrupt-driven UART transmission                             */
 /*                                                                            */
 /******************************************************************************/
 
-APV_ERROR_CODE apvUartCharacterTransmitPrime(Uart                      *uartControlBlock,
-                                             apvSerialTransmitBuffer_t *transmitBuffer)
+APV_ERROR_CODE apvUartCharacterTransmitPrime(Uart             *uartControlBlock,
+                                             apvRingBuffer_t  *uartTransmitBufferList,
+                                             apvRingBuffer_t **uartTransmitBuffer)
   {
 /******************************************************************************/
 
   APV_ERROR_CODE uartErrorCode   = APV_ERROR_CODE_NONE;
-  uint32_t       statusRegister  = 0;
-  bool           initiateTx      = false;
+  uint32_t       transmitBuffer  = 0,
+                 statusRegister  = 0;
 
 /******************************************************************************/
   
-  if ((transmitBuffer == NULL) || (uartControlBlock == NULL))
+  if ((uartTransmitBufferList == NULL) || (uartControlBlock == NULL))
     {
     uartErrorCode = APV_ERROR_CODE_NULL_PARAMETER;
     }
@@ -473,32 +476,46 @@ APV_ERROR_CODE apvUartCharacterTransmitPrime(Uart                      *uartCont
     {
     __disable_irq();
 
-    // Is the transmit buffer empty ?
-    if (transmitBuffer->serialTransmitBufferIndex == 0)
+    // Does the tranmit buffer liat have a buffer in it and does this buffer have characters in it ?
+    if (apvRingBufferUnLoad( uartTransmitBufferList,
+                            (uint32_t *)uartTransmitBuffer,
+                             sizeof(uint8_t),
+                             false) != 0)
       {
-      if (transmitBuffer->serialTransmitBufferLength > 0)
-        { // Is the transmit buffer length > 0 ?
-        initiateTx = true; // START TRANSMISSION!
+      if (apvRingBufferUnLoad(*uartTransmitBuffer,
+                              &transmitBuffer,
+                               sizeof(uint8_t),
+                               false) != 0)
+        {
+        statusRegister = uartControlBlock->UART_SR;
+
+        // If all Tx transmit operations have stopped, load and go
+        if ((statusRegister & UART_SR_TXEMPTY) && (statusRegister & UART_SR_TXRDY))
+          {
+          // Switch on the Tx interrupt
+          uartControlBlock->UART_IER    = UART_IER_TXRDY;
+
+          // Load the first character and leave the rest to the ISR
+          uartControlBlock->UART_THR    = transmitBuffer;
+          ApvUartControlBlock.UART_THR  = transmitBuffer; // shadow
+          }
+        else
+          {
+          uartErrorCode = APV_SERIAL_ERROR_CODE_TRANSMITTER_NOT_READY;
+          }
+        }
+      else
+        {
+        uartErrorCode = APV_ERROR_CODE_RING_BUFFER_EMPTY;
         }
       }
+    else
+      {
+      uartErrorCode = APV_ERROR_CODE_RING_BUFFER_LIST_EMPTY;
+      }
+
 
     __enable_irq();
-
-    if (initiateTx == true)
-      {
-      statusRegister = uartControlBlock->UART_SR;
-
-      // If all Tx transmit operations have stopped, load and go
-      if ((statusRegister & UART_SR_TXEMPTY) && (statusRegister & UART_SR_TXRDY))
-        {
-        // Switch on the Tx interrupt
-        uartControlBlock->UART_IER    = UART_IER_TXRDY;
-
-        // Load the first character and leave the rest to the ISR
-        uartControlBlock->UART_THR    = transmitBuffer->serialTransmitBuffer[transmitBuffer->serialTransmitBufferIndex];
-        ApvUartControlBlock.UART_THR  = transmitBuffer->serialTransmitBuffer[transmitBuffer->serialTransmitBufferIndex]; // shadow
-        }
-      }
     }
 
 /******************************************************************************/

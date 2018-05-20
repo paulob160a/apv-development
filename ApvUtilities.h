@@ -31,13 +31,6 @@
 #define APV_INITIAL_INTERRUPT_NESTING_COUNT ((int16_t)0)
 
 /******************************************************************************/
-/* Global Variables :                                                         */
-/******************************************************************************/
-
-extern int16_t               apvInterruptNestingCount;
-extern APV_GLOBAL_ERROR_FLAG apvGlobalErrorFlags;
-
-/******************************************************************************/
 /* Type Definitions :                                                         */
 /******************************************************************************/
 
@@ -53,6 +46,21 @@ typedef union apvPointerConversion_tTag
   uint32_t apvPointerConversionWords[APV_POINTER_CONVERSION_WORDS]; // map the low-word to [0], high-word to [1]
   uint64_t apvPointerConversion;
   } apvPointerConversion_t;
+
+typedef enum apvInterruptCounters_tTag
+  {
+  APV_TRANSMIT_INTERRUPT_COUNTER = 0,
+  APV_RECEIVE_INTERRUPT_COUNTER,
+  APV_INTERRUPT_COUNTERS
+  } apvInterruptCounters_t;
+
+/******************************************************************************/
+/* Global Variables :                                                         */
+/******************************************************************************/
+
+extern int16_t                apvInterruptNestingCount;
+extern APV_GLOBAL_ERROR_FLAG  apvGlobalErrorFlags;
+extern uint32_t               apvInterruptCounters[APV_INTERRUPT_COUNTERS];
 
 /******************************************************************************/
 /* Function Declarations :                                                    */

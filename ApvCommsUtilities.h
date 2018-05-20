@@ -79,15 +79,16 @@ typedef uint64_t ringBufferEntryPointer_t;
 
 extern APV_ERROR_CODE apvRingBufferSetInitialise(apvRingBuffer_t **ringBufferIndirectSet,
                                                  apvRingBuffer_t  *ringBufferSet,
-                                                 uint8_t           ringBufferSetElements,
+                                                 uint16_t          ringBufferSetElements,
                                                  uint16_t          ringBufferLength);
 extern APV_ERROR_CODE apvRingBufferSetPullBuffer(apvRingBuffer_t **ringBufferIndirectSet,
                                                  apvRingBuffer_t **ringBuffer,
-                                                 uint8_t           ringBufferSetElements,
+                                                 uint16_t          ringBufferSetElements,
                                                  bool              interruptControl);
 extern APV_ERROR_CODE apvRingBufferSetPushBuffer(apvRingBuffer_t **ringBufferIndirectSet,
                                                  apvRingBuffer_t  *ringBuffer,
-                                                 uint8_t           ringBufferSetElements,
+                                                 uint16_t          ringBufferLength,
+                                                 uint16_t          ringBufferSetElements,
                                                  bool              interruptControl);
 extern APV_ERROR_CODE apvRingBufferInitialise(apvRingBuffer_t *ringBuffer,
                                               uint16_t         ringBufferLength);
