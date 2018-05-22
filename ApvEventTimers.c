@@ -18,7 +18,73 @@
 #include "ApvEventTimers.h"
 
 /******************************************************************************/
+/* Global Variable Definitions :                                              */
+/******************************************************************************/
+
+apvCoreTimerBlock_t coreTimeBaseBlock;
+
+/******************************************************************************/
 /* Function Definitions :                                                     */
+/******************************************************************************/
+/* apvInitialiseCoreTimer() :                                                 */
+/*                                                                            */
+/*  --> coreTimerBlock : the single core-timer block is an interrupt          */
+/*                       "monitor" controlling a common timebase that gives a */
+/*                       fine-timing increment for applications to derive     */
+/*                       their own timing requirements. An application grabs  */
+/*                       a time-management slot which subdivides the common   */
+/*                       timebase and automatically flags either periodic or  */
+/*                       one-shot time expiry.                                */
+/*                       The resolution of the common timebase is limited by  */
+/*                       the chip functionality and design decisions(!) The   */
+/*                       aim is NOT to cripple the processor by too short a   */
+/*                       common timebase interval                             */
+/*  --> coreTimerInterval : periodicity of the core timer in nanoseconds.     */
+/*                          this cannot be less than ( 3 * ( 1 / 32768 ) ) ~= */
+/*                          91553                                             */
+/*                                                                            */
+/* - set up the Cortex-M3 core timer as a fine-timer for critical timing      */
+/*                                                                            */
+/* Reference : SAM3X8E Datasheet 23.03.15 "Real-time Timer (RTT)", p234       */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvInitialiseCoreTimer(apvCoreTimerBlock_t *coreTimerBlock,
+                                      uint64_t             coreTimerInterval)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE coreTimerError  = APV_ERROR_CODE_NONE;
+
+  uint64_t       timeBaseDivider = 0;
+
+/******************************************************************************/
+
+  if (coreTimerBlock == NULL)
+    {
+    coreTimerError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+  else
+    {
+    if (coreTimerInterval < APV_CORE_TIMER_CLOCK_MINIMUM_INTERVAL)
+      {
+      coreTimerInterval = APV_CORE_TIMER_CLOCK_MINIMUM_INTERVAL;
+      }
+
+    // Compute the timebase divider
+    timeBaseDivider = (coreTimerInterval * APV_CORE_TIMER_CLOCK_RATE) / APV_CORE_TIMER_CLOCK_RATE_SCALER;
+
+    // Load the timebase counter
+    RTT->RTT_MR = ((uint32_t)timeBaseDivider) & APV_CORE_TIMER_CLOCK_DIVIDER_MASK;
+    }
+
+/******************************************************************************/
+
+  return(coreTimerError);
+
+/******************************************************************************/
+  } /* end of apvInitialiseCoreTimer                                          */
+
 /******************************************************************************/
 /* apvInitialiseEventTimerBlocks() :                                          */
 /*  --> apvEventTimerBlock  : address of the first event timer block          */

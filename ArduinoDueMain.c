@@ -47,6 +47,9 @@ int main(void)
 
 /******************************************************************************/
 
+  apvSerialErrorCode = apvInitialiseCoreTimer(&coreTimeBaseBlock,
+                                               (uint64_t)100);
+
   apvSerialErrorCode = apvInitialiseEventTimerBlocks(&apvEventTimerBlock[APV_EVENT_TIMER_0],
                                                       TCCHANNEL_NUMBER);
 
