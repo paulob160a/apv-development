@@ -41,8 +41,14 @@
 #define APV_CORE_TIMER_CLOCK_RATE_ROUNDUP     ((uint64_t)1)                // crude round-up of integer divisions
 #define APV_CORE_TIMER_CLOCK_MINIMUM_INTERVAL (((APV_CORE_TIMER_CLOCK_MINIMUM_DIVIDER * APV_CORE_TIMER_CLOCK_RATE_SCALER) / APV_CORE_TIMER_CLOCK_RATE) + APV_CORE_TIMER_CLOCK_RATE_ROUNDUP)
 #define APV_CORE_TIMER_CLOCK_DIVIDER_MASK     ((uint32_t)0x0000ffff)       // RTT->RTT_MR : mode register RTPRES mask
+#define APV_CORE_TIMER_SINGLE_PERIOD          ((uint32_t)1)                // interrupt after one (SCLK * prescaler) tick
 
-#define APV_CORE_TIMER_DURATION_TIMERS        32                           // this is enough ? Do not want to use "malloc()"
+#define APV_CORE_TIMER_DURATION_TIMERS        16                           // this is enough ? Do not want to use "malloc()"!
+
+#define APV_DURATION_TIMER_EXPIRED             0
+#define APV_DURATION_TIMER_NULL_INDEX         ((uint32_t)~0)
+
+#define APV_CORE_TIMER_ID                     ID_RTT                       // core timer interrupt ID (Atmel id 3)
 
 /******************************************************************************/
 /* Type Definitions :                                                         */
@@ -126,13 +132,22 @@ typedef enum apvDurationTimerType_tTag
   APV_DURATION_TIMER_TYPES
   } apvDurationTimerType_t;
 
+typedef enum apvCoreTimerFlag_tTag 
+  {
+  APV_CORE_TIMER_FLAG_LOW = 0,
+  APV_CORE_TIMER_FLAG_HIGH,
+  APV_CORE_TIMER_FLAGS
+  } apvCoreTimerFlag_t;
+
 /******************************************************************************/
 /* Holding structure for the core timer-derived process timer set             */
 /******************************************************************************/
 
 typedef struct apvDurationTimer_tTag
   {
+  uint32_t                durationTimerIndex;                                  // 0 { durationTimer[index] } 31
   uint32_t                durationTimerRequestedMicroSeconds;                  // lots of microseconds
+  uint32_t                durationTimerRequestedTicks;                         // the reload value for the down counter
   uint32_t                durationTimerDownCounter;                            // just test for zero
   void                   (*durationTimerCallBack)(void *durationEventMessage); // called when the timer expires
   apvDurationTimerType_t  durationTimerType;                                   // a number of timer types can be supported
@@ -142,14 +157,16 @@ typedef struct apvCoreTimerBlock_tTag
   {
   uint16_t           timeBaseDivider;                               // the value loaded into RTT->RTT_MR:RTPRES from which all 
                                                                     // duration timers are derived
-  apvDurationTimer_t durationTimer[APV_CORE_TIMER_DURATION_TIMERS]; // a fixed number of duration tmers is allocated
+  apvDurationTimer_t durationTimer[APV_CORE_TIMER_DURATION_TIMERS]; // a fixed number of duration timers is allocated
   } apvCoreTimerBlock_t;
 
 /******************************************************************************/
 /* Global Variable Declarations :                                             */
 /******************************************************************************/
 
-extern apvCoreTimerBlock_t coreTimeBaseBlock;
+extern          apvCoreTimerBlock_t apvCoreTimeBaseBlock;
+extern volatile apvCoreTimerFlag_t  apvCoreTimerFlag,
+                                    apvCoreTimerBackgroundFlag;
 
 /******************************************************************************/
 /* function Declarations :                                                    */
@@ -157,6 +174,10 @@ extern apvCoreTimerBlock_t coreTimeBaseBlock;
 
 extern APV_ERROR_CODE apvInitialiseCoreTimer(apvCoreTimerBlock_t *coreTimerBlock,
                                              uint64_t             coreTimerInterval);
+extern APV_ERROR_CODE apvAssignDurationTimer(apvCoreTimerBlock_t     *coreTimerBlock,
+                                             void                   (*durationTimerCallBack)(void *durationEventMessage),
+                                             apvDurationTimerType_t   durationTimerType,
+                                             uint64_t                 durationTimerInterval);
 extern APV_ERROR_CODE apvInitialiseEventTimerBlocks(apvEventTimersBlock_t *apvEventTimerBlock,
                                                     uint32_t               numberOfTimerBlocks);
 extern APV_ERROR_CODE apvAssignEventTimer(uint16_t                timerChannel,

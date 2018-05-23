@@ -47,9 +47,6 @@ int main(void)
 
 /******************************************************************************/
 
-  apvSerialErrorCode = apvInitialiseCoreTimer(&coreTimeBaseBlock,
-                                               (uint64_t)100);
-
   apvSerialErrorCode = apvInitialiseEventTimerBlocks(&apvEventTimerBlock[APV_EVENT_TIMER_0],
                                                       TCCHANNEL_NUMBER);
 
@@ -110,6 +107,16 @@ int main(void)
   apvSerialErrorCode = apvSwitchNvicDeviceIrq(APV_PERIPHERAL_ID_UART,
                                               true);
 
+  apvSerialErrorCode = apvSwitchPeripheralClock(ID_RTT, // switch on the core timer
+                                                true);
+
+  apvSerialErrorCode = apvInitialiseCoreTimer(&apvCoreTimeBaseBlock,
+                                               APV_CORE_TIMER_CLOCK_MINIMUM_INTERVAL);
+
+  // Switch on the core timer interrupt
+  apvSerialErrorCode = apvSwitchNvicDeviceIrq(APV_CORE_TIMER_ID,
+                                              true);
+
 /******************************************************************************/
 
   if (apvSerialErrorCode == APV_SERIAL_ERROR_CODE_NONE)
@@ -118,11 +125,26 @@ int main(void)
       {
         __disable_irq();
 
+       /******************************************************************************/
+       /* This is the "slow" loop timer event detector                               */
+       /******************************************************************************/
+
        if (apvEventTimerHotShot.Flags.APV_EVENT_TIMER_CHANNEL_0_FLAG == APV_EVENT_TIMER_FLAG_SET)
          {
          apvEventTimerHotShot.Flags.APV_EVENT_TIMER_CHANNEL_0_FLAG = APV_EVENT_TIMER_FLAG_CLEAR;
 
          apvRunTimeCounter = apvRunTimeCounter + 1;
+         }
+
+       /******************************************************************************/
+       /* This is the "fast" loop timer core-timer flag detector. The core-timer is  */
+       /* used to derive a number of slower "process" timers                         */
+       /******************************************************************************/
+
+       if (apvCoreTimerFlag == APV_CORE_TIMER_FLAG_HIGH)
+         {
+         apvCoreTimerBackgroundFlag = apvCoreTimerFlag;
+         apvCoreTimerFlag           = APV_CORE_TIMER_FLAG_LOW;
          }
 
        /******************************************************************************/
@@ -155,6 +177,19 @@ int main(void)
          }
 
        __enable_irq();
+
+      /******************************************************************************/
+      /* Run scheduled tasks in the background                                      */
+      /******************************************************************************/
+      /* TASK 1 : run the core-timer to derive process-based timers                 */
+      /******************************************************************************/
+
+      if (apvCoreTimerBackgroundFlag == APV_CORE_TIMER_FLAG_HIGH)
+        {
+        apvCoreTimerBackgroundFlag = APV_CORE_TIMER_FLAG_LOW;
+        }
+
+      /******************************************************************************/
       }
     }
 

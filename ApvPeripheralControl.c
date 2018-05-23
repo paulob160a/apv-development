@@ -105,7 +105,8 @@ APV_ERROR_CODE apvSwitchPeripheralClock(apvPeripheralId_t peripheralId,
         }
       }
 
-    if (peripheralId == APV_PERIPHERAL_ID_UART) // UART --> ID 8
+    if ((peripheralId == APV_PERIPHERAL_ID_UART) || // UART --> ID 8
+        (peripheralId == APV_PERIPHERAL_ID_RTT))    // RTT  --> ID 3
       {
       if (peripheralSwitch == true)
         {

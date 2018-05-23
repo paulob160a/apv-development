@@ -21,7 +21,9 @@
 /* Global Variable Definitions :                                              */
 /******************************************************************************/
 
-apvCoreTimerBlock_t coreTimeBaseBlock;
+         apvCoreTimerBlock_t apvCoreTimeBaseBlock;
+volatile apvCoreTimerFlag_t  apvCoreTimerFlag            = APV_CORE_TIMER_FLAG_LOW,
+                             apvCoreTimerBackgroundFlag  = APV_CORE_TIMER_FLAG_LOW;
 
 /******************************************************************************/
 /* Function Definitions :                                                     */
@@ -29,12 +31,12 @@ apvCoreTimerBlock_t coreTimeBaseBlock;
 /* apvInitialiseCoreTimer() :                                                 */
 /*                                                                            */
 /*  --> coreTimerBlock : the single core-timer block is an interrupt          */
-/*                       "monitor" controlling a common timebase that gives a */
-/*                       fine-timing increment for applications to derive     */
-/*                       their own timing requirements. An application grabs  */
-/*                       a time-management slot which subdivides the common   */
-/*                       timebase and automatically flags either periodic or  */
-/*                       one-shot time expiry.                                */
+/*                       "monitor" controlling a common timebase to give a    */
+/*                       fine-(ish) timing increment for applications to      */
+/*                       derive their own timing requirements. An application */
+/*                       grabs a time-management slot which subdivides the    */
+/*                       common timebase and automatically flags either       */
+/*                       periodic or one-shot time expiry.                    */
 /*                       The resolution of the common timebase is limited by  */
 /*                       the chip functionality and design decisions(!) The   */
 /*                       aim is NOT to cripple the processor by too short a   */
@@ -42,6 +44,7 @@ apvCoreTimerBlock_t coreTimeBaseBlock;
 /*  --> coreTimerInterval : periodicity of the core timer in nanoseconds.     */
 /*                          this cannot be less than ( 3 * ( 1 / 32768 ) ) ~= */
 /*                          91553                                             */
+/*  <-- coreTimerError    : error codes                                       */
 /*                                                                            */
 /* - set up the Cortex-M3 core timer as a fine-timer for critical timing      */
 /*                                                                            */
@@ -56,6 +59,7 @@ APV_ERROR_CODE apvInitialiseCoreTimer(apvCoreTimerBlock_t *coreTimerBlock,
 
   APV_ERROR_CODE coreTimerError  = APV_ERROR_CODE_NONE;
 
+  uint32_t       timerIndex      = 0;
   uint64_t       timeBaseDivider = 0;
 
 /******************************************************************************/
@@ -74,9 +78,25 @@ APV_ERROR_CODE apvInitialiseCoreTimer(apvCoreTimerBlock_t *coreTimerBlock,
     // Compute the timebase divider
     timeBaseDivider = (coreTimerInterval * APV_CORE_TIMER_CLOCK_RATE) / APV_CORE_TIMER_CLOCK_RATE_SCALER;
 
-    // Load the timebase counter
-    RTT->RTT_MR = ((uint32_t)timeBaseDivider) & APV_CORE_TIMER_CLOCK_DIVIDER_MASK;
+    coreTimerBlock->timeBaseDivider = timeBaseDivider;
+
+    // Initialise the timer set
+    for (timerIndex = 0; timerIndex < APV_CORE_TIMER_DURATION_TIMERS; timerIndex++)
+      {
+      coreTimerBlock->durationTimer[timerIndex].durationTimerCallBack              = NULL;
+      coreTimerBlock->durationTimer[timerIndex].durationTimerDownCounter           = APV_DURATION_TIMER_EXPIRED;
+      coreTimerBlock->durationTimer[timerIndex].durationTimerRequestedTicks        = APV_DURATION_TIMER_EXPIRED;
+      coreTimerBlock->durationTimer[timerIndex].durationTimerIndex                 = APV_DURATION_TIMER_NULL_INDEX;
+      coreTimerBlock->durationTimer[timerIndex].durationTimerRequestedMicroSeconds = 0;
+      coreTimerBlock->durationTimer[timerIndex].durationTimerType                  = APV_DURATION_TIMER_TYPE_NONE;
+      }
     }
+
+    // Load the alarm register with one period per interrupt
+    RTT->RTT_AR = APV_CORE_TIMER_SINGLE_PERIOD;
+
+    // Load the timebase counter, enable the alarm interrupt and restart the timer
+    RTT->RTT_MR = ((uint32_t)timeBaseDivider) & APV_CORE_TIMER_CLOCK_DIVIDER_MASK | RTT_MR_ALMIEN | RTT_MR_RTTRST;
 
 /******************************************************************************/
 
@@ -84,6 +104,90 @@ APV_ERROR_CODE apvInitialiseCoreTimer(apvCoreTimerBlock_t *coreTimerBlock,
 
 /******************************************************************************/
   } /* end of apvInitialiseCoreTimer                                          */
+
+/******************************************************************************/
+/* apvAssignDurationTimer() :                                                 */
+/*  --> coreTimerBlock        : the single core-timer block                   */
+/*  --> durationTimerCallBack : function to execute on timer expiry. This is  */
+/*                              the communications conduit from the generic   */
+/*                              core timers to the requesting process!        */
+/*  --> durationTimerType     : [ APV_DURATION_TIMER_TYPE_NONE = 0 |          */
+/*                                APV_DURATION_TIMER_TYPE_ONE_SHOT |          */
+/*                                APV_DURATION_TIMER_TYPE_PERIODIC ]          */
+/*  --> durationTimerInterval : duration of the timer in nanoseconds          */
+/*                                                                            */
+/*  <-- durationTimerError    : error codes                                   */
+/*                                                                            */
+/* - allocate a process timer. The communications conduit from the core timer */
+/*   set to a requesting timer is the callback. When a duration timer expires */
+/*   this callback will run...if all the duration timers expire at the same   */
+/*   time ALL the callbacks will run. As a good design principle any and all  */
+/*   callbacks should do very little other than set a flag! THIS MECHANISM IS */
+/*   NOT INTENDED FOR FINE-TIMED INTERRUPTS - USE A DEDICATED INTERRUPT TIMER */
+/*   FOR THAT - IMPLEMENTED SIMILAR TO THE BACKGROUND LOOP TICK               */
+/*                                                                            */
+/* Reference : SAM3X8E Datasheet 23.03.15 "Real-time Timer (RTT)", p234       */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvAssignDurationTimer(apvCoreTimerBlock_t     *coreTimerBlock,
+                                      void                   (*durationTimerCallBack)(void *durationEventMessage),
+                                      apvDurationTimerType_t   durationTimerType,
+                                      uint64_t                 durationTimerInterval)
+  {
+/******************************************************************************/
+
+   APV_ERROR_CODE durationTimerError  = APV_ERROR_CODE_NONE;
+   uint32_t       timerIndex          = 0;
+
+/******************************************************************************/
+
+  if ((coreTimerBlock == NULL) || (durationTimerCallBack == NULL))
+    {
+    durationTimerError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+  else
+    {
+    if (durationTimerType >= APV_DURATION_TIMER_TYPES)
+      {
+      durationTimerError = APV_ERROR_CODE_PARAMETER_OUT_OF_RANGE;
+      }
+    else
+      { // There is a minimum timing interval due to the chip architecture
+      if (durationTimerInterval < APV_CORE_TIMER_CLOCK_MINIMUM_INTERVAL)
+        {
+        durationTimerInterval = APV_CORE_TIMER_CLOCK_MINIMUM_INTERVAL;
+        }
+
+      // The set of available process timers is small, just do a linear search for a free one
+      while ((coreTimerBlock->durationTimer[timerIndex].durationTimerIndex != APV_DURATION_TIMER_NULL_INDEX) && 
+             (timerIndex                                                   <  APV_CORE_TIMER_DURATION_TIMERS))
+        {
+        timerIndex = timerIndex + 1;
+        }
+
+      if (timerIndex != APV_CORE_TIMER_DURATION_TIMERS)
+        { // Initialise the requested process timer block
+        coreTimerBlock->durationTimer[timerIndex].durationTimerDownCounter           = (durationTimerInterval * APV_CORE_TIMER_CLOCK_RATE) / APV_CORE_TIMER_CLOCK_RATE_SCALER;
+        coreTimerBlock->durationTimer[timerIndex].durationTimerRequestedMicroSeconds = durationTimerInterval;
+        coreTimerBlock->durationTimer[timerIndex].durationTimerRequestedTicks        = durationTimerInterval;
+        coreTimerBlock->durationTimer[timerIndex].durationTimerCallBack              = durationTimerCallBack;
+        coreTimerBlock->durationTimer[timerIndex].durationTimerIndex                 = timerIndex;
+        coreTimerBlock->durationTimer[timerIndex].durationTimerType                  = durationTimerType;
+        }
+      else
+        {
+        durationTimerError = APV_ERROR_CODE_EVENT_TIMER_INITIALISATION_ERROR;
+        }
+      }
+    }
+
+/******************************************************************************/
+
+  return(durationTimerError);
+
+/******************************************************************************/
+  } /* end of apvAssignDurationTimer                                          */
 
 /******************************************************************************/
 /* apvInitialiseEventTimerBlocks() :                                          */

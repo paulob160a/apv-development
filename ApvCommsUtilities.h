@@ -29,7 +29,7 @@
 /* Definitions :                                                              */
 /******************************************************************************/
 
-#define APV_COMMS_RING_BUFFER_MAXIMUM_LENGTH  (256) // for now, but can be up to 65536
+#define APV_COMMS_RING_BUFFER_MAXIMUM_LENGTH   (64) // for now, but can be up to 65536
 #define APV_COMMS_RING_BUFFER_MINIMUM_LENGTH    (2)
 
 #define APV_COMMS_LSB_LEADING_BIT_MASK        (0x1) // little-endian

@@ -28,6 +28,7 @@ extern void TC5_Handler(void);
 extern void TC6_Handler(void);
 extern void TC7_Handler(void);
 extern void TC8_Handler(void);
+extern void RTT_Handler(void);
 
 /******************************************************************************/
 

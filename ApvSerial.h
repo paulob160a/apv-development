@@ -25,7 +25,7 @@
 /* Constant Definitions :                                                     */
 /******************************************************************************/
 
-#define APV_SERIAL_BUFFER_MAXIMUM_LENGTH 256 // a simple buffer for 256 x uint8_t
+#define APV_SERIAL_BUFFER_MAXIMUM_LENGTH 64 // a simple buffer for 128 x uint8_t
 
 /******************************************************************************/
 /* Type Definitions :                                                         */
@@ -73,14 +73,14 @@ typedef enum apvPrimaryRingBufferSet_tTag
   APV_PRIMARY_SERIAL_RING_BUFFER_5,
   APV_PRIMARY_SERIAL_RING_BUFFER_6,
   APV_PRIMARY_SERIAL_RING_BUFFER_7,
-  APV_PRIMARY_SERIAL_RING_BUFFER_8,
+/*  APV_PRIMARY_SERIAL_RING_BUFFER_8,
   APV_PRIMARY_SERIAL_RING_BUFFER_9,
   APV_PRIMARY_SERIAL_RING_BUFFER_10,
   APV_PRIMARY_SERIAL_RING_BUFFER_11,
   APV_PRIMARY_SERIAL_RING_BUFFER_12,
   APV_PRIMARY_SERIAL_RING_BUFFER_13,
   APV_PRIMARY_SERIAL_RING_BUFFER_14,
-  APV_PRIMARY_SERIAL_RING_BUFFER_15,
+  APV_PRIMARY_SERIAL_RING_BUFFER_15, */
   APV_PRIMARY_SERIAL_RING_BUFFER_SET
   } apvPrimaryRingBufferSet_t;
 

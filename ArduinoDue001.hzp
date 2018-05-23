@@ -77,8 +77,8 @@
       <file file_name="ApvEventTimers.c" />
       <file file_name="ApvSystemTime.c" />
       <file file_name="ApvPeripheralControl.c" />
+      <file file_name="ApvEventTimerIsrs.c" />
     </folder>
-    <file file_name="ApvEventTimerIsrs.c" />
   </project>
   <configuration
     Name="THUMB RAM Debug"

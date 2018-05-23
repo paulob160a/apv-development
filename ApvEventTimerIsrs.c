@@ -194,5 +194,38 @@ void TC8_Handler(void)
   } /* end of TC8_Handler                                                     */
 
 /******************************************************************************/
+/* RTT_Handler() :                                                            */
+/*                                                                            */
+/* - core timer interrupt service routine. Just flag the high-speed backgound */
+/*   loop to do the process timer work                                        */
+/*                                                                            */
+/* Reference : SAM3X8E Datasheet 23.03.15 "Real-time Timer (RTT)", p234       */
+/*                                                                            */
+/******************************************************************************/
+
+void RTT_Handler(void)
+  {
+/******************************************************************************/
+
+  volatile uint32_t coreTimerStatus = 0,
+                    modeRegister    = 0;
+
+/******************************************************************************/
+
+  // Flag the fast background loop
+  apvCoreTimerFlag = APV_CORE_TIMER_FLAG_HIGH;
+
+  // Read the core timer status register to cancel the interrupt
+  coreTimerStatus = RTT->RTT_SR;
+
+  // Reload and restart the timer - carefully!
+  modeRegister = RTT->RTT_MR;
+  modeRegister = modeRegister | RTT_MR_RTTRST;
+  RTT->RTT_MR  = modeRegister;
+
+/******************************************************************************/
+  }
+
+/******************************************************************************/
 /* (C) PulsingCoreSoftware Limited 2018 (C)                                   */
 /******************************************************************************/
