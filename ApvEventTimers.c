@@ -16,6 +16,7 @@
 #include "ApvError.h"
 #include "ApvSystemTime.h"
 #include "ApvEventTimers.h"
+#include "ApvUtilities.h"
 
 /******************************************************************************/
 /* Global Variable Definitions :                                              */
@@ -138,7 +139,8 @@ APV_ERROR_CODE apvAssignDurationTimer(apvCoreTimerBlock_t     *coreTimerBlock,
 /******************************************************************************/
 
    APV_ERROR_CODE durationTimerError  = APV_ERROR_CODE_NONE;
-   uint32_t       timerIndex          = 0;
+   uint32_t       timerIndex          = 0,
+                  durationTimerTicks  = 0;
 
 /******************************************************************************/
 
@@ -159,6 +161,9 @@ APV_ERROR_CODE apvAssignDurationTimer(apvCoreTimerBlock_t     *coreTimerBlock,
         durationTimerInterval = APV_CORE_TIMER_CLOCK_MINIMUM_INTERVAL;
         }
 
+      // The duration timer counts down a number of ticks
+      durationTimerTicks = durationTimerInterval / APV_CORE_TIMER_CLOCK_MINIMUM_INTERVAL;
+
       // The set of available process timers is small, just do a linear search for a free one
       while ((coreTimerBlock->durationTimer[timerIndex].durationTimerIndex != APV_DURATION_TIMER_NULL_INDEX) && 
              (timerIndex                                                   <  APV_CORE_TIMER_DURATION_TIMERS))
@@ -168,9 +173,9 @@ APV_ERROR_CODE apvAssignDurationTimer(apvCoreTimerBlock_t     *coreTimerBlock,
 
       if (timerIndex != APV_CORE_TIMER_DURATION_TIMERS)
         { // Initialise the requested process timer block
-        coreTimerBlock->durationTimer[timerIndex].durationTimerDownCounter           = (durationTimerInterval * APV_CORE_TIMER_CLOCK_RATE) / APV_CORE_TIMER_CLOCK_RATE_SCALER;
+        coreTimerBlock->durationTimer[timerIndex].durationTimerDownCounter           = durationTimerTicks;
         coreTimerBlock->durationTimer[timerIndex].durationTimerRequestedMicroSeconds = durationTimerInterval;
-        coreTimerBlock->durationTimer[timerIndex].durationTimerRequestedTicks        = durationTimerInterval;
+        coreTimerBlock->durationTimer[timerIndex].durationTimerRequestedTicks        = durationTimerTicks;
         coreTimerBlock->durationTimer[timerIndex].durationTimerCallBack              = durationTimerCallBack;
         coreTimerBlock->durationTimer[timerIndex].durationTimerIndex                 = timerIndex;
         coreTimerBlock->durationTimer[timerIndex].durationTimerType                  = durationTimerType;
@@ -188,6 +193,71 @@ APV_ERROR_CODE apvAssignDurationTimer(apvCoreTimerBlock_t     *coreTimerBlock,
 
 /******************************************************************************/
   } /* end of apvAssignDurationTimer                                          */
+
+/******************************************************************************/
+/* apvExecuteDurationTimers() :                                               */
+/*                                                                            */
+/*  --> coreTimerBlock        : the single core-timer block                   */
+/*                                                                            */
+/*  <-- durationTimerError    : error codes                                   */
+/*                                                                            */
+/* - decrement any assigned core-timer process timers. At count zero reload   */
+/*   the down-counter and execute the callback function for that process      */
+/*   timer                                                                    */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvExecuteDurationTimers(apvCoreTimerBlock_t *coreTimerBlock)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE      durationTimerError = APV_ERROR_CODE_NONE;
+  uint32_t            timerIndex         = 0;
+
+  apvDurationTimer_t *durationTimer = NULL;
+
+/******************************************************************************/
+
+  if (coreTimerBlock == NULL)
+    {
+    durationTimerError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+  else
+    {
+    while (timerIndex < APV_CORE_TIMER_DURATION_TIMERS)
+      {
+      // Dereference the process timer (in case the optimiser...doesn't!)
+      durationTimer = &coreTimerBlock->durationTimer[timerIndex];
+
+      if ((durationTimer->durationTimerIndex != APV_DURATION_TIMER_NULL_INDEX) &&
+          (durationTimer->durationTimerType  != APV_DURATION_TIMER_TYPE_NONE))
+        { // This process timer is populated, decrement the counter
+        durationTimer->durationTimerDownCounter = 
+            durationTimer->durationTimerDownCounter - 1;
+
+        if (durationTimer->durationTimerDownCounter == 0)
+          { // The timer has reached zero. If it is periodic restart it
+          if (durationTimer->durationTimerType == APV_DURATION_TIMER_TYPE_PERIODIC)
+            {
+            durationTimer->durationTimerDownCounter = 
+                durationTimer->durationTimerRequestedTicks;
+            }
+
+          // Execute the callback
+          durationTimer->durationTimerCallBack((void *)&timerIndex);
+          }
+        }
+
+      timerIndex = timerIndex + 1;
+      }
+    }
+
+/******************************************************************************/
+
+  return(durationTimerError);
+
+/******************************************************************************/
+  } /* end of apvExecuteDurationTimers                                        */
 
 /******************************************************************************/
 /* apvInitialiseEventTimerBlocks() :                                          */
@@ -699,6 +769,42 @@ void apvEventTimerChannel8CallBack(uint32_t apvEventTimerIndex)
 /******************************************************************************/
 /******************************************************************************/
   } /* end of apvEventTimerChannel8CallBack                                   */
+
+/******************************************************************************/
+/* apvSpiStateTimer() :                                                       */
+/*   --> stateTimerIndex : currently a dummy message to this SPI callback     */
+/*                         function                                           */
+/******************************************************************************/
+
+void apvSpiStateTimer(void *stateTimerIndex)
+  {
+/******************************************************************************/
+
+  static bool spiStateTimerStrobe = false;
+
+/******************************************************************************/
+
+  if (spiStateTimerStrobe == false)
+    {
+    apvDriveResourceIoLine(APV_RESOURCE_ID_STROBE_0,
+                           APV_PERIPHERAL_LINE_GROUP_C,
+                           PIO_PER_P3,
+                           true);
+
+    spiStateTimerStrobe = true;
+    }
+  else
+    {
+    apvDriveResourceIoLine(APV_RESOURCE_ID_STROBE_0,
+                           APV_PERIPHERAL_LINE_GROUP_C,
+                           PIO_PER_P3,
+                           false);
+
+    spiStateTimerStrobe = false;
+    }
+
+/******************************************************************************/
+  } /* end of apvSpiStateTimer                                                */
 
 /******************************************************************************/
 /* (C) PulsingCoreSoftware Limited 2018 (C)                                   */

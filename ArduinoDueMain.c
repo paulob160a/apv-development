@@ -113,6 +113,20 @@ int main(void)
   apvSerialErrorCode = apvInitialiseCoreTimer(&apvCoreTimeBaseBlock,
                                                APV_CORE_TIMER_CLOCK_MINIMUM_INTERVAL);
 
+  // Assign a dummy SPI timer for this test
+  apvSerialErrorCode = apvAssignDurationTimer(&apvCoreTimeBaseBlock,
+                                               apvSpiStateTimer,
+                                               APV_DURATION_TIMER_TYPE_PERIODIC,
+                                               APV_CORE_TIMER_CLOCK_MINIMUM_INTERVAL);
+
+  // Switch on the peripheral I/O "C" channel clock
+  apvSerialErrorCode = apvSwitchPeripheralClock(ID_PIOC,
+                                                true);
+
+  // Switch on the timer strobe
+  apvSerialErrorCode = apvSwitchResourceLines(APV_RESOURCE_ID_STROBE_0,
+                                              true);
+
   // Switch on the core timer interrupt
   apvSerialErrorCode = apvSwitchNvicDeviceIrq(APV_CORE_TIMER_ID,
                                               true);
@@ -187,6 +201,9 @@ int main(void)
       if (apvCoreTimerBackgroundFlag == APV_CORE_TIMER_FLAG_HIGH)
         {
         apvCoreTimerBackgroundFlag = APV_CORE_TIMER_FLAG_LOW;
+
+        // Execute any assigned process timers
+        apvSerialErrorCode = apvExecuteDurationTimers(&apvCoreTimeBaseBlock);
         }
 
       /******************************************************************************/

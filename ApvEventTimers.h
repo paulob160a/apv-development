@@ -36,7 +36,7 @@
 #define APV_EVENT_TIMER_DIVISOR_x4            ((uint64_t)4)
 
 #define APV_CORE_TIMER_CLOCK_RATE             ((uint64_t)32768)            // the main RTT clock rate
-#define APV_CORE_TIMER_CLOCK_MINIMUM_DIVIDER  ((uint64_t)3)                // less than 3 results in unstable interrput operation
+#define APV_CORE_TIMER_CLOCK_MINIMUM_DIVIDER  ((uint64_t)3)                // less than 3 results in unstable interrupt operation
 #define APV_CORE_TIMER_CLOCK_RATE_SCALER      ((uint64_t)1000000000)       // translate nanoseconds to a useable integer
 #define APV_CORE_TIMER_CLOCK_RATE_ROUNDUP     ((uint64_t)1)                // crude round-up of integer divisions
 #define APV_CORE_TIMER_CLOCK_MINIMUM_INTERVAL (((APV_CORE_TIMER_CLOCK_MINIMUM_DIVIDER * APV_CORE_TIMER_CLOCK_RATE_SCALER) / APV_CORE_TIMER_CLOCK_RATE) + APV_CORE_TIMER_CLOCK_RATE_ROUNDUP)
@@ -49,6 +49,8 @@
 #define APV_DURATION_TIMER_NULL_INDEX         ((uint32_t)~0)
 
 #define APV_CORE_TIMER_ID                     ID_RTT                       // core timer interrupt ID (Atmel id 3)
+
+#define APV_SPI_STATE_TIMER                   APV_CORE_TIMER_CLOCK_MINIMUM_INTERVAL // currently a dummy timer duration
 
 /******************************************************************************/
 /* Type Definitions :                                                         */
@@ -178,6 +180,7 @@ extern APV_ERROR_CODE apvAssignDurationTimer(apvCoreTimerBlock_t     *coreTimerB
                                              void                   (*durationTimerCallBack)(void *durationEventMessage),
                                              apvDurationTimerType_t   durationTimerType,
                                              uint64_t                 durationTimerInterval);
+extern APV_ERROR_CODE apvExecuteDurationTimers(apvCoreTimerBlock_t *coreTimerBlock);
 extern APV_ERROR_CODE apvInitialiseEventTimerBlocks(apvEventTimersBlock_t *apvEventTimerBlock,
                                                     uint32_t               numberOfTimerBlocks);
 extern APV_ERROR_CODE apvAssignEventTimer(uint16_t                timerChannel,
@@ -204,6 +207,7 @@ extern void           apvEventTimerChannel5CallBack(uint32_t apvEventTimerIndex)
 extern void           apvEventTimerChannel6CallBack(uint32_t apvEventTimerIndex);
 extern void           apvEventTimerChannel7CallBack(uint32_t apvEventTimerIndex);
 extern void           apvEventTimerChannel8CallBack(uint32_t apvEventTimerIndex);
+extern void           apvSpiStateTimer(void *stateTimerIndex);
 
 /******************************************************************************/
 

@@ -64,6 +64,7 @@
         <file file_name="ApvPeripheralControl.h" />
         <file file_name="ApvCommsUtilities.h" />
         <file file_name="ApvUtilities.h" />
+        <file file_name="ar19937.h" />
       </folder>
     </folder>
     <folder Name="Source">

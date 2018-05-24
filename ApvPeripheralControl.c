@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include <sam3x8e.h>
 #include "ApvError.h"
+#include "ApvUtilities.h"
 #include "ApvSystemTime.h"
 #include "ApvEventTimers.h"
 #include "ApvCommsUtilities.h"
@@ -26,21 +27,11 @@
 /* Global Variable Definitions :                                              */
 /******************************************************************************/
 
-Pmc  ApvPeripheralControlBlock;         // shadow peripheral control block
-Pmc *ApvPeripheralControlBlock_p = PMC; // physical block address
+         Pmc   ApvPeripheralControlBlock;         // shadow peripheral control block
+         Pmc  *ApvPeripheralControlBlock_p = PMC; // physical block address
 
-// This definition avoids extravagant casting effort from the Atmel constants
-Pio  ApvPeripheralLineControlBlock[APV_PERIPHERAL_LINE_GROUPS];    // shadow PIO control blocks
-Pio *ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUPS] = // physical block addresses
-  {
-  APV_PIO_BLOCK_A,
-  APV_PIO_BLOCK_B,
-  APV_PIO_BLOCK_C,
-  APV_PIO_BLOCK_D
-  };
-
-         Uart  ApvUartControlBlock;              // shadow UART control block
-volatile Uart *ApvUartControlBlock_p = UART;     // physical block address
+         Uart  ApvUartControlBlock;               // shadow UART control block
+volatile Uart *ApvUartControlBlock_p = UART;      // physical block address
 
 /******************************************************************************/
 /* Function Definitions :                                                     */
@@ -115,7 +106,21 @@ APV_ERROR_CODE apvSwitchPeripheralClock(apvPeripheralId_t peripheralId,
         }
       else
         {
-        ApvPeripheralControlBlock.PMC_PCDR0    = ApvPeripheralControlBlock.PMC_PCER0 | (1 << peripheralId);
+        ApvPeripheralControlBlock.PMC_PCDR0    = ApvPeripheralControlBlock.PMC_PCDR0 | (1 << peripheralId);
+        ApvPeripheralControlBlock_p->PMC_PCDR0 = (1 << peripheralId);
+        }
+      }
+
+    if ((peripheralId >= APV_PERIPHERAL_ID_PIOA) && (peripheralId <= APV_PERIPHERAL_ID_PIOD))
+      {
+      if (peripheralSwitch == true)
+        {
+        ApvPeripheralControlBlock.PMC_PCER0 = ApvPeripheralControlBlock.PMC_PCER0 | (1 << peripheralId);
+        ApvPeripheralControlBlock_p->PMC_PCER0 = (1 << peripheralId);
+        }
+      else
+        {
+        ApvPeripheralControlBlock.PMC_PCDR0    = ApvPeripheralControlBlock.PMC_PCDR0 | (1 << peripheralId);
         ApvPeripheralControlBlock_p->PMC_PCDR0 = (1 << peripheralId);
         }
       }
@@ -174,14 +179,15 @@ APV_ERROR_CODE apvSwitchNvicDeviceIrq(apvPeripheralId_t peripheralIrqId,
 
 /******************************************************************************/
 /* apvSwitchPeripheralLines() :                                               */
-/*  --> peripheralIrqId      : peripheral ID. By some miracle this maps to    */
-/*                             the IRQ identifier as well                     */
+/*  --> peripheralLineId      : peripheral ID. By some miracle this maps to   */
+/*                              the IRQ identifier as well                    */
 /*  --> peripheralLineSwitch : [ false == peripheral lines disabled |         */
 /*                               true  == peripheral lines enabled ]          */
 /*                                                                            */
 /*  - enable/disable the PIO lines associated with a peripheral. NOTE the     */
 /*    Atmel way is to DISABLE the PIO on a line i.e ENABLE the peripheral and */
-/*    vice-versa                                                              */
+/*    vice-versa. The nomenclature is a bit confusing : for instance "PER"    */
+/*    means "enable the parallel I/O line" NOT(!) "enable the peripheral"     */
 /*                                                                            */
 /* Reference : "Atmel-11057C-ATARM-SAM3X-SAM3A-Datasheet_23-Mar-15", p40,     */
 /*             p633 - 4                                                       */
@@ -197,7 +203,6 @@ APV_ERROR_CODE apvSwitchPeripheralLines(apvPeripheralId_t peripheralLineId,
 
 /******************************************************************************/
 
-
   if (peripheralLineId >= APV_PERIPHERAL_IDS)
     {
     peripheralControlError = APV_ERROR_CODE_PARAMETER_OUT_OF_RANGE;
@@ -208,45 +213,43 @@ APV_ERROR_CODE apvSwitchPeripheralLines(apvPeripheralId_t peripheralLineId,
       {
       switch(peripheralLineId)
         {
-       case APV_PERIPHERAL_ID_UART : // The UART is enabled on PIO A pins PA8 and PA9 as peripheral A. THIS IS THE DEFAULT PIO STATE!
-                                     //ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = PIO_ABSR_P8 | PIO_ABSR_P9;
+        case APV_PERIPHERAL_ID_UART : // The UART is enabled on PIO A pins PA8 and PA9 as peripheral A. THIS IS THE DEFAULT PIO STATE!
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PDR  = PIO_PDR_P8  | PIO_PDR_P9;
 
-                                     ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PDR  = PIO_PDR_P8  | PIO_PDR_P9;
+                                      // Enable the pull-ups on Tx and RX
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PUER = PIO_PUER_P8 | PIO_PUER_P9;
 
-                                     // Enable the pull-ups on Tx and RX
-                                     ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PUER = PIO_PUER_P8 | PIO_PUER_P9;
+                                      // Check the status of the attempted configuration; 0 == peripheral selected
+                                      if (((ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PSR & PIO_PDR_P8) == PIO_PDR_P8) || 
+                                          ((ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PSR & PIO_PDR_P9) == PIO_PDR_P9))
+                                        {
+                                        peripheralControlError = APV_ERROR_CODE_CONFIGURATION_ERROR;
+                                        }
 
-                                     // Check the status of the attempted configuration; 0 == peripheral selected
-                                     if (((ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PSR | PIO_PDR_P8) == PIO_PDR_P8) || 
-                                         ((ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PSR | PIO_PDR_P9) == PIO_PDR_P9))
-                                       {
-                                       peripheralControlError = APV_ERROR_CODE_CONFIGURATION_ERROR;
-                                       }
+                                      break;
 
-                                     break;
-
-        default                    :
-                                     break;
+        default                     :
+                                      break;
         }
       }
     else
       {
       switch(peripheralLineId)
         {
-       case APV_PERIPHERAL_ID_UART :  // the UART is disabled on pins PA8 and PA9
-                                     ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PER = PIO_PDR_P8 | PIO_PDR_P9;
+        case APV_PERIPHERAL_ID_UART : // The UART is disabled on pins PA8 and PA9
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PER = PIO_PDR_P8 | PIO_PDR_P9;
 
-                                     // Check the status of the attempted configuration; !0 == peripheral deselected
-                                     if (((ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PSR | PIO_PDR_P8) != PIO_PDR_P8) || 
-                                         ((ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PSR | PIO_PDR_P9) != PIO_PDR_P9))
-                                       {
-                                       peripheralControlError = APV_ERROR_CODE_CONFIGURATION_ERROR;
-                                       }
+                                      // Check the status of the attempted configuration; !0 == peripheral deselected
+                                      if (((ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PSR & PIO_PDR_P8) != PIO_PDR_P8) || 
+                                          ((ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PSR & PIO_PDR_P9) != PIO_PDR_P9))
+                                        {
+                                        peripheralControlError = APV_ERROR_CODE_CONFIGURATION_ERROR;
+                                        }
 
-                                     break;
+                                      break;
 
-        default                    :
-                                     break;
+        default                     :
+                                      break;
         }
       }
     }
