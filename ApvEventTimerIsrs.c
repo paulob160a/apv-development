@@ -224,7 +224,27 @@ void RTT_Handler(void)
   RTT->RTT_MR  = modeRegister;
 
 /******************************************************************************/
-  }
+  } /* end of RTT_Handler                                                     */
+
+/******************************************************************************/
+/* SysTick_Handler() :                                                        */
+/*                                                                            */
+/* - core timer interrupt service routine. Just flag the high-speed backgound */
+/*   loop to do the process timer work                                        */
+/*                                                                            */
+/* Reference : SAM3X8E Datasheet 23.03.15 "System timer, SysTick", p191       */
+/*                                                                            */
+/******************************************************************************/
+
+void SysTick_Handler(void)
+  {
+/******************************************************************************/
+
+  // Flag the fast background loop
+  apvCoreTimerFlag = APV_CORE_TIMER_FLAG_HIGH;
+
+/******************************************************************************/
+  } /* end of SysTick_Handler                                                 */
 
 /******************************************************************************/
 /* (C) PulsingCoreSoftware Limited 2018 (C)                                   */

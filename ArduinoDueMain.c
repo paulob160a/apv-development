@@ -24,9 +24,13 @@
 /* Constant Definitions :                                                     */
 /******************************************************************************/
 
-const char UartTestPhrase[] = "We all live in a Yellow Submarine";
-
 #define APV_RUN_TIME_TX_MODULUS ((uint64_t)1024)
+
+/******************************************************************************/
+/* Local Variable Definitions :                                               */
+/******************************************************************************/
+
+static uint32_t spiTimerIndex = 0;
 
 /******************************************************************************/
 /* Local Function Declarations :                                              */
@@ -87,11 +91,6 @@ int main(void)
   apvSerialErrorCode = apvSwitchPeripheralClock(ID_UART, // switch on the primary serial port peripheral clock
                                                 true);
 
-  apvSerialErrorCode = apvSerialBufferInitialise(&transmitBuffer,
-                                                  (uint16_t)strlen(UartTestPhrase),
-                                                 &UartTestPhrase[0],
-                                                  (uint16_t)strlen(UartTestPhrase));
-
   apvSerialErrorCode = apvControlUart(APV_UART_CONTROL_ACTION_RESET);
   apvSerialErrorCode = apvControlUart(APV_UART_CONTROL_ACTION_RESET_STATUS);
   apvSerialErrorCode = apvControlUart(APV_UART_CONTROL_ACTION_ENABLE);
@@ -110,14 +109,26 @@ int main(void)
   apvSerialErrorCode = apvSwitchPeripheralClock(ID_RTT, // switch on the core timer
                                                 true);
 
-  apvSerialErrorCode = apvInitialiseCoreTimer(&apvCoreTimeBaseBlock,
-                                               APV_CORE_TIMER_CLOCK_MINIMUM_INTERVAL);
+  apvSerialErrorCode = apvInitialiseSystemTimer(&apvCoreTimeBaseBlock,
+                                                 APV_SYSTEM_TIMER_CLOCK_MINIMUM_PERIOD);
+
+  /* apvSerialErrorCode = apvInitialiseCoreTimer(&apvCoreTimeBaseBlock,
+                                               APV_CORE_TIMER_CLOCK_MINIMUM_INTERVAL); */
 
   // Assign a dummy SPI timer for this test
+  /* apvSerialErrorCode = apvAssignDurationTimer(&apvCoreTimeBaseBlock,
+                                               apvSpiStateTimer,
+                                               APV_DURATION_TIMER_TYPE_PERIODIC,
+                                               APV_CORE_TIMER_CLOCK_MINIMUM_INTERVAL,
+                                               APV_DURATION_TIMER_SOURCE_RTT,
+                                              &spiTimerIndex); */
+
   apvSerialErrorCode = apvAssignDurationTimer(&apvCoreTimeBaseBlock,
                                                apvSpiStateTimer,
                                                APV_DURATION_TIMER_TYPE_PERIODIC,
-                                               APV_CORE_TIMER_CLOCK_MINIMUM_INTERVAL);
+                                               APV_SYSTEM_TIMER_CLOCK_MINIMUM_PERIOD,
+                                               APV_DURATION_TIMER_SOURCE_SYSTICK,
+                                              &spiTimerIndex);
 
   // Switch on the peripheral I/O "C" channel clock
   apvSerialErrorCode = apvSwitchPeripheralClock(ID_PIOC,
@@ -128,8 +139,10 @@ int main(void)
                                               true);
 
   // Switch on the core timer interrupt
-  apvSerialErrorCode = apvSwitchNvicDeviceIrq(APV_CORE_TIMER_ID,
-                                              true);
+  /* apvSerialErrorCode = apvSwitchNvicDeviceIrq(APV_CORE_TIMER_ID,
+                                              true); */
+
+  apvSerialErrorCode = apvStartSystemTimer(&apvCoreTimeBaseBlock);
 
 /******************************************************************************/
 
