@@ -42,9 +42,12 @@ apvRingBuffer_t  *apvSerialPortPrimaryRingBuffer_p[APV_PRIMARY_SERIAL_RING_BUFFE
   APV_RING_BUFFER_LIST_EMPTY_POINTER
   };
 
-// This is the transmit ring-buffer of pointers to a set of (received) ring-buffers
+// This is the transmit ring-buffer of pointers to a set of ring-buffers
 apvRingBuffer_t   apvUartPortTransmitBuffer,
-                 *apvUartPortPrimaryRingBuffer_p = &apvUartPortTransmitBuffer;
+                 *apvUartPortPrimaryTransmitRingBuffer_p = &apvUartPortTransmitBuffer;
+// This is the receive ring-buffer of pointers to a set of ring-buffers
+apvRingBuffer_t   apvUartPortReceiveBuffer,
+                 *apvUartPortPrimaryReceiveRingBuffer_p = &apvUartPortReceiveBuffer;
 
 apvRingBuffer_t *apvPrimarySerialCommsReceiveBuffer  = NULL;
 apvRingBuffer_t *apvPrimarySerialCommsTransmitBuffer = NULL;
@@ -194,7 +197,7 @@ APV_SERIAL_ERROR_CODE apvSerialCommsManager(APV_PRIMARY_SERIAL_PORT   apvPrimary
 
       if (apvErrorCode == APV_ERROR_CODE_NONE)
         {
-      switch(apvPrimarySerialPort)
+        switch(apvPrimarySerialPort)
           {
           case APV_PRIMARY_SERIAL_PORT_USART0 : // NOT IMPLEMENTED
                                                 break;
@@ -223,9 +226,13 @@ APV_SERIAL_ERROR_CODE apvSerialCommsManager(APV_PRIMARY_SERIAL_PORT   apvPrimary
                                                     }
                                                   else
                                                     {
-                                                    // Create the small ring-buffer transmit queue (of pointers to ring-buffers)
-                                                    apvErrorCode = apvRingBufferInitialise(apvUartPortPrimaryRingBuffer_p,
+                                                    // Create the small ring-buffer transmit and receive queues (of pointers to ring-buffers)
+                                                    apvErrorCode = apvRingBufferInitialise(apvUartPortPrimaryTransmitRingBuffer_p,
                                                                                            (APV_PRIMARY_SERIAL_RING_BUFFER_SET << 1));
+
+                                                    apvErrorCode = apvRingBufferInitialise(apvUartPortPrimaryReceiveRingBuffer_p,
+                                                                                           (APV_PRIMARY_SERIAL_RING_BUFFER_SET << 1));
+
                                                     }
                                                   }
 
@@ -276,20 +283,19 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
 
       if (receivedTokens == 0)
         { 
-        // A full buffer has been received - put the current receive buffer address on the transmit queue
-        apvRingBufferLoad( apvUartPortPrimaryRingBuffer_p,
+        // A full buffer has been received - put the current receive buffer address on the receive queue
+        apvRingBufferLoad( apvUartPortPrimaryReceiveRingBuffer_p,
                           (uint32_t *)&apvPrimarySerialCommsReceiveBuffer,
                            sizeof(uint8_t),
                            false);
 
         /******************************************************************************/
-        /* Signal the transmitter that new characters are ready. This is used as a    */
-        /* single-trigger flag to the background to prime the transmitter and switch- */
-        /* on interrupts. Only the transmitter sectoin of the interrupt service       */
-        /* routine can cancel this flag in normal operation                           */
+        /* Signal the background that new characters are ready                        */
         /******************************************************************************/
 
-        transmitInterrupt = true;
+        receiveInterrupt = true;
+
+        /******************************************************************************/
 
         // Pull a new ring-buffer from the "free" list
         if (apvRingBufferSetPullBuffer(&apvSerialPortPrimaryRingBuffer_p[0],
@@ -327,10 +333,6 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
           receiveInterrupt                   = false;
           }
         }
-      else
-        {
-        receiveInterrupt = true;
-        }
       }
 
     // Interlock the transmitter buffer "empty" signal with the result of a successful
@@ -360,7 +362,7 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
                                         false) != APV_ERROR_CODE_RING_BUFFER_DEFINITION_ERROR)
           {
           // Try and get a new transmit ring-buffer from the queue
-          if (apvRingBufferUnLoad( apvUartPortPrimaryRingBuffer_p,
+          if (apvRingBufferUnLoad( apvUartPortPrimaryTransmitRingBuffer_p,
                                   (uint32_t *)&apvPrimarySerialCommsTransmitBuffer,
                                    sizeof(uint8_t),
                                    false) != 0)

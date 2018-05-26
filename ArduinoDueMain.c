@@ -19,6 +19,7 @@
 #include "ApvEventTimers.h"
 #include "ApvSystemTime.h"
 #include "ApvPeripheralControl.h"
+#include "ApvControlPortProtocol.h"
 
 /******************************************************************************/
 /* Constant Definitions :                                                     */
@@ -98,6 +99,10 @@ int main(void)
   apvSerialErrorCode = apvConfigureUart(APV_UART_PARITY_NONE,
                                         APV_UART_CHANNEL_MODE_NORMAL,
                                         APV_UART_BAUD_RATE_SELECT_19200);
+
+   // Load the sign-on before the transmit/receive interrupt is started
+  apvSerialErrorCode = apvControlPortSignOn(&apvSignOnMessage[0],
+                                             strlen(apvSignOnMessage));
 
   // SWITCH ON THE NVIC/UART IRQ
   apvSerialErrorCode = apvUartSwitchInterrupt(APV_UART_INTERRUPT_SELECT_RECEIVE,
@@ -182,6 +187,27 @@ int main(void)
        /* transmit buffers and back out in a loop-back                               */
        /******************************************************************************/
 
+       if (receiveInterrupt == true)
+         {
+         // Try and get a new receive ring-buffer from the queue
+         if (apvRingBufferUnLoad( apvUartPortPrimaryReceiveRingBuffer_p,
+                                 (uint32_t *)&apvPrimarySerialCommsReceiveBuffer,
+                                  sizeof(uint8_t),
+                                  false) != 0)
+           {
+           // Put the buffer on the transmit queue
+           apvRingBufferLoad( apvUartPortPrimaryTransmitRingBuffer_p,
+                             (uint32_t *)&apvPrimarySerialCommsReceiveBuffer,
+                              sizeof(uint8_t),
+                              false);
+
+           // Flag the transmitter new characters are available
+           transmitInterrupt = true;
+           }
+
+         receiveInterrupt = false;
+         }
+
        if (transmitInterrupt == true)
          {
          if (transmitInterruptTrigger == false)
@@ -189,7 +215,7 @@ int main(void)
            transmitInterruptTrigger = true;
 
            if (apvUartCharacterTransmitPrime( ApvUartControlBlock_p,
-                                              apvUartPortPrimaryRingBuffer_p,
+                                              apvUartPortPrimaryTransmitRingBuffer_p,
                                              &apvPrimarySerialCommsTransmitBuffer) != APV_ERROR_CODE_NONE)
              {
              // That didn't go well!
@@ -200,7 +226,7 @@ int main(void)
          }
        else
          {
-         transmitInterruptTrigger == false;
+         transmitInterruptTrigger = false;
          }
 
        __enable_irq();

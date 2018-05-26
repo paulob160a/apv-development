@@ -91,14 +91,19 @@ typedef enum apvPrimaryRingBufferSet_tTag
 // The "free" ring buffer list for creating and consuming transmit and receive
 // buffers
 extern apvRingBuffer_t   apvSerialPortPrimaryRingBuffer[APV_PRIMARY_SERIAL_RING_BUFFER_SET];
+extern apvRingBuffer_t  *apvSerialPortPrimaryRingBuffer_p[APV_PRIMARY_SERIAL_RING_BUFFER_SET];
 
-// The "active" transmit and receive reing-buffers
+// The "active" transmit and receive ring-buffers
 extern apvRingBuffer_t  *apvPrimarySerialCommsReceiveBuffer,
                         *apvPrimarySerialCommsTransmitBuffer;
 
 // The "list" of ready (filled) transmit buffers
 extern apvRingBuffer_t   apvUartPortTransmitBuffer,
-                        *apvUartPortPrimaryRingBuffer_p;
+                        *apvUartPortPrimaryTransmitRingBuffer_p;
+
+// The list of ready (filled) received buffers
+extern apvRingBuffer_t   apvUartPortReceiveBuffer,
+                        *apvUartPortPrimaryReceiveRingBuffer_p;
 
 /******************************************************************************/
 /* These variables are only intended to implement a simple foreground/back-   */

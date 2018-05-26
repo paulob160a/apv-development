@@ -193,7 +193,7 @@ extern volatile apvCoreTimerFlag_t  apvCoreTimerFlag,
 extern bool                         apvSystemTimerInUseFlag;
 
 /******************************************************************************/
-/* function Declarations :                                                    */
+/* Function Declarations :                                                    */
 /******************************************************************************/
 
 extern APV_ERROR_CODE apvInitialiseSystemTimer(apvCoreTimerBlock_t *coreTimerBlock,
