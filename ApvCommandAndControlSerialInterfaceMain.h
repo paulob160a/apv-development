@@ -22,6 +22,9 @@
 // The RealTerm serial server virtual "command-line" portal
 #define APV_REALTERM_SERIAL_SERVER_COMMAND     (L"DoCommands(%s)")
 
+#define APV_REALTERM_PROESS_EXIT_CODE          ((UINT)0)
+#define APV_STRING_EOS                         (0)
+
 /******************************************************************************/
 /* The possible symbol rates                                                  */
 /******************************************************************************/

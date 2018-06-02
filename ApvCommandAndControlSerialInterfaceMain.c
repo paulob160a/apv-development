@@ -229,6 +229,15 @@ char apvRealTermPrefixes[APV_REALTERM_COMMAND_PREFIXES][APV_REALTERM_COMMAND_PRE
   APV_REALTERM_COMMAND_PREFIX_VERSION
   };
 
+TCHAR                apvRealTermProcessName[APV_REALTERM_COMMAND_PREFIX_LENGTH]; // "CreateProcess" is using wide characters
+TCHAR                apvWideCharConversion[APV_REALTERM_COMMAND_PREFIX_LENGTH];  // char to wchar_t character conversion
+
+char                *apvCharString  = NULL;                                      // track the char string being converted to wchar_t
+TCHAR               *apvWCharString = NULL;                                      // track the wchar_t string
+
+STARTUPINFO          apvRealTermProcessStartUpInformation;                       // process "startup information" (Windows fills this)
+PROCESS_INFORMATION  apvRealTermProcessInformation;                              // process "information" (Windows fills this)
+
 /******************************************************************************/
 /* Function Declarations :                                                    */
 /******************************************************************************/
@@ -273,7 +282,67 @@ int main(int argc, char *argv[])
       }
     else
       {
-      _execl(APV_SERIAL_SERVER_PATH, APV_SERIAL_SERVER, NULL);
+      //_execl(APV_SERIAL_SERVER_PATH, APV_SERIAL_SERVER, NULL);
+
+      // Build the RealTerm process path and name
+#ifdef UNICODE
+      apvCharString  = APV_SERIAL_SERVER_PATH; // point to the char string to be converted to wchar_t
+      apvWCharString = apvWideCharConversion;  // point to the wchar_t string
+
+      while (*apvCharString != APV_STRING_EOS)
+        {
+        *apvWCharString = (TCHAR)(*apvCharString);
+
+        apvCharString  = apvCharString  + 1;
+        apvWCharString = apvWCharString + 1;
+        }
+
+      *apvWCharString = (TCHAR)APV_STRING_EOS;
+
+      wcscpy((wchar_t *)&apvRealTermProcessName[0], &apvWideCharConversion[0]);
+
+      apvCharString  = APV_SERIAL_SERVER;      // point to the char string to be converted to wchar_t
+      apvWCharString = apvWideCharConversion;  // point to the wchar_t string
+
+      while (*apvCharString != APV_STRING_EOS)
+        {
+        *apvWCharString = (TCHAR)(*apvCharString);
+
+        apvCharString  = apvCharString  + 1;
+        apvWCharString = apvWCharString + 1;
+        }
+
+      *apvWCharString = (TCHAR)APV_STRING_EOS;
+
+      wcscat((wchar_t *)&apvRealTermProcessName[0], &apvWideCharConversion[0]);
+#else
+      strcpy((char *)&apvRealTermProcessName[0], APV_SERIAL_SERVER_PATH);
+      strcat((char *)&apvRealTermProcessName[0], APV_SERIAL_SERVER);
+#endif
+
+      // Empty the process information tables
+      ZeroMemory( &apvRealTermProcessStartUpInformation, sizeof(apvRealTermProcessStartUpInformation) );
+      apvRealTermProcessStartUpInformation.cb = sizeof(apvRealTermProcessStartUpInformation);
+      ZeroMemory( &apvRealTermProcessInformation, sizeof(apvRealTermProcessInformation) );
+
+      if (CreateProcess(&apvRealTermProcessName[0],                // RealTerm process path and name
+                         NULL,                                     // no command-line
+                         NULL,                                     // children do not inherit from the new process
+                         NULL,                                     // children do not inherit from the new process
+                         TRUE,                                     // the new process inherits from this calling process
+                         0,                                        // the new process is created as normal
+                         NULL,                                     // the new process inherits this process's environment
+                         NULL,                                     // the new process uses this process's drive and directory
+                         &apvRealTermProcessStartUpInformation,    // the new process's startup configuration
+                         &apvRealTermProcessInformation) == FALSE) // the new process description
+        {
+        printf("\n ERROR : RealTerm process creation failed!\n");
+              
+        while (!_kbhit())
+          ;
+
+        return(0);
+        }
 
       dhInitialize(TRUE);
       dhToggleExceptions(TRUE);
@@ -322,8 +391,20 @@ int main(int argc, char *argv[])
       while (!_kbhit())
         ;
      
+      // Release the COM/ActiveX object
       SAFE_RELEASE(objRealTerm);
-      dhUninitialize(TRUE);      
+      dhUninitialize(TRUE); 
+
+      // Tell the RealTerm process to stop
+      TerminateProcess(apvRealTermProcessInformation.hProcess,
+                       APV_REALTERM_PROESS_EXIT_CODE);
+                       
+      // Wait until the RealTerm process exits
+      WaitForSingleObject( apvRealTermProcessInformation.hProcess, INFINITE );
+
+      // Close the RealTerm process and thread handles
+      CloseHandle( apvRealTermProcessInformation.hProcess );
+      CloseHandle( apvRealTermProcessInformation.hThread );
       }
     }
 
