@@ -1,4 +1,6 @@
 /******************************************************************************/
+/* (C) PulsingCoreSoftware Limited 2018 (C)                                   */
+/******************************************************************************/
 /*                                                                            */
 /* ApvCommandAndControlSerialInterfaceMain.c                                  */
 /* 01.06.18                                                                   */
@@ -14,7 +16,9 @@
 #include <math.h>
 #include <conio.h>
 #include <process.h>
+#include "ApvError.h"
 #include "ActiveXInC.h"
+#include "ApvCommandAndControlSerialInterface.h"
 #include "ApvCommandAndControlSerialInterfaceMain.h"
 
 /******************************************************************************/
@@ -238,6 +242,8 @@ TCHAR               *apvWCharString = NULL;                                     
 STARTUPINFO          apvRealTermProcessStartUpInformation;                       // process "startup information" (Windows fills this)
 PROCESS_INFORMATION  apvRealTermProcessInformation;                              // process "information" (Windows fills this)
 
+APV_ERROR_CODE       apvMessageControl = APV_ERROR_CODE_NONE;                    // enable the message-sending loop
+
 /******************************************************************************/
 /* Function Declarations :                                                    */
 /******************************************************************************/
@@ -325,7 +331,7 @@ int main(int argc, char *argv[])
       apvRealTermProcessStartUpInformation.cb = sizeof(apvRealTermProcessStartUpInformation);
       ZeroMemory( &apvRealTermProcessInformation, sizeof(apvRealTermProcessInformation) );
 
-      if (CreateProcess(&apvRealTermProcessName[0],                // RealTerm process path and name
+/*      if (CreateProcess(&apvRealTermProcessName[0],                // RealTerm process path and name
                          NULL,                                     // no command-line
                          NULL,                                     // children do not inherit from the new process
                          NULL,                                     // children do not inherit from the new process
@@ -342,7 +348,7 @@ int main(int argc, char *argv[])
           ;
 
         return(0);
-        }
+        } */
 
       dhInitialize(TRUE);
       dhToggleExceptions(TRUE);
@@ -371,25 +377,27 @@ int main(int argc, char *argv[])
       // Select the RealTerm "Send" tabsheet
       strcat(apvRealTermCommands[APV_REALTERM_COMMAND_PREFIX_TAB_INDEX], APV_REALTERM_TABSHEET_NAME_SEND);
 
-      //dhCallMethod(objRealTerm, APV_REALTERM_SERIAL_SERVER_COMMAND, "STRING1=percypylon.txt"); //"HELP"); // "COLORS=BBCCCM");
-      //dhCallMethod(objRealTerm, APV_REALTERM_SERIAL_SERVER_COMMAND, "COLORS=BBCCCM");
-     
       // Setup the RealTerm serial server
       dhCallMethod(objRealTerm, APV_REALTERM_SERIAL_SERVER_COMMAND, apvRealTermCommands[APV_REALTERM_COMMAND_PREFIX_BAUD_INDEX]);
       dhCallMethod(objRealTerm, APV_REALTERM_SERIAL_SERVER_COMMAND, apvRealTermCommands[APV_REALTERM_COMMAND_PREFIX_PORT_INDEX]);
       dhCallMethod(objRealTerm, APV_REALTERM_SERIAL_SERVER_COMMAND, apvRealTermCommands[APV_REALTERM_COMMAND_PREFIX_TAB_INDEX]);
-      dhCallMethod(objRealTerm, APV_REALTERM_SERIAL_SERVER_COMMAND, apvRealTermCommands[APV_REALTERM_COMMAND_PREFIX_SENDFNAME_INDEX]);
+      //dhCallMethod(objRealTerm, APV_REALTERM_SERIAL_SERVER_COMMAND, apvRealTermCommands[APV_REALTERM_COMMAND_PREFIX_SENDFNAME_INDEX]);
       dhCallMethod(objRealTerm, APV_REALTERM_SERIAL_SERVER_COMMAND, apvRealTermCommands[APV_REALTERM_COMMAND_PREFIX_CHARDLY_INDEX]);
       dhCallMethod(objRealTerm, APV_REALTERM_SERIAL_SERVER_COMMAND, apvRealTermCommands[APV_REALTERM_COMMAND_PREFIX_SENDREP_INDEX]);
       dhCallMethod(objRealTerm, APV_REALTERM_SERIAL_SERVER_COMMAND, apvRealTermCommands[APV_REALTERM_COMMAND_PREFIX_CLOSED_INDEX]);
-      dhCallMethod(objRealTerm, APV_REALTERM_SERIAL_SERVER_COMMAND, apvRealTermCommands[APV_REALTERM_COMMAND_PREFIX_SENDFILE_INDEX]);
+      //dhCallMethod(objRealTerm, APV_REALTERM_SERIAL_SERVER_COMMAND, apvRealTermCommands[APV_REALTERM_COMMAND_PREFIX_SENDFILE_INDEX]);
       //dhGetValue(L"%s", &szResponse, objRealTerm, L".ResponseText");
      
       //printf("Response:\n%s\n", szResponse);
       //dhFreeString(szResponse);
      
-      while (!_kbhit())
-        ;
+      /******************************************************************************/
+      /* Execute the APV control via the primary serial port                        */
+      /******************************************************************************/
+
+      apvMessageControl = apvMessagingControlInterface();
+
+      /******************************************************************************/
      
       // Release the COM/ActiveX object
       SAFE_RELEASE(objRealTerm);
@@ -462,4 +470,6 @@ static void ApvCAndCApplicationCommandLine(void)
 /******************************************************************************/
   } /* end of ApvCAndCApplicationCommandLine                                  */
 
+/******************************************************************************/
+/* (C) PulsingCoreSoftware Limited 2018 (C)                                   */
 /******************************************************************************/

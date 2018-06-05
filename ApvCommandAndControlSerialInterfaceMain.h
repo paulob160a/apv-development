@@ -1,4 +1,6 @@
 /******************************************************************************/
+/* (C) PulsingCoreSoftware Limited 2018 (C)                                   */
+/******************************************************************************/
 /*                                                                            */
 /* ApvCommandAndControlSerialInterfaceMain.c                                  */
 /* 01.06.18                                                                   */
@@ -6,8 +8,8 @@
 /*                                                                            */
 /******************************************************************************/
 
-#ifndef _APV_COMMAND_AND_CONTROL_SERIAL_INTERFACE_H_
-#define _APV_COMMAND_AND_CONTROL_SERIAL_INTERFACE_H_
+#ifndef _APV_COMMAND_AND_CONTROL_SERIAL_INTERFACE_MAIN_H_
+#define _APV_COMMAND_AND_CONTROL_SERIAL_INTERFACE_MAIN_H_
 
 /******************************************************************************/
 /* Include Files :                                                            */
@@ -232,4 +234,6 @@ extern char apvRealTermPrefixes[APV_REALTERM_COMMAND_PREFIXES][APV_REALTERM_COMM
 
 #endif
 
+/******************************************************************************/
+/* (C) PulsingCoreSoftware Limited 2018 (C)                                   */
 /******************************************************************************/
