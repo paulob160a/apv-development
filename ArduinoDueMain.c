@@ -20,6 +20,7 @@
 #include "ApvSystemTime.h"
 #include "ApvPeripheralControl.h"
 #include "ApvControlPortProtocol.h"
+#include "ApvMessageHandling.h"
 
 /******************************************************************************/
 /* Constant Definitions :                                                     */
@@ -47,8 +48,13 @@ int main(void)
   {
 /******************************************************************************/
 
-           APV_SERIAL_ERROR_CODE apvSerialErrorCode  = APV_SERIAL_ERROR_CODE_NONE;
-  volatile uint64_t              apvRunTimeCounter   = 0;
+           APV_SERIAL_ERROR_CODE  apvSerialErrorCode        = APV_SERIAL_ERROR_CODE_NONE;
+  volatile uint64_t               apvRunTimeCounter         = 0,
+                                  apvRunTimeCounterOld      = 0;
+
+           apvMessageStructure_t  messageBuffer;
+
+           bool                   apvPrimarySerialPortStart = false;
 
 /******************************************************************************/
 
@@ -100,9 +106,9 @@ int main(void)
                                         APV_UART_CHANNEL_MODE_NORMAL,
                                         APV_UART_BAUD_RATE_SELECT_19200);
 
-   // Load the sign-on before the transmit/receive interrupt is started
-  apvSerialErrorCode = apvControlPortSignOn(&apvSignOnMessage[0],
-                                             strlen(apvSignOnMessage));
+  // Load the sign-on before the transmit/receive interrupt is started
+  // apvSerialErrorCode = apvControlPortSignOn(&apvSignOnMessage[0],
+  //                                            strlen(apvSignOnMessage));
 
   // SWITCH ON THE NVIC/UART IRQ
   apvSerialErrorCode = apvUartSwitchInterrupt(APV_UART_INTERRUPT_SELECT_RECEIVE,
@@ -165,7 +171,9 @@ int main(void)
          {
          apvEventTimerHotShot.Flags.APV_EVENT_TIMER_CHANNEL_0_FLAG = APV_EVENT_TIMER_FLAG_CLEAR;
 
-         apvRunTimeCounter = apvRunTimeCounter + 1;
+         apvRunTimeCounterOld = apvRunTimeCounter;
+
+         apvRunTimeCounter    = apvRunTimeCounter + 1;
          }
 
        /******************************************************************************/
@@ -179,27 +187,50 @@ int main(void)
          apvCoreTimerFlag           = APV_CORE_TIMER_FLAG_LOW;
          }
 
+       __enable_irq();
+
        /******************************************************************************/
-       /* The current software configuration is all to test the transmit and receive */
-       /* UART interrupts and the ring-buffer lists and "free" buffer list that      */
-       /* support them. The whole shebang is driven round by the receiver i.e. when  */
-       /* characters turn up in the receive buffers they shold wend their way to the */
-       /* transmit buffers and back out in a loop-back                               */
+       /* FOR NOW, AT EACH MILLISECOND...                                            */
        /******************************************************************************/
 
+       if (apvRunTimeCounterOld != apvRunTimeCounter)
+         {
+         apvRunTimeCounterOld = apvRunTimeCounter;
+
+         /******************************************************************************/
+         /* The first level of wired (serial port) I/O is a framed message defined by  */
+         /* a finite-state-machine.                                                    */
+         /******************************************************************************/
+
+         if (apvPrimarySerialPortStart == false)
+           {
+           apvPrimarySerialPortStart = true;
+
+           // Initialise the lowest-level serial comms frame receiver state machine
+           apvSerialErrorCode = apvDeFrameMessageInitialisation( apvPrimarySerialCommsReceiveBuffer,
+                                                                &messageBuffer,
+                                                                &apvMessagingDeFramingStateMachine[0]);
+           }
+
+         apvSerialErrorCode = apvDeFrameMessage(&apvMessagingDeFramingStateMachine[0]);
+
+         /******************************************************************************/
+         }
+
+#if (0)
        if (receiveInterrupt == true)
          {
          // Try and get a new receive ring-buffer from the queue
          if (apvRingBufferUnLoad( apvUartPortPrimaryReceiveRingBuffer_p,
-                                 (uint32_t *)&apvPrimarySerialCommsReceiveBuffer,
+                                 (uint32_t *)&apvReceiveBuffer_p,
                                   sizeof(uint8_t),
-                                  false) != 0)
+                                  true) != 0)
            {
            // Put the buffer on the transmit queue
            apvRingBufferLoad( apvUartPortPrimaryTransmitRingBuffer_p,
-                             (uint32_t *)&apvPrimarySerialCommsReceiveBuffer,
+                             (uint32_t *)&apvReceiveBuffer_p,
                               sizeof(uint8_t),
-                              false);
+                              true);
 
            // Flag the transmitter new characters are available
            transmitInterrupt = true;
@@ -214,9 +245,9 @@ int main(void)
            {
            transmitInterruptTrigger = true;
 
-           if (apvUartCharacterTransmitPrime( ApvUartControlBlock_p,
-                                              apvUartPortPrimaryTransmitRingBuffer_p,
-                                             &apvPrimarySerialCommsTransmitBuffer) != APV_ERROR_CODE_NONE)
+           if (apvUartBufferTransmitPrime( ApvUartControlBlock_p,
+                                           apvUartPortPrimaryTransmitRingBuffer_p,
+                                          &apvPrimarySerialCommsTransmitBuffer) != APV_ERROR_CODE_NONE)
              {
              // That didn't go well!
              transmitInterrupt        = false;
@@ -230,6 +261,7 @@ int main(void)
          }
 
        __enable_irq();
+#endif
 
       /******************************************************************************/
       /* Run scheduled tasks in the background                                      */
@@ -239,6 +271,7 @@ int main(void)
 
       if (apvCoreTimerBackgroundFlag == APV_CORE_TIMER_FLAG_HIGH)
         {
+        apvCoreTimerBackgroundFlag = APV_CORE_TIMER_FLAG_LOW;
         apvCoreTimerBackgroundFlag = APV_CORE_TIMER_FLAG_LOW;
 
         // Execute any assigned process timers

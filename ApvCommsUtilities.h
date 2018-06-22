@@ -29,7 +29,7 @@
 /* Definitions :                                                              */
 /******************************************************************************/
 
-#define APV_COMMS_RING_BUFFER_MAXIMUM_LENGTH   (64) // for now, but can be up to 65536
+#define APV_COMMS_RING_BUFFER_MAXIMUM_LENGTH  (256) // for now, but can be up to 65536
 #define APV_COMMS_RING_BUFFER_MINIMUM_LENGTH    (2)
 
 #define APV_COMMS_LSB_LEADING_BIT_MASK        (0x1) // little-endian
@@ -92,6 +92,9 @@ extern APV_ERROR_CODE apvRingBufferSetPushBuffer(apvRingBuffer_t **ringBufferInd
                                                  bool              interruptControl);
 extern APV_ERROR_CODE apvRingBufferInitialise(apvRingBuffer_t *ringBuffer,
                                               uint16_t         ringBufferLength);
+extern APV_ERROR_CODE apvRingBufferReportFillState(apvRingBuffer_t *ringBuffer,
+                                                   uint16_t        *numberOfTokens,
+                                                   bool             interruptControl);
 extern uint16_t       apvRingBufferLoad(apvRingBuffer_t *ringBuffer,
                                         uint32_t        *tokens,
                                         uint16_t         numberOfTokensToLoad,
@@ -100,6 +103,7 @@ extern uint16_t       apvRingBufferUnLoad(apvRingBuffer_t *ringBuffer,
                                           uint32_t        *tokens,
                                           uint16_t         numberOfTokensToUnLoad,
                                           bool             interruptControl);
+#if (0)
 extern APV_ERROR_CODE apvCreateTestMessage(uint8_t  *testMessage,
                                            uint16_t  testMessageSomLength,
                                            uint16_t *testMessagePayLoadLength,
@@ -108,6 +112,7 @@ extern APV_ERROR_CODE apvCreateTestMessage(uint8_t  *testMessage,
                                            uint16_t  testMessageSoms,
                                            bool      testMessageFault,
                                            bool      testMessageSomFault);
+#endif
 
 /******************************************************************************/
 

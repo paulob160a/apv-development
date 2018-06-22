@@ -272,17 +272,6 @@ APV_ERROR_CODE apvRingBufferInitialise(apvRingBuffer_t *ringBuffer,
     ringBuffer->apvCommsRingBufferEnd    =  ringBuffer->apvCommsRingBufferStart + (ringBuffer->apvCommsRingBufferLength - 1);
 
     ringBuffer->apvCommsRingBufferLoad   = 0;
-
-#ifdef _APV_DEBUG_RING_BUFFERS_
-  {
-  int i = 0;
-
-  for (i = 0; i < ringBuffer->apvCommsRingBufferLength; i++)
-    {
-    ringBuffer->apvCommsRingBuffer[i] = APV_RING_BUFFER_INITIALISATION_FLAG;
-    }
-  }
-#endif
     }
 
 /******************************************************************************/
@@ -291,6 +280,54 @@ APV_ERROR_CODE apvRingBufferInitialise(apvRingBuffer_t *ringBuffer,
 
 /******************************************************************************/
   } /* end of apvRingBufferInitialise                                         */
+
+/******************************************************************************/
+/* apvRingBufferReportFillState() :                                           */
+/*                                                                            */
+/*   --> ringBuffer       : pointer to a ring-buffer structure                */
+/*  <--> numberOfTokens   : returns the number of filled ring-buffer slots    */
+/*   --> interruptControl : optional interrupt-enable/disable switch          */
+/*                                                                            */
+/* - returns the current fill state of a ring-buffer without removing any of  */
+/*   the tokens                                                               */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvRingBufferReportFillState(apvRingBuffer_t *ringBuffer,
+                                            uint16_t        *numberOfTokens,
+                                            bool             interruptControl)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE ringBufferError = APV_ERROR_CODE_NONE;
+
+/******************************************************************************/
+
+  if (ringBuffer == NULL)
+    {
+    ringBufferError = APV_ERROR_CODE_RING_BUFFER_DEFINITION_ERROR;
+    }
+  else
+    {
+    if (interruptControl == true)
+      {
+      APV_CRITICAL_REGION_ENTRY();
+      }
+
+    *numberOfTokens = ringBuffer->apvCommsRingBufferLoad;
+
+    if (interruptControl == true)
+      {
+      APV_CRITICAL_REGION_EXIT();
+      }
+    }
+
+/******************************************************************************/
+
+  return(ringBufferError);
+
+/******************************************************************************/
+  } /* end of apvRingBufferReportFillState                                    */
 
 /******************************************************************************/
 /* apvRingBufferLoad() :                                                      */
@@ -487,7 +524,7 @@ uint16_t apvRingBufferUnLoad(apvRingBuffer_t *ringBuffer,
 /* - construct correct or faulty messages to test the messaging state-machine */
 /*                                                                            */
 /******************************************************************************/
-
+#if (0)
 APV_ERROR_CODE apvCreateTestMessage(uint8_t  *testMessage,
                                     uint16_t  testMessageSomLength,
                                     uint16_t *testMessagePayLoadLength,
@@ -619,7 +656,7 @@ APV_ERROR_CODE apvCreateTestMessage(uint8_t  *testMessage,
 
 /******************************************************************************/
   } /* end of apvCreateTestMessage                                            */
-
+#endif
 /******************************************************************************/
 /* apvRingBufferPrint() :                                                     */
 /*  --> ringBuffer : pointer to a ring-buffer structure                       */

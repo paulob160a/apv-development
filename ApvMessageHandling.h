@@ -35,16 +35,19 @@
 /* - the message format by token-numbering is :                               */
 /*                                                                            */
 /*   00 : <SOM>. It is not included in the message length                     */
-/*   01 : <<comms-plane><signal-plane>>. Bits 0-3 are the comms-plane, bits   */
-/*        4-7 are the signal-plane. As this follows <SOM> it is NOT allowed   */
-/*        to be a 'bare' <SOM> (0x7e). It is not included in the message      */
-/*        length                                                              */
-/*   02 : <message-length>. The unstuffed (flagged) message length range is   */
+/*   01 : "inbound" <<comms-plane><signal-plane>> :                           */
+/*        Bits 0-3 are the comms-plane, bits 4-7 are the signal-plane. As     */
+/*        this follows <SOM> it is NOT allowed to be a 'bare' <SOM> (0x7e).   */
+/*        It is not included in the message length                            */
+/*   02 : "outbound" <<comms-plane><signal-plane>> :                          */
+/*        Bits 0-3 are the comms-plane, bits 4-7 are the signal-plane. As     */
+/*        this follows <SOM> it is NOT allowed to be a 'bare' <SOM> (0x7e).   */
+/*   03 : <message-length>. The unstuffed (flagged) message length range is   */
 /*        constrained to be : 1 >= <message-length> <= ((0x7e - 1) / 2) i.e.  */
 /*        1 .. 62. A message length less than '1' is meaningless. A message   */
 /*        length of 62 if and when fully stuffed(!) expands to 124 or 0x7C.   */
 /*        It is not included in the message length                            */
-/*   03 : <message>. ( 1 * [ 1 | 2 ] ) { <token> } ( 62 * [ 1 | 2 ] ) i.e.    */
+/*   04 : <message>. ( 1 * [ 1 | 2 ] ) { <token> } ( 62 * [ 1 | 2 ] ) i.e.    */
 /*        03 .. ( 03 + 0x7C )                                                 */
 /*                                                                            */
 /*   .. + 1 : high-byte of the CCITT-CRC16 checksum of <message-length> +     */
@@ -79,19 +82,32 @@
 #define APV_MESSAGE_PLANE_MASK                         (0x0f) // one nybble
 #define APV_MESSAGE_PLANE_SHIFT                        APV_SIGNAL_PLANE_FIELD_BITS
 
+#define APV_MESSAGE_PAYLOAD_CHARACTER                  uint8_t
+#define APV_MESSAGE_PAYLOAD_CHARACTER_WIDTH            (sizeof(uint8_t))
+#define APV_MESSAGE_PAYLOAD_CHARACTER_BIT_WIDTH        8
+#define APV_MESSAGE_PAYLOAD_CHARACTER_MASK             ((1 << APV_MESSAGE_PAYLOAD_CHARACTER_BIT_WIDTH) - 1)
+
 #define APV_COMMS_MESSAGE_PLANE_FIELD_WIDTH            (sizeof(uint8_t))
 #define APV_COMMS_MESSAGE_PAYLOAD_LENGTH_FIELD_WIDTH   (sizeof(uint8_t))
+
+#define APV_COMMS_MESSAGE_PAYLOAD_SOM_FIELD_OFFSET             0
+#define APV_COMMS_MESSAGE_PAYLOAD_INBOUND_PLANES_FIELD_OFFSET  (APV_COMMS_MESSAGE_PAYLOAD_SOM_FIELD_OFFSET             + 1)
+#define APV_COMMS_MESSAGE_PAYLOAD_OUTBOUND_PLANES_FIELD_OFFSET (APV_COMMS_MESSAGE_PAYLOAD_INBOUND_PLANES_FIELD_OFFSET  + 1)
+#define APV_COMMS_MESSAGE_PAYLOAD_LENGTH_FIELD_OFFSET          (APV_COMMS_MESSAGE_PAYLOAD_OUTBOUND_PLANES_FIELD_OFFSET + 1)
+#define APV_COMMS_MESSAGE_PAYLOAD_MESSAGE_FIELD_OFFSET         (APV_COMMS_MESSAGE_PAYLOAD_LENGTH_FIELD_OFFSET          + 1)
 
 #define APV_MESSAGING_MINIMUM_UNSTUFFED_MESSAGE_LENGTH (1) // 1
 #define APV_MESSAGING_MAXIMUM_UNSTUFFED_MESSAGE_LENGTH ((APV_MESSAGING_START_OF_MESSAGE - 1) >> 1) // 62
 #define APV_MESSAGING_MAXIMUM_STUFFED_MESSAGE_LENGTH   (APV_MESSAGING_MAXIMUM_UNSTUFFED_MESSAGE_LENGTH << 1)
 
+#define APV_MESSAGING_MAXIMUM_PAYLOAD_LENGTH           (APV_COMMS_MESSAGE_PAYLOAD_MESSAGE_FIELD_OFFSET + \
+                                                        APV_MESSAGING_MAXIMUM_STUFFED_MESSAGE_LENGTH   + \
+                                                        APV_CRC_WORD_WIDTH)
+
 #define APV_MESSAGE_STATE_VARIABLE_CACHE_LENGTH        APV_GENERIC_STATE_VARIABLE_CACHE_LENGTH
 
-#define APV_MESSAGE_BUFFER_MAXIMUM_LENGTH             (64)
-
-#define APV_UINT64_POINTER_UINT32_MASK                ((uint64_t)0xffffffff) // 64-bit pointer packing/unpacking
-#define APV_UINT64_POINTER_UINT32_SHIFT               ((uint64_t)32)
+#define APV_UINT64_POINTER_UINT32_MASK                ((uint32_t)0xffffffff) // 64-bit pointer packing/unpacking
+#define APV_UINT64_POINTER_UINT32_SHIFT               ((uint32_t)32)
 
 /******************************************************************************/
 /* Type Definitions :                                                         */
@@ -159,13 +175,15 @@ typedef union apvMessagePlanesToken_tTag
 
 typedef struct apvMessageStructure_tTag
   {
-  uint8_t                 apvMessagingStartOfMessageToken;
-  apvMessagePlanesToken_t apvMessagingPlanesToken;
-  uint8_t                 apvMessagingLengthOfMessage; // this does not include the appended CRC
-  uint8_t                 apvMessagingPayload[APV_MESSAGING_MAXIMUM_STUFFED_MESSAGE_LENGTH + APV_CRC_WORD_WIDTH]; // the block CRC generator adds the CRC to the end of the message
-  uint8_t                 apvMessagingCrcLowToken;
-  uint8_t                 apvMessagingCrcHighToken;
-  uint8_t                 apvMessagingEndOfMessageToken;
+  uint8_t                       apvMessagingStartOfMessageToken;
+  apvMessagePlanesToken_t       apvMessagingInBoundPlanesToken;
+  apvMessagePlanesToken_t       apvMessagingOutBoundPlanesToken;
+  uint8_t                       apvMessagingLengthOfMessage;                               // this does not include the appended CRC
+  APV_MESSAGE_PAYLOAD_CHARACTER apvMessagingPayload[APV_MESSAGING_MAXIMUM_PAYLOAD_LENGTH]; // the block CRC generator adds the CRC to the end of the message
+  uint8_t                       apvMessagingCrcLowToken;
+  uint8_t                       apvMessagingCrcHighToken;
+  uint8_t                       apvMessagingEndOfMessageToken;
+  uint16_t                      apvMessagingPayloadMaximumLength;
   } apvMessageStructure_t;
 
 // For convenience in message handling alias to an array
@@ -179,14 +197,13 @@ typedef enum apvMessagingFrameStates_tTag
   {
   APV_MESSAGE_FRAME_STATE_NULL = 0,
   APV_MESSAGE_FRAME_STATE_INITIALISATION,
-  APV_MESSAGE_FRAME_STATE_START_OF_MESSAGE,
-  APV_MESSAGE_FRAME_STATE_SIGNAL_AND_LOGICAL_PLANES,
+  APV_MESSAGE_FRAME_STATE_INBOUND_SIGNAL_AND_LOGICAL_PLANES,
+  APV_MESSAGE_FRAME_STATE_OUTBOUND_SIGNAL_AND_LOGICAL_PLANES,
   APV_MESSAGE_FRAME_STATE_MESSAGE_LENGTH,
-  APV_MESSAGE_FRAME_STATE_STUFFING_BYTE,
   APV_MESSAGE_FRAME_STATE_DATA_BYTE,
   APV_MESSAGE_FRAME_STATE_CCITT_CRC16,
   APV_MESSAGE_FRAME_STATE_CRC_CHECK,
-  APV_MESSAGE_FRAME_STATE_ERROR_REPORTER,
+  APV_MESSAGE_FRAME_STATE_FRAME_REPORTER,
   APV_MESSAGE_FRAME_STATES
   } apvMessagingFrameStates_t;
 
@@ -208,8 +225,8 @@ typedef enum apvMessagingFrameStateVariable_tTag
   APV_MESSAGE_FRAME_STATE_RING_BUFFER_HIGH          = APV_GENERIC_STATE_VARIABLE_6,
   APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_HIGH       = APV_GENERIC_STATE_VARIABLE_7,
   APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW        = APV_GENERIC_STATE_VARIABLE_8,
-  APV_MESSAGE_FRAME_STATE_VARIABLE_FREE_0           = APV_GENERIC_STATE_VARIABLE_9,
-  APV_MESSAGE_FRAME_STATE_VARIABLE_FREE_1           = APV_GENERIC_STATE_VARIABLE_10,
+  APV_MESSAGE_FRAME_STATE_PAYLOAD_LENGTH            = APV_GENERIC_STATE_VARIABLE_9,
+  APV_MESSAGE_FRAME_STATE_FRAME_CHECK               = APV_GENERIC_STATE_VARIABLE_10,
   APV_MESSAGE_FRAME_STATE_VARIABLE_FREE_2           = APV_GENERIC_STATE_VARIABLE_11,
   APV_MESSAGE_FRAME_STATE_VARIABLE_CACHE_LENGTH     = APV_GENERIC_STATE_VARIABLE_CACHE_LENGTH
   } apvMessagingFrameStateVariable_t;
@@ -217,7 +234,7 @@ typedef enum apvMessagingFrameStateVariable_tTag
 typedef APV_GENERIC_STATE_CODE APV_MESSAGING_STATE_CODE;
 
 typedef uint32_t apvMessageStateVariable_t;     // state-variable type
-typedef uint64_t apvMessageStateEntryPointer_t; // state-entry pointer type
+typedef uint32_t apvMessageStateEntryPointer_t; // state-entry pointer type
 
 // A set of variables to carry information between states
 typedef struct apvMessagingStateVariables_tTag
@@ -254,15 +271,24 @@ extern apvMessagingDeFramingState_t *apvMessageDeFramingStateMachine;
 /* Function Declarations :                                                    */
 /******************************************************************************/
 
+extern bool           apvMessageFramerCheckCommsPlane(apvCommsPlanes_t commsPlane);
+extern bool           apvMessageFramerCheckSignalPlane(apvSignalPlanes_t signalPlane);
+extern APV_ERROR_CODE apvMessageStructureInitialisation(apvMessageStructure_t *messageStructure,
+                                                        uint16_t               messagePayloadMaximumLength);
 extern APV_ERROR_CODE apvFrameMessage(apvMessageStructure_t *messageStructure,
-                                      apvCommsPlanes_t       commsPlane,
-                                      apvSignalPlanes_t      signalPlane,
+                                      apvCommsPlanes_t       inBoundCommsPlane,
+                                      apvSignalPlanes_t      inBoundSignalPlane,
+                                      apvCommsPlanes_t       outBoundCommsPlane,
+                                      apvSignalPlanes_t      outBoundSignalPlane,
                                       uint8_t               *message,
-                                      uint16_t               messageLength);
+                                      uint16_t               messageLength,
+                                      uint16_t              *messageTotalLength);
 extern APV_MESSAGING_STATE_CODE apvDeFrameMessageInitialisation(apvRingBuffer_t              *ringBuffer,
                                                                 apvMessageStructure_t        *messageBuffer,
                                                                 apvMessagingDeFramingState_t *messageState);
 extern APV_MESSAGING_STATE_CODE apvDeFrameMessage(apvMessagingDeFramingState_t *messageStateMachine);
+
+extern void                     apvMessageStructurePrint(apvMessagingDeFramingState_t *stateMachine);
 
 /******************************************************************************/
 /* Message de-framing state machine functions :                               */
@@ -270,9 +296,13 @@ extern APV_MESSAGING_STATE_CODE apvDeFrameMessage(apvMessagingDeFramingState_t *
 
 extern APV_MESSAGING_STATE_CODE apvMessageDeFramingNull(apvMessagingDeFramingState_t *messageStateMachine);
 extern APV_MESSAGING_STATE_CODE apvMessageDeFramingInitialise(apvMessagingDeFramingState_t *messageStateMachine);
-extern APV_MESSAGING_STATE_CODE apvMessageDeFramingStartOfMessage(apvMessagingDeFramingState_t *messageStateMachine);
-extern APV_MESSAGING_STATE_CODE apvMessageDeFramingSignalAndLogicalPlanes(apvMessagingDeFramingState_t *messageStateMachine);
+extern APV_MESSAGING_STATE_CODE apvMessageDeFramingInBoundSignalAndLogicalPlanes(apvMessagingDeFramingState_t *messageStateMachine);
+extern APV_MESSAGING_STATE_CODE apvMessageDeFramingOutBoundSignalAndLogicalPlanes(apvMessagingDeFramingState_t *messageStateMachine);
 extern APV_MESSAGING_STATE_CODE apvMessageDeFramingMessageLength(apvMessagingDeFramingState_t *messageStateMachine);
+extern APV_MESSAGING_STATE_CODE apvMessageDeFramingDataByte(apvMessagingDeFramingState_t *messageStateMachine);
+extern APV_MESSAGING_STATE_CODE apvMessagingDeFramingCrcBytes(apvMessagingDeFramingState_t *messageStateMachine);
+extern APV_MESSAGING_STATE_CODE apvMessagingDeFramingCrcCheck(apvMessagingDeFramingState_t *messageStateMachine);
+extern APV_MESSAGING_STATE_CODE apvMessagingDeFramingReporter(apvMessagingDeFramingState_t *messageStateMachine);
 
 /******************************************************************************/
 

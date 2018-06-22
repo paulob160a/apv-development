@@ -66,6 +66,7 @@
         <file file_name="ApvUtilities.h" />
         <file file_name="ar19937.h" />
         <file file_name="ApvControlPortProtocol.h" />
+        <file file_name="ApvMessageHandling.h" />
       </folder>
     </folder>
     <folder Name="Source">

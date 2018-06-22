@@ -450,19 +450,69 @@ APV_ERROR_CODE apvUartCharacterTransmit(uint8_t transmitBuffer)
 
 /******************************************************************************/
 /* apvUartCharacterTransmitPrime() :                                          */
-/*  --> uartControlBloc    k   : physical address of the UART peripheral      */
+/******************************************************************************/
+
+APV_ERROR_CODE apvUartCharacterTransmitPrime(Uart     *uartControlBlock,
+                                             uint32_t  transmitBuffer)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE uartErrorCode  = APV_ERROR_CODE_NONE;
+
+  uint32_t       statusRegister = 0;
+
+/******************************************************************************/
+
+  if (uartControlBlock == NULL)
+    {
+    uartErrorCode = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+  else
+    {
+    __disable_irq();
+
+    statusRegister = uartControlBlock->UART_SR;
+
+    // If all Tx transmit operations have stopped, load and go
+    if ((statusRegister & UART_SR_TXEMPTY) && (statusRegister & UART_SR_TXRDY))
+      {
+      // Switch on the Tx interrupt
+      uartControlBlock->UART_IER = UART_IER_TXRDY;
+
+      // Load the character and leave the rest to the ISR
+      uartControlBlock->UART_THR    = transmitBuffer;
+      ApvUartControlBlock.UART_THR  = transmitBuffer; // shadow
+      }
+    else
+      {
+      uartErrorCode = APV_SERIAL_ERROR_CODE_TRANSMITTER_NOT_READY;
+      }
+
+    __enable_irq();
+    }
+
+/******************************************************************************/
+
+  return(uartErrorCode);
+
+/******************************************************************************/
+  } /* end of apvUartCharacterTransmitPrime                                   */
+
+/******************************************************************************/
+/* apvUartBufferTransmitPrime() :                                             */
+/*  --> uartControlBlock       : physical address of the UART peripheral      */
 /*  --> uartTransmitBufferList : pointer to the ready "filled" transmit ring- */
 /*                               buffer structure                             */
-/*  --> uartTransmitBuffer     : poibter to the active transmit ring-buffer   */
-/*  <-- uartErrorCode      : error codes                                      */
+/*  --> uartTransmitBuffer     : pointer to the active transmit ring-buffer   */
+/*  <-- uartErrorCode          : error codes                                  */
 /*                                                                            */
 /*  - initiate interrupt-driven UART transmission                             */
 /*                                                                            */
 /******************************************************************************/
 
-APV_ERROR_CODE apvUartCharacterTransmitPrime(Uart             *uartControlBlock,
-                                             apvRingBuffer_t  *uartTransmitBufferList,
-                                             apvRingBuffer_t **uartTransmitBuffer)
+APV_ERROR_CODE apvUartBufferTransmitPrime(Uart             *uartControlBlock,
+                                          apvRingBuffer_t  *uartTransmitBufferList,
+                                          apvRingBuffer_t **uartTransmitBuffer)
   {
 /******************************************************************************/
 
@@ -527,10 +577,10 @@ APV_ERROR_CODE apvUartCharacterTransmitPrime(Uart             *uartControlBlock,
   return(uartErrorCode);
 
 /******************************************************************************/
-  }
+  } /* end of apvUartBufferTransmitPrime                                      */
 
 /******************************************************************************/
-/* apvUartCharacterTransmit() :                                               */
+/* apvUartCharacterReceive() :                                                */
 /*  --> receiveBuffer : holding cell for an 8-bit character code              */
 /*  <-- uartErrorCode : error codes                                           */
 /*                                                                            */

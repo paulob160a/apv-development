@@ -110,7 +110,7 @@ typedef enum apvPointerConversionWords_tTag
 typedef union apvPointerConversion_tTag
   {
   uint32_t apvPointerConversionWords[APV_POINTER_CONVERSION_WORDS]; // map the low-word to [0], high-word to [1]
-  uint64_t apvPointerConversion;
+  uint32_t apvPointerConversion;
   } apvPointerConversion_t;
 
 typedef enum apvInterruptCounters_tTag

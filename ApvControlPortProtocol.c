@@ -38,7 +38,8 @@ uint8_t apvSignOnMessage[APV_SIGN_ON_MESSAGE_MAXIMUM_LENGTH] = APV_SIGN_ON_MESSA
 /*  --> apvSignOnMessageLength : APV sign-on message length                   */
 /*  <-- signOnError            : error codes                                  */
 /*                                                                            */
-/* - sends a sign-on message via the primary serial port control protocol     */
+/* - sends a sign-on message via the primary serial port control protocol.    */
+/*   This should only be used before the UART interrupt is switched on!       */
 /*                                                                            */
 /******************************************************************************/
 

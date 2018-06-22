@@ -25,7 +25,7 @@
 /* Constant Definitions :                                                     */
 /******************************************************************************/
 
-#define APV_SERIAL_BUFFER_MAXIMUM_LENGTH 64 // a simple buffer for 128 x uint8_t
+#define APV_SERIAL_BUFFER_MAXIMUM_LENGTH 256 // a simple buffer for 256 x uint8_t
 
 /******************************************************************************/
 /* Type Definitions :                                                         */
@@ -93,9 +93,10 @@ typedef enum apvPrimaryRingBufferSet_tTag
 extern apvRingBuffer_t   apvSerialPortPrimaryRingBuffer[APV_PRIMARY_SERIAL_RING_BUFFER_SET];
 extern apvRingBuffer_t  *apvSerialPortPrimaryRingBuffer_p[APV_PRIMARY_SERIAL_RING_BUFFER_SET];
 
-// The "active" transmit and receive ring-buffers
+// The "active" transmit, receive and transfer ring-buffers
 extern apvRingBuffer_t  *apvPrimarySerialCommsReceiveBuffer,
-                        *apvPrimarySerialCommsTransmitBuffer;
+                        *apvPrimarySerialCommsTransmitBuffer,
+                        *apvPrimarySerialCommsTransferBuffer;
 
 // The "list" of ready (filled) transmit buffers
 extern apvRingBuffer_t   apvUartPortTransmitBuffer,
@@ -131,9 +132,11 @@ extern APV_SERIAL_ERROR_CODE apvSerialBufferInitialise(volatile apvSerialTransmi
                                                                 uint16_t                   serialBufferLength,
                                                        const    char                      *transmitPhrase,
                                                                 uint16_t                   transmitPhraseLength);
-extern APV_ERROR_CODE        apvUartCharacterTransmitPrime(Uart             *uartControlBlock,
-                                                           apvRingBuffer_t  *uartTransmitBufferList,
-                                                           apvRingBuffer_t **uartTransmitBuffer);
+extern APV_ERROR_CODE        apvUartBufferTransmitPrime(Uart             *uartControlBlock,
+                                                        apvRingBuffer_t  *uartTransmitBufferList,
+                                                        apvRingBuffer_t **uartTransmitBuffer);
+extern APV_ERROR_CODE        apvUartCharacterTransmitPrime(Uart     *uartControlBlock,
+                                                           uint32_t  transmitBuffer);
 
 /******************************************************************************/
 
