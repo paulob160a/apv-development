@@ -75,6 +75,11 @@
 
 apvMessagingDeFramingState_t *apvMessageDeFramingStateMachine = &apvMessagingDeFramingStateMachine[APV_MESSAGE_FRAME_STATE_NULL];
 
+apvRingBuffer_t               apvMessageFreeBufferSet;
+apvMessageStructure_t         apvMessageFreeBuffers[APV_MESSAGE_FREE_BUFFER_SET_SIZE];
+
+uint32_t                      apvMessageSuccessCounters[APV_MESSAGE_SUCCESS_COUNTERS]   = { 0, 0 };
+
 /******************************************************************************/
 /* Static Variables :                                                         */
 /******************************************************************************/
@@ -395,12 +400,15 @@ APV_ERROR_CODE apvFrameMessage(apvMessageStructure_t *messageStructure,
 /******************************************************************************/
 
 APV_MESSAGING_STATE_CODE apvDeFrameMessageInitialisation(apvRingBuffer_t              *ringBuffer,
-                                                         apvMessageStructure_t        *messageBuffer,
+                                                         apvRingBuffer_t              *messageFreeBuffers,
                                                          apvMessagingDeFramingState_t *messageStateMachine)
   {
 /******************************************************************************/
 
-  APV_MESSAGING_STATE_CODE deFramingError = APV_STATE_MACHINE_CODE_NONE;
+  APV_MESSAGING_STATE_CODE  deFramingError   = APV_STATE_MACHINE_CODE_NONE;
+
+  uint32_t                  *messageBuffer   =  NULL,
+                           **messageBuffer_p = &messageBuffer;
 
 /******************************************************************************/
 
@@ -415,17 +423,28 @@ APV_MESSAGING_STATE_CODE apvDeFrameMessageInitialisation(apvRingBuffer_t        
   messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_LAST_TOKEN]       = 0;
   messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_CRC_SUM]          = APV_CRC_GENERATOR_INITIAL_VALUE; // marks as an unfinished frame decode
 
-  if ((ringBuffer == NULL) || (messageBuffer == NULL))
+  if ((ringBuffer == NULL) || (messageFreeBuffers == NULL))
     {
     deFramingError = APV_STATE_MACHINE_CODE_ERROR;
     }
   else
     {
-    // KEEP THIS FOR THE FINAL READ-BACK WHEN THE MESSAGE HAS BEEN ASSEMBLED, USE THE STATE-MACHINE MESSAGE-FRAME FOR ASSEMBLY
-    messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_LOW]     = (apvMessageStateVariable_t)(((apvMessageStateEntryPointer_t)ringBuffer)     & APV_UINT64_POINTER_UINT32_MASK);
-    messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_HIGH]    = (apvMessageStateVariable_t)0; // pointers are only 32-bits wide on Cortex-M
-    messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW]  = (apvMessageStateVariable_t)(((apvMessageStateEntryPointer_t)messageBuffer)  & APV_UINT64_POINTER_UINT32_MASK);
-    messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_HIGH] = (apvMessageStateVariable_t)0; // pointers are only 32-bits wide on Cortex-M
+    // Get a message buffer from the "free" list
+    if (apvRingBufferUnLoad( messageFreeBuffers,
+                            (uint32_t *)messageBuffer_p,
+                             1,
+                             true) != 0)
+      {
+      // KEEP THIS FOR THE FINAL READ-BACK WHEN THE MESSAGE HAS BEEN ASSEMBLED, USE THE STATE-MACHINE MESSAGE-FRAME FOR ASSEMBLY
+      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_LOW]     = (apvMessageStateVariable_t)(((apvMessageStateEntryPointer_t)ringBuffer)     & APV_UINT64_POINTER_UINT32_MASK);
+      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_HIGH]    = (apvMessageStateVariable_t)0; // pointers are only 32-bits wide on Cortex-M
+      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW]  = (apvMessageStateVariable_t)(((apvMessageStateEntryPointer_t)messageBuffer)  & APV_UINT64_POINTER_UINT32_MASK);
+      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_HIGH] = (apvMessageStateVariable_t)0; // pointers are only 32-bits wide on Cortex-M
+      }
+    else
+      {
+      deFramingError = APV_STATE_MACHINE_CODE_ERROR;
+      }
     }
 
 /******************************************************************************/
@@ -946,11 +965,15 @@ APV_MESSAGING_STATE_CODE apvMessagingDeFramingReporter(apvMessagingDeFramingStat
 #if (1)
   if (messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_CRC_SUM] == APV_CRC_GENERATOR_FINAL_VALUE)
     {
-    printf("\n Message Test Passed...");
+    //printf("\n Message Test Passed...");
+
+    apvMessageSuccessCounters[APV_MESSAGE_SUCCESS_COUNTER] = apvMessageSuccessCounters[APV_MESSAGE_SUCCESS_COUNTER] + 1;
     }
   else
     {
-    printf("\n Message Test Failed...");
+    //printf("\n Message Test Failed...");
+
+    apvMessageSuccessCounters[APV_MESSAGE_FAILURE_COUNTER] = apvMessageSuccessCounters[APV_MESSAGE_FAILURE_COUNTER] + 1;
     }
 #endif
 
@@ -962,6 +985,80 @@ APV_MESSAGING_STATE_CODE apvMessagingDeFramingReporter(apvMessagingDeFramingStat
 
 /******************************************************************************/
   } /* end of apvMessagingDeFramingReporter                                   */
+
+/******************************************************************************/
+/* apvCreateMessageBuffers() :                                                */
+/*  --> apvMessageBufferSet     : "free" set of message buffers               */
+/*  --> apvMessageBuffers       : set of message buffers to be managed in the */
+/*                                "free" set                                  */
+/*  --> apvMessageBufferSetSize : number of buffers to be managed             */
+/*  <-- messageError            : error codes                                 */
+/*                                                                            */
+/* - instantiate a managed list of message buffers/structures                 */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvCreateMessageBuffers(apvRingBuffer_t       *apvMessageBufferSet,
+                                       apvMessageStructure_t *apvMessageBuffers,
+                                       uint32_t               apvMessageBufferSetSize)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE  messageError  = APV_ERROR_CODE_NONE;
+
+  uint32_t        messageBuffer =  0;
+
+/******************************************************************************/
+
+  if ((apvMessageBufferSet     == NULL) || (apvMessageBuffers == NULL) || 
+      (apvMessageBufferSetSize == 0))
+    {
+    messageError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+  else
+    {
+    // Initialise the holding ring-buffer
+    if (apvRingBufferInitialise(apvMessageBufferSet,
+                                apvMessageBufferSetSize) == APV_ERROR_CODE_NONE)
+      {
+      // In reverse-order initialise the message buffer structures
+      do 
+        {
+        apvMessageBufferSetSize = apvMessageBufferSetSize - 1;
+
+        if (apvMessageStructureInitialisation((apvMessageBuffers + apvMessageBufferSetSize),
+                                              APV_MESSAGING_MAXIMUM_PAYLOAD_LENGTH) != APV_ERROR_CODE_NONE)
+          {
+          messageError = APV_ERROR_CODE_MESSAGE_DEFINITION_ERROR;
+          }
+        else
+          { // Assign the address of the ring buffer to the controlling ring-buffer
+          messageBuffer = (uint32_t)(apvMessageBuffers + apvMessageBufferSetSize);
+
+          if (apvRingBufferLoad(apvMessageBufferSet,
+                                (uint32_t *)&messageBuffer,
+                                1,
+                                false) == 0)
+            {
+            messageError = APV_ERROR_CODE_RING_BUFFER_DEFINITION_ERROR;
+            break;
+            }
+          }
+        }
+      while (apvMessageBufferSetSize != 0);
+      }
+    else
+      {
+      messageError = APV_ERROR_CODE_RING_BUFFER_DEFINITION_ERROR;
+      }
+    }
+
+/******************************************************************************/
+
+  return(messageError);
+
+/******************************************************************************/
+  } /* end of apvCreateMessageBuffers                                         */
 
 /******************************************************************************/
 /* apvMessageStructurePrint() :                                               */

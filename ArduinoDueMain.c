@@ -52,11 +52,14 @@ int main(void)
   volatile uint64_t               apvRunTimeCounter         = 0,
                                   apvRunTimeCounterOld      = 0;
 
-           apvMessageStructure_t  messageBuffer;
-
            bool                   apvPrimarySerialPortStart = false;
 
 /******************************************************************************/
+
+  // Create the inter-messaging layer message buffers
+  apvSerialErrorCode = apvCreateMessageBuffers(&apvMessageFreeBufferSet,
+                                               &apvMessageFreeBuffers[0],
+                                                APV_MESSAGE_FREE_BUFFER_SET_SIZE);
 
   apvSerialErrorCode = apvInitialiseEventTimerBlocks(&apvEventTimerBlock[APV_EVENT_TIMER_0],
                                                       TCCHANNEL_NUMBER);
@@ -208,9 +211,19 @@ int main(void)
 
            // Initialise the lowest-level serial comms frame receiver state machine
            apvSerialErrorCode = apvDeFrameMessageInitialisation( apvPrimarySerialCommsReceiveBuffer,
-                                                                &messageBuffer,
+                                                                &apvMessageFreeBufferSet,
                                                                 &apvMessagingDeFramingStateMachine[0]);
            }
+
+         /******************************************************************************/
+         /* BEWARE THE DEBUGGER! With the optimisation level set to 0 the debugger can */
+         /* enable the virtual printf channel. THIS KILLS THE PROCESSOR! The result is */
+         /* an apparent inability to keep up with even the slowest messaging. Setting  */
+         /* the optimisation level to '1' disables the virtual printf channel. Using a */
+         /* couple of "message successful/unsuccessful" counters demonstrates that all */
+         /* is well and the processor has no problems with continuous 19.2Kbps message */
+         /* arrival                                                                    */
+         /******************************************************************************/
 
          apvSerialErrorCode = apvDeFrameMessage(&apvMessagingDeFramingStateMachine[0]);
 
@@ -271,7 +284,6 @@ int main(void)
 
       if (apvCoreTimerBackgroundFlag == APV_CORE_TIMER_FLAG_HIGH)
         {
-        apvCoreTimerBackgroundFlag = APV_CORE_TIMER_FLAG_LOW;
         apvCoreTimerBackgroundFlag = APV_CORE_TIMER_FLAG_LOW;
 
         // Execute any assigned process timers

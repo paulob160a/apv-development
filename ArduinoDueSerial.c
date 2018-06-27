@@ -289,9 +289,8 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
   {
 /******************************************************************************/
 
-           uint32_t statusRegister = 0;
-  volatile uint16_t receivedTokens = 0;
-           uint8_t  txRxBuffer     = 0;
+   uint32_t statusRegister = 0;
+   uint8_t  txRxBuffer     = 0;
 
 /******************************************************************************/
 
@@ -307,10 +306,14 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
       apvUartCharacterReceive(&txRxBuffer);
 
       // Put it into the current receiver ring buffer if there is room
-      receivedTokens = apvRingBufferLoad( apvPrimarySerialCommsReceiveBuffer,
-                                         (uint32_t *)&txRxBuffer,
-                                          sizeof(uint8_t),
-                                          false);
+      if (apvRingBufferLoad( apvPrimarySerialCommsReceiveBuffer,
+                            (uint32_t *)&txRxBuffer,
+                             sizeof(uint8_t),
+                             false) == 0)
+        {
+        while (true)
+          ;
+        }
       }
 
     if (((statusRegister & UART_SR_TXEMPTY) == UART_SR_TXEMPTY) && 

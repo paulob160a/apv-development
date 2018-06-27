@@ -109,6 +109,8 @@
 #define APV_UINT64_POINTER_UINT32_MASK                ((uint32_t)0xffffffff) // 64-bit pointer packing/unpacking
 #define APV_UINT64_POINTER_UINT32_SHIFT               ((uint32_t)32)
 
+#define APV_MESSAGE_FREE_BUFFER_SET_SIZE              16 // the message buffers available to pass between comms layers
+
 /******************************************************************************/
 /* Type Definitions :                                                         */
 /******************************************************************************/
@@ -255,6 +257,13 @@ typedef struct apvMessagingDeFramingState_tTag
 typedef        apvMessagingDeFramingState_t     APV_MESSAGING_DEFRAMING_STATE;
 typedef struct apvMessagingDeFramingState_tTag *APV_MESSAGING_DEFRAMING_STATE_S;
 
+typedef enum apvMessageSuccessCounters_tTag
+  {
+  APV_MESSAGE_SUCCESS_COUNTER = 0,
+  APV_MESSAGE_FAILURE_COUNTER,
+  APV_MESSAGE_SUCCESS_COUNTERS
+  } apvMessageSuccessCounters_t;
+
 /******************************************************************************/
 /* Local Variables :                                                          */
 /******************************************************************************/
@@ -267,6 +276,12 @@ extern apvMessagingDeFramingState_t apvMessagingDeFramingStateMachine[APV_MESSAG
 // The message-handling state-machine
 extern apvMessagingDeFramingState_t *apvMessageDeFramingStateMachine;
 
+// the "free" list of message buffers
+extern apvRingBuffer_t               apvMessageFreeBufferSet;
+extern apvMessageStructure_t         apvMessageFreeBuffers[APV_MESSAGE_FREE_BUFFER_SET_SIZE];
+
+extern uint32_t                      apvMessageSuccessCounters[APV_MESSAGE_SUCCESS_COUNTERS];
+
 /******************************************************************************/
 /* Function Declarations :                                                    */
 /******************************************************************************/
@@ -275,6 +290,11 @@ extern bool           apvMessageFramerCheckCommsPlane(apvCommsPlanes_t commsPlan
 extern bool           apvMessageFramerCheckSignalPlane(apvSignalPlanes_t signalPlane);
 extern APV_ERROR_CODE apvMessageStructureInitialisation(apvMessageStructure_t *messageStructure,
                                                         uint16_t               messagePayloadMaximumLength);
+
+extern APV_ERROR_CODE apvCreateMessageBuffers(apvRingBuffer_t       *apvMessageBufferSet,
+                                              apvMessageStructure_t *apvMessageBuffers,
+                                              uint32_t               apvMessageBufferSetSize);
+
 extern APV_ERROR_CODE apvFrameMessage(apvMessageStructure_t *messageStructure,
                                       apvCommsPlanes_t       inBoundCommsPlane,
                                       apvSignalPlanes_t      inBoundSignalPlane,
@@ -284,7 +304,7 @@ extern APV_ERROR_CODE apvFrameMessage(apvMessageStructure_t *messageStructure,
                                       uint16_t               messageLength,
                                       uint16_t              *messageTotalLength);
 extern APV_MESSAGING_STATE_CODE apvDeFrameMessageInitialisation(apvRingBuffer_t              *ringBuffer,
-                                                                apvMessageStructure_t        *messageBuffer,
+                                                                apvRingBuffer_t              *messageFreeBuffers,
                                                                 apvMessagingDeFramingState_t *messageState);
 extern APV_MESSAGING_STATE_CODE apvDeFrameMessage(apvMessagingDeFramingState_t *messageStateMachine);
 

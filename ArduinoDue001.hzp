@@ -24,7 +24,7 @@
       c_user_include_directories="$(TargetsDir)/SAM/CMSIS/Device/ATMEL;$(TargetsDir)/SAM/CMSIS/Device/ATMEL/$(SAM_Series)/include;$(TargetsDir)/CMSIS_3/CMSIS/Include;$(TargetsDir)/SAM"
       debug_threads_script="$(PackagesDir)/libraries/libctl/source/threads.js"
       gcc_enable_all_warnings="Yes"
-      gcc_optimization_level="None"
+      gcc_optimization_level="Level 1"
       libctl="Yes"
       link_include_startup_code="No"
       linker_memory_map_file="$(TargetsDir)/SAM/SAM3X8E_MemoryMap.xml"
