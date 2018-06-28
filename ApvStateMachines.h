@@ -102,7 +102,6 @@ typedef struct apvGenericState_tTag
   apvGenericStates_t           apvGenericNextState;
   APV_ERROR_CODE             (*apvGenericStateAction)(struct apvGenericState_tTag *apvGenericStateMachine);
   apvGenericStateVariables_t  *apvGenericStateVariables;
-  apvGenericResults_t          apvGenericResults;
   } apvGenericState_t;
 
 // The generic state-machine

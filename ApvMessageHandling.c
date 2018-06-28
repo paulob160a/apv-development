@@ -97,64 +97,55 @@ apvMessagingDeFramingState_t apvMessagingDeFramingStateMachine[APV_MESSAGE_FRAME
      APV_MESSAGE_FRAME_STATE_NULL,
      APV_MESSAGE_FRAME_STATE_INITIALISATION,
      apvMessageDeFramingNull,
-    &apvMessageVariableCache,
-    &apvMessageFrame
+    &apvMessageVariableCache
     },
     {
      APV_MESSAGE_FRAME_STATE_INITIALISATION,
      APV_MESSAGE_FRAME_STATE_INBOUND_SIGNAL_AND_LOGICAL_PLANES,
      apvMessageDeFramingInitialise,
-    &apvMessageVariableCache,
-    &apvMessageFrame
+    &apvMessageVariableCache
     },
     {
      APV_MESSAGE_FRAME_STATE_INBOUND_SIGNAL_AND_LOGICAL_PLANES,
      APV_MESSAGE_FRAME_STATE_OUTBOUND_SIGNAL_AND_LOGICAL_PLANES,
      apvMessageDeFramingInBoundSignalAndLogicalPlanes,
-    &apvMessageVariableCache,
-    &apvMessageFrame
+    &apvMessageVariableCache
     },
     {
      APV_MESSAGE_FRAME_STATE_OUTBOUND_SIGNAL_AND_LOGICAL_PLANES,
      APV_MESSAGE_FRAME_STATE_MESSAGE_LENGTH,
      apvMessageDeFramingOutBoundSignalAndLogicalPlanes,
-    &apvMessageVariableCache,
-    &apvMessageFrame
+    &apvMessageVariableCache
     },
     {
      APV_MESSAGE_FRAME_STATE_MESSAGE_LENGTH,
      APV_MESSAGE_FRAME_STATE_DATA_BYTE,
      apvMessageDeFramingMessageLength,
-    &apvMessageVariableCache,
-    &apvMessageFrame
+    &apvMessageVariableCache
     },
     {
      APV_MESSAGE_FRAME_STATE_DATA_BYTE,
      APV_MESSAGE_FRAME_STATE_CCITT_CRC16,
      apvMessageDeFramingDataByte,
-    &apvMessageVariableCache,
-    &apvMessageFrame
+    &apvMessageVariableCache
     },
     {
      APV_MESSAGE_FRAME_STATE_CCITT_CRC16,
      APV_MESSAGE_FRAME_STATE_CRC_CHECK,
      apvMessagingDeFramingCrcBytes,
-    &apvMessageVariableCache,
-    &apvMessageFrame
+    &apvMessageVariableCache
     },
     {
      APV_MESSAGE_FRAME_STATE_CRC_CHECK,
      APV_MESSAGE_FRAME_STATE_FRAME_REPORTER,
      apvMessagingDeFramingCrcCheck,
-    &apvMessageVariableCache,
-    &apvMessageFrame
+    &apvMessageVariableCache
     },
     {
      APV_MESSAGE_FRAME_STATE_FRAME_REPORTER,
      APV_MESSAGE_FRAME_STATE_INITIALISATION,
      apvMessagingDeFramingReporter,
-    &apvMessageVariableCache,
-    &apvMessageFrame
+    &apvMessageVariableCache
     }
   };
 
@@ -523,7 +514,9 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingInitialise(apvMessagingDeFramingStat
   {
 /******************************************************************************/
 
-  APV_MESSAGING_STATE_CODE apvStateError = APV_STATE_MACHINE_CODE_NONE;
+  APV_MESSAGING_STATE_CODE  apvStateError        = APV_STATE_MACHINE_CODE_NONE;
+
+  apvMessageStructure_t    *messageBufferPointer = NULL;
 
 /******************************************************************************/
 
@@ -535,7 +528,22 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingInitialise(apvMessagingDeFramingStat
   messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_PAYLOAD_LENGTH]         = 0;
   messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_FRAME_CHECK]            = APV_MESSAGE_FRAME_STATE_FRAME_REPORTER;
 
-  *((uint16_t *)&(messageStateMachine->apvMessageFrame->apvMessagingCrcLowToken))                                         = APV_CRC_GENERATOR_INITIAL_VALUE;
+  // Compute the message buffer structure address
+  messageBufferPointer = (apvMessageStructure_t *)(messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW]);
+
+  // If a message buffer has been allocated point to it else prevent this state machine EVER progressing
+  if (messageBufferPointer != NULL)
+    {
+    *((uint16_t *)&(messageBufferPointer->apvMessagingCrcLowToken))                                                         = APV_CRC_GENERATOR_INITIAL_VALUE;
+    }
+  else
+    {
+    messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_ACTIVE_STATE] = 
+                  messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_FIRST_STATE];
+
+    apvStateError = APV_STATE_MACHINE_CODE_STOP;
+    }
+
 
   // Save the next active state to change state
   messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_ACTIVE_STATE] = (apvMessageStateVariable_t)messageStateMachine->apvMessageNextState;
@@ -560,14 +568,18 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingInBoundSignalAndLogicalPlanes(apvMes
   {
 /******************************************************************************/
 
-  APV_MESSAGING_STATE_CODE apvStateError      = APV_STATE_MACHINE_CODE_NONE;
+  APV_MESSAGING_STATE_CODE  apvStateError        = APV_STATE_MACHINE_CODE_NONE;
 
-  apvPointerConversion_t   ringBufferPointer;
+  apvPointerConversion_t    ringBufferPointer;
+  apvMessageStructure_t    *messageBufferPointer = NULL;
 
 /******************************************************************************/
 
   // Compute the ring-buffer structure address
   ringBufferPointer.apvPointerConversion = (apvMessageStateEntryPointer_t)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_LOW];
+
+  // Compute the message buffer structure address
+  messageBufferPointer = (apvMessageStructure_t *)(messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW]);
 
   // Get the next token off the ring-buffer if it exists
   if (apvRingBufferUnLoad((apvRingBuffer_t *)(ringBufferPointer.apvPointerConversion),
@@ -582,8 +594,8 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingInBoundSignalAndLogicalPlanes(apvMes
       }
     else
       { // The token is potentially a 'planes' token, save it and change state
-      messageStateMachine->apvMessageFrame->apvMessagingInBoundPlanesToken.apvMessagePlanesToken = (messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN] & APV_MESSAGE_PAYLOAD_CHARACTER_MASK);
-
+      messageBufferPointer->apvMessagingInBoundPlanesToken.apvMessagePlanesToken = (messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN] & APV_MESSAGE_PAYLOAD_CHARACTER_MASK);
+ 
       messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_ACTIVE_STATE] = (apvMessageStateVariable_t)messageStateMachine->apvMessageNextState;
       }
     }
@@ -613,14 +625,18 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingOutBoundSignalAndLogicalPlanes(apvMe
   {
 /******************************************************************************/
 
-  APV_MESSAGING_STATE_CODE apvStateError      = APV_STATE_MACHINE_CODE_NONE;
+  APV_MESSAGING_STATE_CODE  apvStateError        = APV_STATE_MACHINE_CODE_NONE;
 
-  apvPointerConversion_t   ringBufferPointer;
+  apvPointerConversion_t    ringBufferPointer;
+  apvMessageStructure_t    *messageBufferPointer = NULL;
 
 /******************************************************************************/
 
   // Compute the ring-buffer structure address
   ringBufferPointer.apvPointerConversion = (apvMessageStateEntryPointer_t)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_LOW];
+
+  // Compute the message buffer structure address
+  messageBufferPointer = (apvMessageStructure_t *)(messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW]);
 
   // Get the next token off the ring-buffer if it exists
   if (apvRingBufferUnLoad((apvRingBuffer_t *)(ringBufferPointer.apvPointerConversion),
@@ -635,7 +651,7 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingOutBoundSignalAndLogicalPlanes(apvMe
       }
     else
       { // The token is potentially a 'planes' token, save it and change state
-      messageStateMachine->apvMessageFrame->apvMessagingOutBoundPlanesToken.apvMessagePlanesToken = (messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN] & APV_MESSAGE_PAYLOAD_CHARACTER_MASK);
+      messageBufferPointer->apvMessagingOutBoundPlanesToken.apvMessagePlanesToken = (messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN] & APV_MESSAGE_PAYLOAD_CHARACTER_MASK);
 
       messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_ACTIVE_STATE] = (apvMessageStateVariable_t)messageStateMachine->apvMessageNextState;
       }
@@ -666,14 +682,18 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingMessageLength(apvMessagingDeFramingS
   {
 /******************************************************************************/
 
-  APV_MESSAGING_STATE_CODE apvStateError      = APV_STATE_MACHINE_CODE_NONE;
+  APV_MESSAGING_STATE_CODE  apvStateError        = APV_STATE_MACHINE_CODE_NONE;
 
-  apvPointerConversion_t   ringBufferPointer;
+  apvPointerConversion_t    ringBufferPointer;
+  apvMessageStructure_t    *messageBufferPointer = NULL;
 
 /******************************************************************************/
 
   // Compute the ring-buffer structure address
   ringBufferPointer.apvPointerConversion = (apvMessageStateEntryPointer_t)((*(apvMessageStateEntryPointer_t *)(&messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_LOW])));
+
+  // Compute the message buffer structure address
+  messageBufferPointer = (apvMessageStructure_t *)(messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW]);
 
   // Get the next token off the ring-buffer if it exists
   if (apvRingBufferUnLoad((apvRingBuffer_t *)(ringBufferPointer.apvPointerConversion),
@@ -688,7 +708,8 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingMessageLength(apvMessagingDeFramingS
       }
     else
       { // The token is potentially a 'length-of-message' token, save it and change state
-      messageStateMachine->apvMessageFrame->apvMessagingLengthOfMessage                                                      = ((uint8_t)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN] & APV_MESSAGE_PAYLOAD_CHARACTER_MASK);
+      messageBufferPointer->apvMessagingLengthOfMessage                                                                      = ((uint8_t)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN] & APV_MESSAGE_PAYLOAD_CHARACTER_MASK);
+
       messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_PAYLOAD_LENGTH]        = (messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN] & APV_MESSAGE_PAYLOAD_CHARACTER_MASK);
 
       messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_LAST_TOKEN]   = 0; // no tokens yet so the last one cannot be a "stuffing" byte
@@ -723,14 +744,18 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingDataByte(apvMessagingDeFramingState_
   {
 /******************************************************************************/
 
-  APV_MESSAGING_STATE_CODE apvStateError      = APV_STATE_MACHINE_CODE_NONE;
+  APV_MESSAGING_STATE_CODE  apvStateError        = APV_STATE_MACHINE_CODE_NONE;
 
-  apvPointerConversion_t   ringBufferPointer;
+  apvPointerConversion_t    ringBufferPointer;
+  apvMessageStructure_t    *messageBufferPointer = NULL;
 
 /******************************************************************************/
 
   // Compute the ring-buffer structure address
   ringBufferPointer.apvPointerConversion = (apvMessageStateEntryPointer_t)((*(apvMessageStateEntryPointer_t *)(&messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_LOW])));
+
+  // Compute the message buffer structure address
+  messageBufferPointer = (apvMessageStructure_t *)(messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW]);
 
   // Get the next token off the ring-buffer if it exists
   if (apvRingBufferUnLoad((apvRingBuffer_t *)(ringBufferPointer.apvPointerConversion),
@@ -740,7 +765,7 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingDataByte(apvMessagingDeFramingState_
     {
     // Compute the running CRC
     apvComputeCrc((uint8_t)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN], 
-                                                                   ((uint16_t *)&(messageStateMachine->apvMessageFrame->apvMessagingCrcLowToken)));
+                                                                                  ((uint16_t *)&(messageBufferPointer->apvMessagingCrcLowToken)));
 
     // The expected remaining payload length is...
     messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_PAYLOAD_LENGTH] = 
@@ -760,9 +785,9 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingDataByte(apvMessagingDeFramingState_
         {
         if (messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_LAST_TOKEN] == APV_MESSAGING_STUFFING_FLAG)
           { // Correct - reduce the overall message length by 1 and store the new data on the payload
-          messageStateMachine->apvMessageFrame->apvMessagingLengthOfMessage = messageStateMachine->apvMessageFrame->apvMessagingLengthOfMessage - 1;
+          messageBufferPointer->apvMessagingLengthOfMessage = messageBufferPointer->apvMessagingLengthOfMessage - 1;
 
-          messageStateMachine->apvMessageFrame->apvMessagingPayload[messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT]] = APV_MESSAGING_START_OF_MESSAGE;
+          messageBufferPointer->apvMessagingPayload[messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT]] = APV_MESSAGING_START_OF_MESSAGE;
 
           // Increment the payload count by 1
           messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT] = 
@@ -789,14 +814,14 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingDataByte(apvMessagingDeFramingState_
           { // Last byte of the payload - check for a hanging stuffing flag, load the remaining byte(s) and change state
           if (messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_LAST_TOKEN] == APV_MESSAGING_STUFFING_FLAG)
             {
-            messageStateMachine->apvMessageFrame->apvMessagingPayload[messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT]] = APV_MESSAGING_STUFFING_FLAG;
+            messageBufferPointer->apvMessagingPayload[messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT]] = APV_MESSAGING_STUFFING_FLAG;
 
             messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT] = 
                         messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT] + 1;
             }
 
-          messageStateMachine->apvMessageFrame->apvMessagingPayload[messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT]] = 
-                                                                                                         (uint8_t)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN];
+          messageBufferPointer->apvMessagingPayload[messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT]] = 
+                                                                                                         (uint8_t)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN] & APV_MESSAGE_PAYLOAD_CHARACTER_MASK;
 
           messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT] = 
                         messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT] + 1;
@@ -809,7 +834,7 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingDataByte(apvMessagingDeFramingState_
             { // Only one stuffing flag can be outstanding so load the last one on the payload
             if (messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_LAST_TOKEN] == APV_MESSAGING_STUFFING_FLAG)
               {
-              messageStateMachine->apvMessageFrame->apvMessagingPayload[messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT]] = APV_MESSAGING_STUFFING_FLAG;
+              messageBufferPointer->apvMessagingPayload[messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT]] = APV_MESSAGING_STUFFING_FLAG;
          
               messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT] = 
                           messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT] + 1;
@@ -823,7 +848,7 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingDataByte(apvMessagingDeFramingState_
             { // Load the next byte on the payload
             if (messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_LAST_TOKEN] == APV_MESSAGING_STUFFING_FLAG)
               {
-              messageStateMachine->apvMessageFrame->apvMessagingPayload[messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT]] = APV_MESSAGING_STUFFING_FLAG;
+              messageBufferPointer->apvMessagingPayload[messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT]] = APV_MESSAGING_STUFFING_FLAG;
               
               messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT] = 
                         messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT] + 1;
@@ -831,8 +856,8 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingDataByte(apvMessagingDeFramingState_
               messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_LAST_TOKEN] = 0;
               }
 
-            messageStateMachine->apvMessageFrame->apvMessagingPayload[messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT]] =
-                                                                                                         (uint8_t)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN];
+            messageBufferPointer->apvMessagingPayload[messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT]] =
+                                                                                                         (uint8_t)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN] & APV_MESSAGE_PAYLOAD_CHARACTER_MASK;
 
             messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT] = 
                           messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT] + 1;
@@ -867,14 +892,18 @@ APV_MESSAGING_STATE_CODE apvMessagingDeFramingCrcBytes(apvMessagingDeFramingStat
   {
 /******************************************************************************/
 
-  APV_MESSAGING_STATE_CODE apvStateError      = APV_STATE_MACHINE_CODE_NONE;
+  APV_MESSAGING_STATE_CODE  apvStateError        = APV_STATE_MACHINE_CODE_NONE;
 
-  apvPointerConversion_t   ringBufferPointer;
+  apvPointerConversion_t    ringBufferPointer;
+  apvMessageStructure_t    *messageBufferPointer = NULL;
 
 /******************************************************************************/
 
   // Compute the ring-buffer structure address
   ringBufferPointer.apvPointerConversion = (apvMessageStateEntryPointer_t)((*(apvMessageStateEntryPointer_t *)(&messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_LOW])));
+
+  // Compute the message buffer structure address
+  messageBufferPointer = (apvMessageStructure_t *)(messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW]);
 
   if (messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_PAYLOAD_LENGTH] < APV_CRC_WORD_WIDTH)
     {
@@ -886,7 +915,7 @@ APV_MESSAGING_STATE_CODE apvMessagingDeFramingCrcBytes(apvMessagingDeFramingStat
       {
       // Divide the running CRC by the pre-computed message CRC
       apvComputeCrc(messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN], 
-                                                                     ((uint16_t *)&(messageStateMachine->apvMessageFrame->apvMessagingCrcLowToken)));
+                                                                          ((uint16_t *)&(messageBufferPointer->apvMessagingCrcLowToken)));
 
       messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_PAYLOAD_LENGTH] = 
                   messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_PAYLOAD_LENGTH] + 1;
@@ -922,14 +951,19 @@ APV_MESSAGING_STATE_CODE apvMessagingDeFramingCrcCheck(apvMessagingDeFramingStat
   {
 /******************************************************************************/
 
-  APV_MESSAGING_STATE_CODE apvStateError      = APV_STATE_MACHINE_CODE_NONE;
+  APV_MESSAGING_STATE_CODE  apvStateError        = APV_STATE_MACHINE_CODE_NONE;
+
+  apvMessageStructure_t    *messageBufferPointer = NULL;
 
 /******************************************************************************/
 
+  // Compute the message buffer structure address
+  messageBufferPointer = (apvMessageStructure_t *)(messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW]);
+
   // Test if the CRC check has passed
-  if (*((uint16_t *)&(messageStateMachine->apvMessageFrame->apvMessagingCrcLowToken)) == APV_CRC_GENERATOR_FINAL_VALUE)
+  if (messageBufferPointer->apvMessagingCrcLowToken == APV_CRC_GENERATOR_FINAL_VALUE)
     { // If it has, compare the expected message length to the actual message length
-    if (messageStateMachine->apvMessageFrame->apvMessagingLengthOfMessage == messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT])
+    if (messageBufferPointer->apvMessagingLengthOfMessage == messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_TOKEN_COUNT])
       { // Change state to flag the message as OK for higher layers
       messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_CRC_SUM] = APV_CRC_GENERATOR_FINAL_VALUE;
       }
@@ -971,7 +1005,8 @@ APV_MESSAGING_STATE_CODE apvMessagingDeFramingReporter(apvMessagingDeFramingStat
     }
   else
     {
-    //printf("\n Message Test Failed...");
+    // If the current message decode has failed keep the message buffer as it will get re-initialised
+    // as the state machine restarts
 
     apvMessageSuccessCounters[APV_MESSAGE_FAILURE_COUNTER] = apvMessageSuccessCounters[APV_MESSAGE_FAILURE_COUNTER] + 1;
     }
@@ -1072,26 +1107,31 @@ void apvMessageStructurePrint(apvMessagingDeFramingState_t *stateMachine)
   {
 /******************************************************************************/
 
-  int i = 0;
+  int                    i                    = 0;
+
+  apvMessageStructure_t *messageBufferPointer = NULL;
 
 /******************************************************************************/
+
+  // Compute the message buffer structure address
+  messageBufferPointer = (apvMessageStructure_t *)(stateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW]);
 
   printf("\n");
   printf("\n Message Structure :");
   printf("\n -------------------");
   printf("\n");
 
-  for (i = 0; i < stateMachine->apvMessageFrame->apvMessagingLengthOfMessage; i++)
+  for (i = 0; i < messageBufferPointer->apvMessagingLengthOfMessage; i++)
     {
-    printf("[%02x]", (uint8_t)stateMachine->apvMessageFrame ->apvMessagingPayload[i]);
+    printf("[%02x]", (uint8_t)messageBufferPointer->apvMessagingPayload[i]);
     }
 
   printf("\n -------------------");
-  printf("\n Inbound Planes Token   = %08x", stateMachine->apvMessageFrame->apvMessagingInBoundPlanesToken.apvMessagePlanesToken);
-  printf("\n Outbound Planes Token  = %08x", stateMachine->apvMessageFrame->apvMessagingOutBoundPlanesToken.apvMessagePlanesToken);
-  printf("\n Message Length         = %08x", stateMachine->apvMessageFrame->apvMessagingLengthOfMessage);
-  printf("\n CRC High               = %08x", stateMachine->apvMessageFrame->apvMessagingCrcHighToken);
-  printf("\n CRC Low                = %08x", stateMachine->apvMessageFrame->apvMessagingCrcLowToken);
+  printf("\n Inbound Planes Token   = %08x", messageBufferPointer->apvMessagingInBoundPlanesToken.apvMessagePlanesToken);
+  printf("\n Outbound Planes Token  = %08x", messageBufferPointer->apvMessagingOutBoundPlanesToken.apvMessagePlanesToken);
+  printf("\n Message Length         = %08x", messageBufferPointer->apvMessagingLengthOfMessage);
+  printf("\n CRC High               = %08x", messageBufferPointer->apvMessagingCrcHighToken);
+  printf("\n CRC Low                = %08x", messageBufferPointer->apvMessagingCrcLowToken);
   printf("\n -------------------");
   printf("\n");
 

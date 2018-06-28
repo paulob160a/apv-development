@@ -27,6 +27,9 @@
 /******************************************************************************/
 /* These variables control the primary serial receive port buffering          */
 /******************************************************************************/
+/* 27.06.18 : this can be removed, better handled by a ring-buffer of         */
+/*            pointers. This may nit be needed in it's entirety               */
+/******************************************************************************/
 
 // This is the ring-buffer "free-list"
 apvRingBuffer_t   apvSerialPortPrimaryRingBuffer[APV_PRIMARY_SERIAL_RING_BUFFER_SET];
@@ -41,6 +44,8 @@ apvRingBuffer_t  *apvSerialPortPrimaryRingBuffer_p[APV_PRIMARY_SERIAL_RING_BUFFE
   APV_RING_BUFFER_LIST_EMPTY_POINTER,
   APV_RING_BUFFER_LIST_EMPTY_POINTER
   };
+
+/******************************************************************************/
 
 // This is the transmit ring-buffer of pointers to a set of ring-buffers
 apvRingBuffer_t   apvUartPortTransmitBuffer,

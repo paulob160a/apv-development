@@ -250,8 +250,7 @@ typedef struct apvMessagingDeFramingState_tTag
   apvMessagingFrameStates_t      apvMessageCurrentState;
   apvMessagingFrameStates_t      apvMessageNextState;
   APV_MESSAGING_STATE_CODE     (*apvMessageStateAction)(struct apvMessagingDeFramingState_tTag *apvMessagingStateMachine);
-  apvMessagingStateVariables_t  *apvMessageStateVariables;
-  apvMessageStructure_t         *apvMessageFrame;
+  apvMessagingStateVariables_t  *apvMessageStateVariables
   } apvMessagingDeFramingState_t;
 
 typedef        apvMessagingDeFramingState_t     APV_MESSAGING_DEFRAMING_STATE;
