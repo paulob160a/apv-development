@@ -21,6 +21,7 @@
 #include "ApvPeripheralControl.h"
 #include "ApvControlPortProtocol.h"
 #include "ApvMessageHandling.h"
+#include "ApvMessagingLayerManager.h"
 
 /******************************************************************************/
 /* Constant Definitions :                                                     */
@@ -56,10 +57,39 @@ int main(void)
 
 /******************************************************************************/
 
-  // Create the inter-messaging layer message buffers
+  // Create the serial UART inter-messaging layer message buffers
   apvSerialErrorCode = apvCreateMessageBuffers(&apvMessageFreeBufferSet,
                                                &apvMessageFreeBuffers[0],
                                                 APV_MESSAGE_FREE_BUFFER_SET_SIZE);
+
+  // Create messaging layer handler function inter-layer free message buffers
+  apvSerialErrorCode = apvCreateMessageBuffers(&apvMessagingLayerFreeBufferSet,
+                                               &apvMessagingLayerFreeBuffers[0],
+                                                APV_MESSAGING_LAYER_FREE_MESSAGE_BUFFER_SET_SIZE); 
+
+  // Initialise the array of message layer handling components
+  apvSerialErrorCode = apvMessagingLayerComponentInitialise(&apvMessagingLayerComponents[0],
+                                                             APV_PLANE_SERIAL_UART_CHANNELS);
+
+  // Load the serial UART messaging layer received message interpreter
+  apvSerialErrorCode = apvMessagingLayerComponentLoad( APV_PLANE_SERIAL_UART_CONTROL_0,
+                                                      &apvMessagingLayerComponents[0],
+                                                       APV_PLANE_SERIAL_UART_CHANNELS,
+                                                      &apvMessageFreeBufferSet,
+                                                      &apvMessagingLayerFreeBufferSet,
+                                                       APV_COMMS_PLANE_SERIAL_UART,
+                                                       APV_SIGNAL_PLANE_CONTROL_0,
+                                                      &apvMessagingLayerSerialUARTInputHandler);
+
+  // Load the serial UART messaging layer transmit message handler
+  apvSerialErrorCode = apvMessagingLayerComponentLoad( APV_PLANE_SERIAL_UART_CONTROL_1,
+                                                      &apvMessagingLayerComponents[0],
+                                                       APV_PLANE_SERIAL_UART_CHANNELS,
+                                                      &apvMessageFreeBufferSet,
+                                                      &apvMessagingLayerFreeBufferSet,
+                                                       APV_COMMS_PLANE_SERIAL_UART,
+                                                       APV_SIGNAL_PLANE_CONTROL_1,
+                                                      &apvMessagingLayerSerialUARTOutputHandler);
 
   apvSerialErrorCode = apvInitialiseEventTimerBlocks(&apvEventTimerBlock[APV_EVENT_TIMER_0],
                                                       TCCHANNEL_NUMBER);

@@ -85,7 +85,6 @@ uint32_t                      apvMessageSuccessCounters[APV_MESSAGE_SUCCESS_COUN
 /******************************************************************************/
 
 static apvMessagingStateVariables_t apvMessageVariableCache;
-static apvMessageStructure_t        apvMessageFrame;
 
 /******************************************************************************/
 /* The message de-framing state-machine :                                     */
@@ -427,10 +426,12 @@ APV_MESSAGING_STATE_CODE apvDeFrameMessageInitialisation(apvRingBuffer_t        
                              true) != 0)
       {
       // KEEP THIS FOR THE FINAL READ-BACK WHEN THE MESSAGE HAS BEEN ASSEMBLED, USE THE STATE-MACHINE MESSAGE-FRAME FOR ASSEMBLY
-      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_LOW]     = (apvMessageStateVariable_t)(((apvMessageStateEntryPointer_t)ringBuffer)     & APV_UINT64_POINTER_UINT32_MASK);
-      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_HIGH]    = (apvMessageStateVariable_t)0; // pointers are only 32-bits wide on Cortex-M
-      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW]  = (apvMessageStateVariable_t)(((apvMessageStateEntryPointer_t)messageBuffer)  & APV_UINT64_POINTER_UINT32_MASK);
-      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_HIGH] = (apvMessageStateVariable_t)0; // pointers are only 32-bits wide on Cortex-M
+      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_LOW]           = (apvMessageStateVariable_t)(((apvMessageStateEntryPointer_t)ringBuffer)          & APV_UINT64_POINTER_UINT32_MASK);
+      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_RING_BUFFER_HIGH]          = (apvMessageStateVariable_t)0; // pointers are only 32-bits wide on Cortex-M
+      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW]        = (apvMessageStateVariable_t)(((apvMessageStateEntryPointer_t)messageBuffer)       & APV_UINT64_POINTER_UINT32_MASK);
+      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_HIGH]       = (apvMessageStateVariable_t)0; // pointers are only 32-bits wide on Cortex-M
+      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_FREE_MESSAGE_BUFFERS_LOW]  = (apvMessageStateVariable_t)(((apvMessageStateEntryPointer_t)messageFreeBuffers)  & APV_UINT64_POINTER_UINT32_MASK);
+      messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_FREE_MESSAGE_BUFFERS_HIGH] = (apvMessageStateVariable_t)0; // pointers are only 32-bits wide on Cortex-M
       }
     else
       {
@@ -991,26 +992,63 @@ APV_MESSAGING_STATE_CODE apvMessagingDeFramingReporter(apvMessagingDeFramingStat
   {
 /******************************************************************************/
 
-  APV_MESSAGING_STATE_CODE apvStateError      = APV_STATE_MACHINE_CODE_NONE;
+  APV_MESSAGING_STATE_CODE  apvStateError           = APV_STATE_MACHINE_CODE_NONE;
+
+  apvMessageStructure_t    *liveMessageBuffer       = NULL;
+
+  uint32_t                  *newMessageBuffer       =  NULL,
+                           **newMessageBuffer_p     = &newMessageBuffer;
+
+  apvCommsPlanes_t          targetCommsPlane        = APV_COMMS_PLANE_UNUSED_0;
+  apvSignalPlanes_t         targetSignalPlane       = APV_SIGNAL_PLANE_UNUSED_0;
+
+  apvRingBuffer_t          *freeMessageBufferRing_p = NULL;
 
 /******************************************************************************/
 
   // All done, start looking for another message
-#if (1)
   if (messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_CRC_SUM] == APV_CRC_GENERATOR_FINAL_VALUE)
     {
-    //printf("\n Message Test Passed...");
-
     apvMessageSuccessCounters[APV_MESSAGE_SUCCESS_COUNTER] = apvMessageSuccessCounters[APV_MESSAGE_SUCCESS_COUNTER] + 1;
+
+    // A message has been successfully decoded...get ready to detach it
+    liveMessageBuffer = (apvMessageStructure_t *)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW];
+
+    // Does it have a legal destination in the upper layers ? If not, just leave the message buffer for re-use
+    targetCommsPlane  = liveMessageBuffer->apvMessagingInBoundPlanesToken.apvMessagePlanesToken  & APV_MESSAGE_PLANE_MASK;
+    targetSignalPlane = liveMessageBuffer->apvMessagingInBoundPlanesToken.apvMessagePlanesToken >> APV_MESSAGE_PLANE_SHIFT;
+
+    if (apvMessageFramerCheckCommsPlane(targetCommsPlane) == true)
+      {
+      if (apvMessageFramerCheckSignalPlane(targetSignalPlane) == true)
+        { // The target layer exists : move the new message to that layer and attach a new message buffer to the state machine
+        freeMessageBufferRing_p = (apvRingBuffer_t *)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_FREE_MESSAGE_BUFFERS_LOW];
+
+        // Get the next token off the ring-buffer if it exists
+        if (apvRingBufferUnLoad( freeMessageBufferRing_p,
+                                (uint32_t *)newMessageBuffer_p,
+                                 1,
+                                 true) != 0)
+          {
+          // Attach the new message buffer to the state machine
+          messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW] = (apvMessageStateVariable_t)newMessageBuffer;
+          }
+        else
+          { // Now we are screwed...
+          apvStateError = APV_ERROR_CODE_RING_BUFFER_EMPTY;
+
+          while(true)
+            ;
+          }
+        }
+      }
     }
   else
     {
     // If the current message decode has failed keep the message buffer as it will get re-initialised
     // as the state machine restarts
-
     apvMessageSuccessCounters[APV_MESSAGE_FAILURE_COUNTER] = apvMessageSuccessCounters[APV_MESSAGE_FAILURE_COUNTER] + 1;
     }
-#endif
 
   messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_ACTIVE_STATE] = (apvMessageStateVariable_t)messageStateMachine->apvMessageNextState;
 

@@ -225,11 +225,12 @@ typedef enum apvMessagingFrameStateVariable_tTag
   APV_MESSAGE_FRAME_STATE_VARIABLE_CRC_SUM          = APV_GENERIC_STATE_VARIABLE_4,
   APV_MESSAGE_FRAME_STATE_RING_BUFFER_LOW           = APV_GENERIC_STATE_VARIABLE_5,
   APV_MESSAGE_FRAME_STATE_RING_BUFFER_HIGH          = APV_GENERIC_STATE_VARIABLE_6,
-  APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_HIGH       = APV_GENERIC_STATE_VARIABLE_7,
-  APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW        = APV_GENERIC_STATE_VARIABLE_8,
+  APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW        = APV_GENERIC_STATE_VARIABLE_7,
+  APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_HIGH       = APV_GENERIC_STATE_VARIABLE_8,
   APV_MESSAGE_FRAME_STATE_PAYLOAD_LENGTH            = APV_GENERIC_STATE_VARIABLE_9,
   APV_MESSAGE_FRAME_STATE_FRAME_CHECK               = APV_GENERIC_STATE_VARIABLE_10,
-  APV_MESSAGE_FRAME_STATE_VARIABLE_FREE_2           = APV_GENERIC_STATE_VARIABLE_11,
+  APV_MESSAGE_FRAME_STATE_FREE_MESSAGE_BUFFERS_LOW  = APV_GENERIC_STATE_VARIABLE_11,
+  APV_MESSAGE_FRAME_STATE_FREE_MESSAGE_BUFFERS_HIGH = APV_GENERIC_STATE_VARIABLE_12,
   APV_MESSAGE_FRAME_STATE_VARIABLE_CACHE_LENGTH     = APV_GENERIC_STATE_VARIABLE_CACHE_LENGTH
   } apvMessagingFrameStateVariable_t;
 
@@ -250,7 +251,7 @@ typedef struct apvMessagingDeFramingState_tTag
   apvMessagingFrameStates_t      apvMessageCurrentState;
   apvMessagingFrameStates_t      apvMessageNextState;
   APV_MESSAGING_STATE_CODE     (*apvMessageStateAction)(struct apvMessagingDeFramingState_tTag *apvMessagingStateMachine);
-  apvMessagingStateVariables_t  *apvMessageStateVariables
+  apvMessagingStateVariables_t  *apvMessageStateVariables;
   } apvMessagingDeFramingState_t;
 
 typedef        apvMessagingDeFramingState_t     APV_MESSAGING_DEFRAMING_STATE;
@@ -272,10 +273,11 @@ extern apvMessagingDeFramingState_t apvMessagingDeFramingStateMachine[APV_MESSAG
 /******************************************************************************/
 /* Global Variables :                                                         */
 /******************************************************************************/
+
 // The message-handling state-machine
 extern apvMessagingDeFramingState_t *apvMessageDeFramingStateMachine;
 
-// the "free" list of message buffers
+// The "free" list ofserial UART message buffers
 extern apvRingBuffer_t               apvMessageFreeBufferSet;
 extern apvMessageStructure_t         apvMessageFreeBuffers[APV_MESSAGE_FREE_BUFFER_SET_SIZE];
 

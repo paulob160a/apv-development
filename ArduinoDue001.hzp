@@ -67,6 +67,8 @@
         <file file_name="ar19937.h" />
         <file file_name="ApvControlPortProtocol.h" />
         <file file_name="ApvMessageHandling.h" />
+        <file file_name="ApvStateMachines.h" />
+        <file file_name="ApvMessagingLayerManager.h" />
       </folder>
     </folder>
     <folder Name="Source">
@@ -82,6 +84,7 @@
       <file file_name="ApvPeripheralControl.c" />
       <file file_name="ApvEventTimerIsrs.c" />
       <file file_name="ApvControlPortProtocol.c" />
+      <file file_name="ApvMessagingLayerManager.c" />
     </folder>
   </project>
   <configuration
