@@ -58,14 +58,14 @@ int main(void)
 /******************************************************************************/
 
   // Create the serial UART inter-messaging layer message buffers
-  apvSerialErrorCode = apvCreateMessageBuffers(&apvMessageFreeBufferSet,
-                                               &apvMessageFreeBuffers[0],
+  apvSerialErrorCode = apvCreateMessageBuffers(&apvMessageSerialUartFreeBufferSet,
+                                               &apvMessageSerialUartFreeBuffers[0],
                                                 APV_MESSAGE_FREE_BUFFER_SET_SIZE);
 
   // Create messaging layer handler function inter-layer free message buffers
   apvSerialErrorCode = apvCreateMessageBuffers(&apvMessagingLayerFreeBufferSet,
                                                &apvMessagingLayerFreeBuffers[0],
-                                                APV_MESSAGING_LAYER_FREE_MESSAGE_BUFFER_SET_SIZE); 
+                                                APV_MESSAGING_LAYER_FREE_MESSAGE_BUFFER_SET_SIZE);
 
   // Initialise the array of message layer handling components
   apvSerialErrorCode = apvMessagingLayerComponentInitialise(&apvMessagingLayerComponents[0],
@@ -75,8 +75,9 @@ int main(void)
   apvSerialErrorCode = apvMessagingLayerComponentLoad( APV_PLANE_SERIAL_UART_CONTROL_0,
                                                       &apvMessagingLayerComponents[0],
                                                        APV_PLANE_SERIAL_UART_CHANNELS,
-                                                      &apvMessageFreeBufferSet,
+                                                      &apvMessageSerialUartFreeBufferSet,
                                                       &apvMessagingLayerFreeBufferSet,
+                                                      &apvMessagingLayerComponentSerialUartRxBuffer,
                                                        APV_COMMS_PLANE_SERIAL_UART,
                                                        APV_SIGNAL_PLANE_CONTROL_0,
                                                       &apvMessagingLayerSerialUARTInputHandler);
@@ -85,8 +86,9 @@ int main(void)
   apvSerialErrorCode = apvMessagingLayerComponentLoad( APV_PLANE_SERIAL_UART_CONTROL_1,
                                                       &apvMessagingLayerComponents[0],
                                                        APV_PLANE_SERIAL_UART_CHANNELS,
-                                                      &apvMessageFreeBufferSet,
                                                       &apvMessagingLayerFreeBufferSet,
+                                                      &apvMessageSerialUartFreeBufferSet,
+                                                      &apvMessagingLayerComponentSerialUartTxBuffer,
                                                        APV_COMMS_PLANE_SERIAL_UART,
                                                        APV_SIGNAL_PLANE_CONTROL_1,
                                                       &apvMessagingLayerSerialUARTOutputHandler);
@@ -241,7 +243,7 @@ int main(void)
 
            // Initialise the lowest-level serial comms frame receiver state machine
            apvSerialErrorCode = apvDeFrameMessageInitialisation( apvPrimarySerialCommsReceiveBuffer,
-                                                                &apvMessageFreeBufferSet,
+                                                                &apvMessageSerialUartFreeBufferSet,
                                                                 &apvMessagingDeFramingStateMachine[0]);
            }
 

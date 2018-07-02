@@ -67,6 +67,7 @@
 #include "ApvStateMachines.h"
 #include "ApvCrcGenerator.h"
 #include "ApvMessageHandling.h"
+#include "ApvMessagingLayerManager.h"
 #include "ApvCommsUtilities.h"
 
 /******************************************************************************/
@@ -75,8 +76,8 @@
 
 apvMessagingDeFramingState_t *apvMessageDeFramingStateMachine = &apvMessagingDeFramingStateMachine[APV_MESSAGE_FRAME_STATE_NULL];
 
-apvRingBuffer_t               apvMessageFreeBufferSet;
-apvMessageStructure_t         apvMessageFreeBuffers[APV_MESSAGE_FREE_BUFFER_SET_SIZE];
+apvRingBuffer_t               apvMessageSerialUartFreeBufferSet;
+apvMessageStructure_t         apvMessageSerialUartFreeBuffers[APV_MESSAGE_FREE_BUFFER_SET_SIZE];
 
 uint32_t                      apvMessageSuccessCounters[APV_MESSAGE_SUCCESS_COUNTERS]   = { 0, 0 };
 
@@ -1002,7 +1003,9 @@ APV_MESSAGING_STATE_CODE apvMessagingDeFramingReporter(apvMessagingDeFramingStat
   apvCommsPlanes_t          targetCommsPlane        = APV_COMMS_PLANE_UNUSED_0;
   apvSignalPlanes_t         targetSignalPlane       = APV_SIGNAL_PLANE_UNUSED_0;
 
-  apvRingBuffer_t          *freeMessageBufferRing_p = NULL;
+  apvRingBuffer_t          *freeMessageBufferRing_p = NULL,
+                           *targetInputPort         = NULL,
+                          **targetInputPort_p       = &targetInputPort;
 
 /******************************************************************************/
 
@@ -1018,28 +1021,46 @@ APV_MESSAGING_STATE_CODE apvMessagingDeFramingReporter(apvMessagingDeFramingStat
     targetCommsPlane  = liveMessageBuffer->apvMessagingInBoundPlanesToken.apvMessagePlanesToken  & APV_MESSAGE_PLANE_MASK;
     targetSignalPlane = liveMessageBuffer->apvMessagingInBoundPlanesToken.apvMessagePlanesToken >> APV_MESSAGE_PLANE_SHIFT;
 
-    if (apvMessageFramerCheckCommsPlane(targetCommsPlane) == true)
+    if (apvMessageFramerCheckCommsPlane(targetCommsPlane) == true) // comms plane id exists
       {
-      if (apvMessageFramerCheckSignalPlane(targetSignalPlane) == true)
-        { // The target layer exists : move the new message to that layer and attach a new message buffer to the state machine
-        freeMessageBufferRing_p = (apvRingBuffer_t *)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_FREE_MESSAGE_BUFFERS_LOW];
-
-        // Get the next token off the ring-buffer if it exists
-        if (apvRingBufferUnLoad( freeMessageBufferRing_p,
-                                (uint32_t *)newMessageBuffer_p,
+      if (apvMessageFramerCheckSignalPlane(targetSignalPlane) == true) // signal plane id exists
+        {
+        if (apvMessagingLayerGetComponentInputPort( targetCommsPlane, 
+                                                    targetSignalPlane,
+                                                   &apvMessagingLayerComponents[0],
+                                                    targetInputPort_p) == true)
+          {
+          // If possible load the new message onto the messaging layer components' input port
+          if (apvRingBufferLoad( targetInputPort,
+                                (uint32_t *)&liveMessageBuffer,
                                  1,
                                  true) != 0)
-          {
-          // Attach the new message buffer to the state machine
-          messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW] = (apvMessageStateVariable_t)newMessageBuffer;
-          }
-        else
-          { // Now we are screwed...
-          apvStateError = APV_ERROR_CODE_RING_BUFFER_EMPTY;
+            {
+            // Get the next token off the ring-buffer if it exists
+            freeMessageBufferRing_p = (apvRingBuffer_t *)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_FREE_MESSAGE_BUFFERS_LOW];
 
-          while(true)
-            ;
+            if (apvRingBufferUnLoad( freeMessageBufferRing_p,
+                                    (uint32_t *)newMessageBuffer_p,
+                                     1,
+                                     true) != 0)
+              {
+              // Attach the new message buffer to the state machine
+              messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_MESSAGE_BUFFER_LOW] = (apvMessageStateVariable_t)newMessageBuffer;
+              }
+            else
+              { // Now we are screwed...
+              apvStateError = APV_ERROR_CODE_RING_BUFFER_EMPTY;
+
+              while(true)
+                ;
+              }
+            }
           }
+        }
+      else
+        {
+        // The messaging layer component id is false, corrupted or doesn't exist - no 
+        // need to exchange message buffers
         }
       }
     }

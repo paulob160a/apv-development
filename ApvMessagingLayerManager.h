@@ -95,7 +95,10 @@
 
 /******************************************************************************/
 
-#define APV_MESSAGING_LAYER_FREE_MESSAGE_BUFFER_SET_SIZE 16
+#define APV_MESSAGING_LAYER_COMPONENT_ENTRIES_SIZE        (APV_PLANE_SERIAL_UART_CHANNELS)
+#define APV_MESSAGING_LAYER_FREE_MESSAGE_BUFFER_SET_SIZE  16 // the pool of inter-messaging layer message buffers
+
+#define APV_MESSAGINIG_COMPONENT_MESSAGE_RING_BUFFER_SIZE 16 // a messaging layer components' message buffer holding ring
 
 /******************************************************************************/
 /* Type Definitions :                                                         */
@@ -116,8 +119,14 @@ typedef struct apvMessagingLayerComponent_tTag
   bool               messagingLayerComponentLoaded;        // mark occupied components
   apvCommsPlanes_t   messagingLayerCommsPlane;             // the comms plane this manager handles
   apvSignalPlanes_t  messagingLayerSignalPlane;            // the signal plane this manager handles
-  apvRingBuffer_t   *messagingLayerServerBufferPool;       // points to the ring-buffer serving the pool of message buffers for the layers' input/output messaging server
-  apvRingBuffer_t   *messagingLayerBufferPool;             // points to the ring-buffer serving the pool of message buffers for the layers' input/output inter-layer messaging
+  apvRingBuffer_t   *messagingLayerInputBufferPool;        // points to the ring-buffer serving the pool of message buffers for the layers' input messaging server
+                                                           // - the messaging layer component uses this to return exhauted nessage buffers to their (port) source
+                                                           // - this ring-buffer is owned by the server
+  apvRingBuffer_t   *messagingLayerOutputBufferPool;       // points to the ring-buffer serving the pool of message buffers for the layers' output messaging server
+                                                           // - the messaging layer conponent uses this to produce and consume inter-messaging layer message buffers
+                                                           // - this ring-buffer is owned by the server
+  apvRingBuffer_t   *messagingLayerInputBuffers;           // points to the ring-buffer of incoming message buffers that will be RETURNED to the servers' buffer pool
+                                                           // this ring-buffer is owned by the component which does NOT own any message buffers
   void             (*messagingLayerServiceManager)(void);  // the instance of a manager function
   } apvMessagingLayerComponent_t;
 
@@ -130,6 +139,9 @@ extern apvMessagingLayerComponent_t apvMessagingLayerComponents[APV_PLANE_SERIAL
 extern apvRingBuffer_t              apvMessagingLayerFreeBufferSet;
 extern apvMessageStructure_t        apvMessagingLayerFreeBuffers[APV_MESSAGING_LAYER_FREE_MESSAGE_BUFFER_SET_SIZE];
 
+extern apvRingBuffer_t              apvMessagingLayerComponentSerialUartTxBuffer;
+extern apvRingBuffer_t              apvMessagingLayerComponentSerialUartRxBuffer;
+
 /******************************************************************************/
 /* Function Declarations :                                                    */
 /******************************************************************************/
@@ -139,11 +151,17 @@ extern APV_ERROR_CODE apvMessagingLayerComponentInitialise(apvMessagingLayerComp
 extern APV_ERROR_CODE apvMessagingLayerComponentLoad(apvMessagingLayerPlaneHandlers_t  messagingLayerComponentIndex,
                                                      apvMessagingLayerComponent_t     *messagingLayerComponents,
                                                      uint16_t                          messagingLayerComponentEntries,
-                                                     apvRingBuffer_t                  *messagingServerBuffers,
-                                                     apvRingBuffer_t                  *messagingLayerBuffers,
+                                                     apvRingBuffer_t                  *messagingInputBufferPool,     // input is nominally from a server - but can be to a layer
+                                                     apvRingBuffer_t                  *messagingOutputBufferPool,    // output is nominally to a layer - but can be to a server
+                                                     apvRingBuffer_t                  *messagingLayerMessageBuffers, // the components' holding ring of borrowed message buffers
                                                      apvCommsPlanes_t                  messagingLayerCommsPlane,
                                                      apvSignalPlanes_t                 messagingLayerSignalPlane,
                                                      void                            (*messagingLayerServiceManager)(void));
+
+extern bool           apvMessagingLayerGetComponentInputPort(apvCommsPlanes_t               componentCommsPlane, 
+                                                             apvSignalPlanes_t              componentSignalPlane,
+                                                             apvMessagingLayerComponent_t  *messagingLayerComponents,
+                                                             apvRingBuffer_t              **componentInpuMessageBuffers);
 
 extern void           apvMessagingLayerSerialUARTInputHandler(void);
 extern void           apvMessagingLayerSerialUARTOutputHandler(void);

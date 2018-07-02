@@ -81,7 +81,7 @@
 /* Definition of the messaging layer handlers and their interconnects         */
 /******************************************************************************/
 
-apvMessagingLayerComponent_t apvMessagingLayerComponents[APV_PLANE_SERIAL_UART_CHANNELS];
+apvMessagingLayerComponent_t apvMessagingLayerComponents[APV_MESSAGING_LAYER_COMPONENT_ENTRIES_SIZE];
 
 /******************************************************************************/
 /* Definition of the messaging layer message buffers and the holding ring-    */
@@ -92,6 +92,16 @@ apvRingBuffer_t       apvMessagingLayerFreeBufferSet;
 apvMessageStructure_t apvMessagingLayerFreeBuffers[APV_MESSAGING_LAYER_FREE_MESSAGE_BUFFER_SET_SIZE];
 
 /******************************************************************************/
+/* Definition of messaging layer components' message buffer holding ring-     */
+/* buffers. There are no actual message buffers defined per component as each */
+/* component "borrows" the buffers of a hardware server port or the messaging */
+/* layer common resource                                                      */
+/******************************************************************************/
+
+apvRingBuffer_t       apvMessagingLayerComponentSerialUartTxBuffer,
+                      apvMessagingLayerComponentSerialUartRxBuffer;
+
+/******************************************************************************/
 /* Function Definitions :                                                     */
 /******************************************************************************/
 /* apvMessagingLayerComponentInitialise() :                                   */
@@ -99,6 +109,7 @@ apvMessageStructure_t apvMessagingLayerFreeBuffers[APV_MESSAGING_LAYER_FREE_MESS
 /*                                       definitions                          */
 /*  --> messagingLayerComponentEntries : size of the message layer handler    */
 /*                                       array                                */
+/*  <-- layerComponentError            : component errors                     */
 /*                                                                            */
 /* - clear out all of the entries in the message layer handler definition     */
 /*   array                                                                    */
@@ -125,8 +136,8 @@ APV_ERROR_CODE apvMessagingLayerComponentInitialise(apvMessagingLayerComponent_t
       messagingLayerComponentEntries = messagingLayerComponentEntries - 1;
 
       (messagingLayerComponents + messagingLayerComponentEntries)->messagingLayerComponentLoaded  = false;
-      (messagingLayerComponents + messagingLayerComponentEntries)->messagingLayerServerBufferPool = NULL;
-      (messagingLayerComponents + messagingLayerComponentEntries)->messagingLayerBufferPool       = NULL;
+      (messagingLayerComponents + messagingLayerComponentEntries)->messagingLayerInputBufferPool  = NULL;
+      (messagingLayerComponents + messagingLayerComponentEntries)->messagingLayerOutputBufferPool = NULL;
       (messagingLayerComponents + messagingLayerComponentEntries)->messagingLayerCommsPlane       = APV_COMMS_PLANE_UNUSED_0;
       (messagingLayerComponents + messagingLayerComponentEntries)->messagingLayerSignalPlane      = APV_SIGNAL_PLANE_UNUSED_0;
       (messagingLayerComponents + messagingLayerComponentEntries)->messagingLayerServiceManager   = NULL;
@@ -158,17 +169,22 @@ APV_ERROR_CODE apvMessagingLayerComponentInitialise(apvMessagingLayerComponent_t
 /*  --> messagingLayerSignalPlane      : signalling plane identifier          */
 /*  --> messagingLayerServiceManager   : message layer component handling     */
 /*                                       function                             */
+/*  <-- layerComponentError            : component errors                     */
+/*                                                                            */
 /* - initialise a component of the messaging layer handlers, defining its'    */
 /*   comms and signal planes, input port and output port message buffer       */
-/*   sources/sinks and the component handling function                        */
+/*   sources/sinks and the component handling function. NOTE that a single    */
+/*   messaging layer component MUST!NOT! be connected to more than one        */
+/*   physical server port                                                     */
 /*                                                                            */
 /******************************************************************************/
 
 APV_ERROR_CODE apvMessagingLayerComponentLoad(apvMessagingLayerPlaneHandlers_t  messagingLayerComponentIndex,
                                               apvMessagingLayerComponent_t     *messagingLayerComponents,
                                               uint16_t                          messagingLayerComponentEntries,
-                                              apvRingBuffer_t                  *messagingServerBuffers,
-                                              apvRingBuffer_t                  *messagingLayerBuffers,
+                                              apvRingBuffer_t                  *messagingInputBufferPool,     // input is nominally from a server - but can be to a layer
+                                              apvRingBuffer_t                  *messagingOutputBufferPool,    // output is nominally to a layer - but can be to a server
+                                              apvRingBuffer_t                  *messagingLayerMessageBuffers, // the components' holding ring of borrowed message buffers
                                               apvCommsPlanes_t                  messagingLayerCommsPlane,
                                               apvSignalPlanes_t                 messagingLayerSignalPlane,
                                               void                            (*messagingLayerServiceManager)(void))
@@ -179,21 +195,29 @@ APV_ERROR_CODE apvMessagingLayerComponentLoad(apvMessagingLayerPlaneHandlers_t  
 
 /******************************************************************************/
 
-  if ((messagingLayerComponents       == NULL) || (messagingServerBuffers       == NULL) ||
-      (messagingLayerBuffers          == NULL) || (messagingLayerServiceManager == NULL) || 
+  if ((messagingLayerComponents       == NULL) || (messagingInputBufferPool     == NULL) ||
+      (messagingOutputBufferPool      == NULL) || (messagingLayerServiceManager == NULL) || 
+      (messagingLayerMessageBuffers   == NULL) ||
       (messagingLayerComponentEntries == 0)    || (messagingLayerComponentIndex > messagingLayerComponentEntries))
     {
     layerComponentError = APV_ERROR_CODE_NULL_PARAMETER;
     }
   else
     {
-    // Match the compnent index to it's entry in the messaging layer definition array
-    (messagingLayerComponents + messagingLayerComponentIndex)->messagingLayerComponentLoaded  = true;
-    (messagingLayerComponents + messagingLayerComponentIndex)->messagingLayerServerBufferPool = messagingServerBuffers;
-    (messagingLayerComponents + messagingLayerComponentIndex)->messagingLayerBufferPool       = messagingLayerBuffers;
-    (messagingLayerComponents + messagingLayerComponentIndex)->messagingLayerCommsPlane       = messagingLayerCommsPlane;
-    (messagingLayerComponents + messagingLayerComponentIndex)->messagingLayerSignalPlane      = messagingLayerSignalPlane;
-    (messagingLayerComponents + messagingLayerComponentIndex)->messagingLayerServiceManager   = messagingLayerServiceManager;
+    // Initialise the components' message buffer holding ring
+    if (apvRingBufferInitialise(messagingLayerMessageBuffers,
+                                APV_MESSAGINIG_COMPONENT_MESSAGE_RING_BUFFER_SIZE) == APV_ERROR_CODE_NONE)
+      {
+
+      // Match the compnent index to it's entry in the messaging layer definition array
+      (messagingLayerComponents + messagingLayerComponentIndex)->messagingLayerComponentLoaded  = true;
+      (messagingLayerComponents + messagingLayerComponentIndex)->messagingLayerInputBufferPool  = messagingInputBufferPool;
+      (messagingLayerComponents + messagingLayerComponentIndex)->messagingLayerOutputBufferPool = messagingOutputBufferPool;
+      (messagingLayerComponents + messagingLayerComponentIndex)->messagingLayerInputBuffers     = messagingLayerMessageBuffers;
+      (messagingLayerComponents + messagingLayerComponentIndex)->messagingLayerCommsPlane       = messagingLayerCommsPlane;
+      (messagingLayerComponents + messagingLayerComponentIndex)->messagingLayerSignalPlane      = messagingLayerSignalPlane;
+      (messagingLayerComponents + messagingLayerComponentIndex)->messagingLayerServiceManager   = messagingLayerServiceManager;
+      }
     }
 
 /******************************************************************************/
@@ -202,6 +226,63 @@ APV_ERROR_CODE apvMessagingLayerComponentLoad(apvMessagingLayerPlaneHandlers_t  
 
 /******************************************************************************/
   } /* apvMessagingLayerComponentLoad                                         */
+
+/******************************************************************************/
+/* apvMessagingLayerGetComponentInputPort() :                                 */
+/*  --> componentCommsPlane         : comms plane id                          */
+/*  --> componentSignalPlane        : signalling plane id                     */
+/*  --> componentInpuMessageBuffers : address of the components' input        */
+/*                                    message buffer holding ring-buffer      */
+/*  <-- componentExistence          : [ false == 0 | true == !0 ]             */
+/*                                                                            */
+/* - look to see if a messaging layer component exists and if it does return  */
+/*   'true' and the address of it's message buffer input holding ring-buffer  */
+/*                                                                            */
+/******************************************************************************/
+
+bool apvMessagingLayerGetComponentInputPort(apvCommsPlanes_t               componentCommsPlane, 
+                                            apvSignalPlanes_t              componentSignalPlane,
+                                            apvMessagingLayerComponent_t  *messagingLayerComponents,
+                                            apvRingBuffer_t              **componentInpuMessageBuffers)
+  {
+/******************************************************************************/
+
+  bool     componentExistence = false;
+
+  uint16_t component          = 0;
+
+/******************************************************************************/
+
+  if (messagingLayerComponents != NULL)
+    {
+    // For now the messaging layer component array is short so a simple linear
+    // search for components will not take much time
+    for (component = 0; component < APV_MESSAGING_LAYER_COMPONENT_ENTRIES_SIZE; component++)
+      {
+      if ((messagingLayerComponents + component)->messagingLayerComponentLoaded == true)
+        { // This compnent entry exists...
+        if ((messagingLayerComponents + component)->messagingLayerCommsPlane == componentCommsPlane)
+          { // The comms layer id matches...
+          if ((messagingLayerComponents + component)->messagingLayerSignalPlane == componentSignalPlane)
+            { // The signal layer id matches...
+            if ((messagingLayerComponents + component)->messagingLayerInputBuffers != NULL)
+              { // The input message buffer port has been initialised - return its' address and stop searching
+              *componentInpuMessageBuffers = (messagingLayerComponents + component)->messagingLayerInputBuffers;
+               componentExistence          = true;
+               component                   = APV_MESSAGING_LAYER_COMPONENT_ENTRIES_SIZE;
+              }
+            }
+          }
+        }
+      }
+    }
+
+/******************************************************************************/
+
+  return(componentExistence);
+
+/******************************************************************************/
+  } /* end of apvMessagingLayerGetComponentInputPort                          */
 
 /******************************************************************************/
 /* Messaging layer handling functions :                                       */

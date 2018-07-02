@@ -277,10 +277,11 @@ extern apvMessagingDeFramingState_t apvMessagingDeFramingStateMachine[APV_MESSAG
 // The message-handling state-machine
 extern apvMessagingDeFramingState_t *apvMessageDeFramingStateMachine;
 
-// The "free" list ofserial UART message buffers
-extern apvRingBuffer_t               apvMessageFreeBufferSet;
-extern apvMessageStructure_t         apvMessageFreeBuffers[APV_MESSAGE_FREE_BUFFER_SET_SIZE];
+// The "free" list of serial UART message buffers
+extern apvRingBuffer_t               apvMessageSerialUartFreeBufferSet;
+extern apvMessageStructure_t         apvMessageSerialUartFreeBuffers[APV_MESSAGE_FREE_BUFFER_SET_SIZE];
 
+// DEBUG
 extern uint32_t                      apvMessageSuccessCounters[APV_MESSAGE_SUCCESS_COUNTERS];
 
 /******************************************************************************/
