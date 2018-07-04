@@ -24,9 +24,10 @@
 /*   * NO SINGLE HANDLER FUNCTION MAY TERMINATE TWO HARDWARE SOURCES/SINKS *  */
 /*   ***********************************************************************  */
 /*                                                                            */
-/*   Typically a layer handler will be TWO functions, one serving a hardware  */
-/*   port input and one a related hardware port output e.g. serial UART tx    */
-/*   rx. So if the message path is (say) :                                    */
+/*   Typically a layer handler ("channel") will be serviced by TWO functions  */
+/*   or "components", one serving a hardware port input and one a related     */
+/*   hardware port output e.g. serial UART tx and rx. So if the message path  */
+/*   is (say) :                                                               */
 /*     hardware port rx -> message interpreter -> message response ->         */
 /*     hardware port tx                                                       */
 /*   the hardware port rx will firstly verify the incoming message. The       */
@@ -78,10 +79,14 @@
 /******************************************************************************/
 /* Global Variable Definitions :                                              */
 /******************************************************************************/
-/* Definition of the messaging layer handlers and their interconnects         */
+/* Definition of the messaging layer handlers and their interconnects. The    */
+/* "shadow" list 'apvMessagingLayerComponentReady' enforces one channel       */
+/* component only runs at each background loop-tick regardless of the list    */
+/* searching method (simply linear at the moment)                             */
 /******************************************************************************/
 
 apvMessagingLayerComponent_t apvMessagingLayerComponents[APV_MESSAGING_LAYER_COMPONENT_ENTRIES_SIZE];
+bool                         apvMessagingLayerComponentReady[APV_MESSAGING_LAYER_COMPONENT_ENTRIES_SIZE];
 
 /******************************************************************************/
 /* Definition of the messaging layer message buffers and the holding ring-    */
@@ -187,7 +192,8 @@ APV_ERROR_CODE apvMessagingLayerComponentLoad(apvMessagingLayerPlaneHandlers_t  
                                               apvRingBuffer_t                  *messagingLayerMessageBuffers, // the components' holding ring of borrowed message buffers
                                               apvCommsPlanes_t                  messagingLayerCommsPlane,
                                               apvSignalPlanes_t                 messagingLayerSignalPlane,
-                                              void                            (*messagingLayerServiceManager)(void))
+                                              void                            (*messagingLayerServiceManager)(struct apvMessagingLayerComponent_tTag *thisComponent,
+                                                                                                              struct apvMessagingLayerComponent_tTag *allComponents))
   {
 /******************************************************************************/
 
@@ -231,6 +237,8 @@ APV_ERROR_CODE apvMessagingLayerComponentLoad(apvMessagingLayerPlaneHandlers_t  
 /* apvMessagingLayerGetComponentInputPort() :                                 */
 /*  --> componentCommsPlane         : comms plane id                          */
 /*  --> componentSignalPlane        : signalling plane id                     */
+/*  --> messagingLayerComponents    : definition of the messaging layer       */
+/*                                    components                              */
 /*  --> componentInpuMessageBuffers : address of the components' input        */
 /*                                    message buffer holding ring-buffer      */
 /*  <-- componentExistence          : [ false == 0 | true == !0 ]             */
@@ -288,21 +296,123 @@ bool apvMessagingLayerGetComponentInputPort(apvCommsPlanes_t               compo
 /* Messaging layer handling functions :                                       */
 /******************************************************************************/
 /* apvMessagingLayerSerialUARTInputHandler() :                                */
+/*  --> thisComponent : points to this handlers' component definition         */
+/*  --> allComponents : points to the list of handlers' component definitions */
+/*                                                                            */
+/* - all component handlers are data-driven; by definition there are one or   */
+/*   more messages on this components' input buffer to consume                */
+/*                                                                            */
 /******************************************************************************/
 
-void apvMessagingLayerSerialUARTInputHandler(void)
+void apvMessagingLayerSerialUARTInputHandler(struct apvMessagingLayerComponent_tTag *thisComponent,
+                                             struct apvMessagingLayerComponent_tTag *allComponents)
   {
 /******************************************************************************/
+
+  apvMessageStructure_t  *uartInputMessage  = NULL,
+                         *uartOutputMessage = NULL;
+
+  apvCommsPlanes_t        targetCommsPlane;
+  apvSignalPlanes_t       targetSignalPlane;
+
+  apvRingBuffer_t        *targetInputPort         = NULL,
+                        **targetInputPort_p       = &targetInputPort;
+
+/******************************************************************************/
+
+  // Pull a message from the input ring-buffer (which by definition exists
+  // otherwise this function would not have been called)
+  apvRingBufferUnLoad(thisComponent->messagingLayerInputBuffers,
+                      (uint32_t *)&uartInputMessage,
+                      1,
+                      true);
+
+  
+  // PROCESS SHIT
+
+
+
+
+
+  // Get a message buffer from the messaging layer message buffer pool ("output" in this case) 
+  // if one exists = otherwise no response is possible
+  if (apvRingBufferUnLoad(thisComponent->messagingLayerOutputBufferPool,
+                          (uint32_t *)&uartOutputMessage,
+                          1,
+                          true) != 0)
+    {
+    // Find the corresponding components' message buffer input port (for this channel it 
+    // is just the serial UART output component)
+    targetCommsPlane  = uartInputMessage->apvMessagingOutBoundPlanesToken.apvMessagePlanesToken  & APV_MESSAGE_PLANE_MASK;
+    targetSignalPlane = uartInputMessage->apvMessagingOutBoundPlanesToken.apvMessagePlanesToken >> APV_MESSAGE_PLANE_SHIFT;
+
+    if (apvMessageFramerCheckCommsPlane(targetCommsPlane) == true) // comms plane id exists
+      {
+      if (apvMessageFramerCheckSignalPlane(targetSignalPlane) == true) // signal plane id exists
+        {
+        if (apvMessagingLayerGetComponentInputPort(targetCommsPlane, 
+                                                   targetSignalPlane,
+                                                   allComponents,
+                                                   targetInputPort_p) == true)
+          {
+          }
+        }
+      }
+  // NEW SHIT
+
+
+
+
+
+  // Put the response to the UART input onto the UART outputs' input message buffer ring
+
+
+
+    }
+
+  // Finally put the exhausted input message buffer back on the messaging layer 
+  // message buffer pool. If this fails there is no recovery here
+  apvRingBufferLoad(thisComponent->messagingLayerInputBufferPool,
+                    (uint32_t *)&uartOutputMessage,
+                    1,
+                    true);
+
 /******************************************************************************/
   } /* end of apvMessagingLayerSerialUARTInputHandler                         */
 
 /******************************************************************************/
 /* apvMessagingLayerSerialUARTOutputHandler() :                               */
+/*  --> thisComponent : points to this handlers' component definition         */
+/*  --> allComponents : points to the list of handlers' component definitions */
+/*                                                                            */
+/* - all component handlers are data-driven; by definition there are one or   */
+/*   more messages on this components' input buffer to consume                */
+/*                                                                            */
 /******************************************************************************/
 
-void apvMessagingLayerSerialUARTOutputHandler(void)
+void apvMessagingLayerSerialUARTOutputHandler(struct apvMessagingLayerComponent_tTag *thisComponent,
+                                              struct apvMessagingLayerComponent_tTag *allComponents)
   {
 /******************************************************************************/
+
+  apvMessageStructure_t *uartOutputMessage = NULL;
+
+/******************************************************************************/
+
+  // Pull a message from the input ring-buffer (which by definition exists
+  // otherwise this function would not have been called)
+  apvRingBufferUnLoad(thisComponent->messagingLayerInputBuffers,
+                      (uint32_t *)&uartOutputMessage,
+                      1,
+                      true);
+
+  // Finally put the exhausted message buffer back on the messaging layer 
+  // message buffer pool. If this fails there is no recovery here
+  apvRingBufferLoad(thisComponent->messagingLayerInputBufferPool,
+                    (uint32_t *)&uartOutputMessage,
+                    1,
+                    true);
+
 /******************************************************************************/
   } /* end of apvMessagingLayerSerialUARTOutputHandler                        */
 

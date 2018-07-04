@@ -24,9 +24,10 @@
 /*   * NO SINGLE HANDLER FUNCTION MAY TERMINATE TWO HARDWARE SOURCES/SINKS *  */
 /*   ***********************************************************************  */
 /*                                                                            */
-/*   Typically a layer handler will be TWO functions, one serving a hardware  */
-/*   port input and one a related hardware port output e.g. serial UART tx    */
-/*   rx. So if the message path is (say) :                                    */
+/*   Typically a layer handler ("channel") will be serviced by TWO functions  */
+/*   or "components", one serving a hardware port input and one a related     */
+/*   hardware port output e.g. serial UART tx and rx. So if the message path  */
+/*   is (say) :                                                               */
 /*     hardware port rx -> message interpreter -> message response ->         */
 /*     hardware port tx                                                       */
 /*   the hardware port rx will firstly verify the incoming message. The       */
@@ -127,7 +128,8 @@ typedef struct apvMessagingLayerComponent_tTag
                                                            // - this ring-buffer is owned by the server
   apvRingBuffer_t   *messagingLayerInputBuffers;           // points to the ring-buffer of incoming message buffers that will be RETURNED to the servers' buffer pool
                                                            // this ring-buffer is owned by the component which does NOT own any message buffers
-  void             (*messagingLayerServiceManager)(void);  // the instance of a manager function
+  void             (*messagingLayerServiceManager)(struct apvMessagingLayerComponent_tTag *thisComponent,
+                                                   struct apvMessagingLayerComponent_tTag *allComponents);  // the instance of a manager function
   } apvMessagingLayerComponent_t;
 
 /******************************************************************************/
@@ -135,6 +137,7 @@ typedef struct apvMessagingLayerComponent_tTag
 /******************************************************************************/
 
 extern apvMessagingLayerComponent_t apvMessagingLayerComponents[APV_PLANE_SERIAL_UART_CHANNELS];
+extern bool                         apvMessagingLayerComponentReady[APV_MESSAGING_LAYER_COMPONENT_ENTRIES_SIZE];
 
 extern apvRingBuffer_t              apvMessagingLayerFreeBufferSet;
 extern apvMessageStructure_t        apvMessagingLayerFreeBuffers[APV_MESSAGING_LAYER_FREE_MESSAGE_BUFFER_SET_SIZE];
@@ -147,7 +150,7 @@ extern apvRingBuffer_t              apvMessagingLayerComponentSerialUartRxBuffer
 /******************************************************************************/
 
 extern APV_ERROR_CODE apvMessagingLayerComponentInitialise(apvMessagingLayerComponent_t *messagingLayerComponents,
-                                                    uint16_t                      messagingLayerComponentEntries);
+                                                           uint16_t                      messagingLayerComponentEntries);
 extern APV_ERROR_CODE apvMessagingLayerComponentLoad(apvMessagingLayerPlaneHandlers_t  messagingLayerComponentIndex,
                                                      apvMessagingLayerComponent_t     *messagingLayerComponents,
                                                      uint16_t                          messagingLayerComponentEntries,
@@ -156,15 +159,18 @@ extern APV_ERROR_CODE apvMessagingLayerComponentLoad(apvMessagingLayerPlaneHandl
                                                      apvRingBuffer_t                  *messagingLayerMessageBuffers, // the components' holding ring of borrowed message buffers
                                                      apvCommsPlanes_t                  messagingLayerCommsPlane,
                                                      apvSignalPlanes_t                 messagingLayerSignalPlane,
-                                                     void                            (*messagingLayerServiceManager)(void));
+                                                     void                            (*messagingLayerServiceManager)(struct apvMessagingLayerComponent_tTag *thisComponent,
+                                                                                                                     struct apvMessagingLayerComponent_tTag *allComponents));
 
 extern bool           apvMessagingLayerGetComponentInputPort(apvCommsPlanes_t               componentCommsPlane, 
                                                              apvSignalPlanes_t              componentSignalPlane,
                                                              apvMessagingLayerComponent_t  *messagingLayerComponents,
                                                              apvRingBuffer_t              **componentInpuMessageBuffers);
 
-extern void           apvMessagingLayerSerialUARTInputHandler(void);
-extern void           apvMessagingLayerSerialUARTOutputHandler(void);
+extern void           apvMessagingLayerSerialUARTInputHandler(struct apvMessagingLayerComponent_tTag *thisComponent,
+                                                              struct apvMessagingLayerComponent_tTag *allComponents);
+extern void           apvMessagingLayerSerialUARTOutputHandler(struct apvMessagingLayerComponent_tTag *thisComponent,
+                                                               struct apvMessagingLayerComponent_tTag *allComponents);
 
 /******************************************************************************/
 

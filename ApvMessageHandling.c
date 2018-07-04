@@ -993,18 +993,18 @@ APV_MESSAGING_STATE_CODE apvMessagingDeFramingReporter(apvMessagingDeFramingStat
   {
 /******************************************************************************/
 
-  APV_MESSAGING_STATE_CODE  apvStateError           = APV_STATE_MACHINE_CODE_NONE;
+  APV_MESSAGING_STATE_CODE  apvStateError           =  APV_STATE_MACHINE_CODE_NONE;
 
-  apvMessageStructure_t    *liveMessageBuffer       = NULL;
+  apvMessageStructure_t    *liveMessageBuffer       =  NULL;
 
   uint32_t                  *newMessageBuffer       =  NULL,
                            **newMessageBuffer_p     = &newMessageBuffer;
 
-  apvCommsPlanes_t          targetCommsPlane        = APV_COMMS_PLANE_UNUSED_0;
-  apvSignalPlanes_t         targetSignalPlane       = APV_SIGNAL_PLANE_UNUSED_0;
+  apvCommsPlanes_t          targetCommsPlane        =  APV_COMMS_PLANE_UNUSED_0;
+  apvSignalPlanes_t         targetSignalPlane       =  APV_SIGNAL_PLANE_UNUSED_0;
 
-  apvRingBuffer_t          *freeMessageBufferRing_p = NULL,
-                           *targetInputPort         = NULL,
+  apvRingBuffer_t          *freeMessageBufferRing_p =  NULL,
+                           *targetInputPort         =  NULL,
                           **targetInputPort_p       = &targetInputPort;
 
 /******************************************************************************/

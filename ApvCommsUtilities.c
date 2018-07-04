@@ -289,7 +289,8 @@ APV_ERROR_CODE apvRingBufferInitialise(apvRingBuffer_t *ringBuffer,
 /*   --> interruptControl : optional interrupt-enable/disable switch          */
 /*                                                                            */
 /* - returns the current fill state of a ring-buffer without removing any of  */
-/*   the tokens                                                               */
+/*   the tokens. This fucntion will be used to detect data-driven input to    */
+/*   processes so any way to make it faster...                                */
 /*                                                                            */
 /******************************************************************************/
 

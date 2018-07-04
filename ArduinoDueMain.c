@@ -55,6 +55,9 @@ int main(void)
 
            bool                   apvPrimarySerialPortStart = false;
 
+           uint16_t components                              = 0,
+                    messageCount                            = 0;
+
 /******************************************************************************/
 
   // Create the serial UART inter-messaging layer message buffers
@@ -75,9 +78,9 @@ int main(void)
   apvSerialErrorCode = apvMessagingLayerComponentLoad( APV_PLANE_SERIAL_UART_CONTROL_0,
                                                       &apvMessagingLayerComponents[0],
                                                        APV_PLANE_SERIAL_UART_CHANNELS,
-                                                      &apvMessageSerialUartFreeBufferSet,
-                                                      &apvMessagingLayerFreeBufferSet,
-                                                      &apvMessagingLayerComponentSerialUartRxBuffer,
+                                                      &apvMessageSerialUartFreeBufferSet,            // serial UART free buffer set/pool
+                                                      &apvMessagingLayerFreeBufferSet,               // messaging layer free buffer set/pool
+                                                      &apvMessagingLayerComponentSerialUartRxBuffer, // serial UART component input ring
                                                        APV_COMMS_PLANE_SERIAL_UART,
                                                        APV_SIGNAL_PLANE_CONTROL_0,
                                                       &apvMessagingLayerSerialUARTInputHandler);
@@ -86,9 +89,9 @@ int main(void)
   apvSerialErrorCode = apvMessagingLayerComponentLoad( APV_PLANE_SERIAL_UART_CONTROL_1,
                                                       &apvMessagingLayerComponents[0],
                                                        APV_PLANE_SERIAL_UART_CHANNELS,
-                                                      &apvMessagingLayerFreeBufferSet,
-                                                      &apvMessageSerialUartFreeBufferSet,
-                                                      &apvMessagingLayerComponentSerialUartTxBuffer,
+                                                      &apvMessagingLayerFreeBufferSet,               // messaging layer free buffer set/pool
+                                                      &apvMessageSerialUartFreeBufferSet,            // serial UART free buffer set/pool
+                                                      &apvMessagingLayerComponentSerialUartTxBuffer, // serial UART component output ring
                                                        APV_COMMS_PLANE_SERIAL_UART,
                                                        APV_SIGNAL_PLANE_CONTROL_1,
                                                       &apvMessagingLayerSerialUARTOutputHandler);
@@ -233,6 +236,11 @@ int main(void)
          apvRunTimeCounterOld = apvRunTimeCounter;
 
          /******************************************************************************/
+         /* Low-level message input de-framing is handled here :                       */
+         /*                                                                            */
+         /*        *** MESSAGE DEFRAMING : LOW-LEVEL MESSAGE STATE-MACHINES ***        */
+         /*                                                                            */
+         /******************************************************************************/
          /* The first level of wired (serial port) I/O is a framed message defined by  */
          /* a finite-state-machine.                                                    */
          /******************************************************************************/
@@ -257,9 +265,58 @@ int main(void)
          /* arrival                                                                    */
          /******************************************************************************/
 
+         // Run the serial UART comms message state-machine
          apvSerialErrorCode = apvDeFrameMessage(&apvMessagingDeFramingStateMachine[0]);
 
          /******************************************************************************/
+         /* The second level of any message activity is handled here :                 */
+         /*                                                                            */
+         /*               *** MESSAGING LAYER : COMPONENT HANDLERS ***                 */
+         /*                                                                            */
+         /******************************************************************************/
+         /* All messaging-layer component handling is data-driven. Each component      */
+         /* handler has in input port and an output port - activity is triggered by    */
+         /* messages arriving at the input ports :                                     */
+         /******************************************************************************/
+         /* A communications channel is usually two components, one input and one      */
+         /* output. To remove the effect of the linear search on a channel i.e. if the */
+         /* input component is earlier than the output component the channel gets two  */
+         /* bites of the cherry because the input component sends a message to the     */
+         /* output component, the "ready" state is read first for the whole list       */
+         /* before acting on it                                                        */
+         /******************************************************************************/
+
+         for (components = 0; components < APV_MESSAGING_LAYER_COMPONENT_ENTRIES_SIZE; components++)
+           { // Visit each CHANNEL once at each pass
+           if (apvMessagingLayerComponents[components].messagingLayerComponentLoaded == true)
+             { // Check if the component is loaded
+             if (apvRingBufferReportFillState( apvMessagingLayerComponents[components].messagingLayerInputBuffers,
+                                              &messageCount,
+                                               true) == APV_ERROR_CODE_NONE)
+               { // Only service components that have messages waiting at their input ports
+               if (messageCount != 0)
+                 {
+                 apvMessagingLayerComponentReady[components] = true;
+                 }
+               else
+                 {
+                 apvMessagingLayerComponentReady[components] = false;
+                 }
+               }
+             }
+           }
+
+         for (components = 0; components < APV_MESSAGING_LAYER_COMPONENT_ENTRIES_SIZE; components++)
+           {
+           if (apvMessagingLayerComponentReady[components] == true)
+             {
+             apvMessagingLayerComponents[components].messagingLayerServiceManager(&apvMessagingLayerComponents[components],
+                                                                                  (apvMessagingLayerComponent_t *)&apvMessagingLayerComponents);
+             }
+           }
+
+         /******************************************************************************/
+
          }
 
 #if (0)
