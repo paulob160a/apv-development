@@ -67,10 +67,12 @@
 /******************************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 #include "apvError.h"
 #include "ApvCommsUtilities.h"
 #include "ApvMessageHandling.h"
 #include "ApvMessagingLayerManager.h"
+#include "ApvControlPortProtocol.h"
 
 /******************************************************************************/
 /* Constants :                                                                */
@@ -315,8 +317,10 @@ void apvMessagingLayerSerialUARTInputHandler(struct apvMessagingLayerComponent_t
   apvCommsPlanes_t        targetCommsPlane;
   apvSignalPlanes_t       targetSignalPlane;
 
-  apvRingBuffer_t        *targetInputPort         = NULL,
-                        **targetInputPort_p       = &targetInputPort;
+  apvRingBuffer_t        *targetInputPort   = NULL,
+                        **targetInputPort_p = &targetInputPort;
+
+  uint16_t                protocolMessage   = 0;
 
 /******************************************************************************/
 
@@ -327,48 +331,119 @@ void apvMessagingLayerSerialUARTInputHandler(struct apvMessagingLayerComponent_t
                       1,
                       true);
 
-  
-  // PROCESS SHIT
+  /******************************************************************************/
+  /* Serial port messages can be "local" i.e. handled only in the serial        */
+  /* messaging layer, or "remote" i.e. to be passed to other components for     */
+  /* resolution                                                                 */
+  /******************************************************************************/
 
+  targetCommsPlane = uartInputMessage->apvMessagingOutBoundPlanesToken.apvMessagePlanesToken  & APV_MESSAGE_PLANE_MASK;
 
-
-
-
-  // Get a message buffer from the messaging layer message buffer pool ("output" in this case) 
-  // if one exists = otherwise no response is possible
-  if (apvRingBufferUnLoad(thisComponent->messagingLayerOutputBufferPool,
-                          (uint32_t *)&uartOutputMessage,
-                          1,
-                          true) != 0)
+  if (apvMessageFramerCheckCommsPlane(targetCommsPlane) == true)
     {
-    // Find the corresponding components' message buffer input port (for this channel it 
-    // is just the serial UART output component)
-    targetCommsPlane  = uartInputMessage->apvMessagingOutBoundPlanesToken.apvMessagePlanesToken  & APV_MESSAGE_PLANE_MASK;
-    targetSignalPlane = uartInputMessage->apvMessagingOutBoundPlanesToken.apvMessagePlanesToken >> APV_MESSAGE_PLANE_SHIFT;
-
-    if (apvMessageFramerCheckCommsPlane(targetCommsPlane) == true) // comms plane id exists
-      {
-      if (apvMessageFramerCheckSignalPlane(targetSignalPlane) == true) // signal plane id exists
+    if (targetCommsPlane == APV_COMMS_PLANE_SERIAL_UART)
+      { 
+      // These messages are "local", to be resolved here - get the command from the message buffer
+      for (protocolMessage = 0; protocolMessage < APV_COMMAND_PROTOCOL_MESSAGE_DEFINITIONS; protocolMessage++)
         {
-        if (apvMessagingLayerGetComponentInputPort(targetCommsPlane, 
-                                                   targetSignalPlane,
-                                                   allComponents,
-                                                   targetInputPort_p) == true)
+        // The message command type must be a string
+        if (apvCommandProtocol[protocolMessage].apvCommandProtocolFields->apvCommandProtocolFieldType == APV_COMMAND_PROTOCOL_FIELD_TYPE_TEXT)
           {
+          if (apvStringCompare((char *)&apvCommandProtocol[protocolMessage].apvCommandProtocolFields->apvCommandProtocolField.apvCommandProtocolText, 
+                               0, 
+                               strlen(apvCommandProtocol[protocolMessage].apvCommandProtocolFields->apvCommandProtocolField.apvCommandProtocolText),
+                               (char *)&uartInputMessage->apvMessagingPayload[0],
+                               0,
+                               0,
+                               false) == true)
+            {
+            break;
+            }
+          }
+        }
+
+      // Has the message type been found ?
+      if (protocolMessage < APV_COMMAND_PROTOCOL_MESSAGE_DEFINITIONS)
+        {
+        // Get a message buffer from the messaging layer message buffer pool ("output" in this case) 
+        // if one exists = otherwise no response is possible
+        if (apvRingBufferUnLoad(thisComponent->messagingLayerOutputBufferPool,
+                      (uint32_t *)&uartOutputMessage,
+                      1,
+                      true) != 0)
+          {
+          targetSignalPlane = uartInputMessage->apvMessagingOutBoundPlanesToken.apvMessagePlanesToken >> APV_MESSAGE_PLANE_SHIFT;
+        
+          if (apvMessageFramerCheckSignalPlane(targetSignalPlane) == true) // signal plane id exists
+            {
+            if (apvMessagingLayerGetComponentInputPort(targetCommsPlane, 
+                                                       targetSignalPlane,
+                                                       allComponents,
+                                                       targetInputPort_p) == true)
+              {
+              // Re-route the message; first copy the contents. This is a pain but otherwise keeping 
+              // the input and output message buffers straight is a nightmare!
+              *uartOutputMessage = *uartInputMessage;
+      
+               // If the response message is present, put that in the output buffer
+               if (apvCommandProtocol[protocolMessage].commandProtocolMessageResponse != NULL)
+                 {
+                 strcpy((char *)&uartOutputMessage->apvMessagingPayload[0], (const char *)&apvCommandProtocol[protocolMessage].commandProtocolMessageResponse[0]);
+                 }
+
+               // But - change the "inbound" channel codes...the "outbound" channel codes are not 
+               // really of interest as this message is destined for the hardware output port
+               uartOutputMessage->apvMessagingInBoundPlanesToken.apvMessagePlanesToken = 
+                                                       uartInputMessage->apvMessagingOutBoundPlanesToken.apvMessagePlanesToken;
+      
+               apvRingBufferLoad(targetInputPort,
+                                 (uint32_t *)&uartOutputMessage,
+                                 1,
+                                 true);
+              }
+            }
           }
         }
       }
-  // NEW SHIT
+    else
+      { 
+      // These messages need to be sent somewhere else, get a message buffer from the messaging
+      // layer message buffer pool ("output" in this case) if one exists, otherwise no response
+      // is possible
+      if (apvRingBufferUnLoad(thisComponent->messagingLayerOutputBufferPool,
+                              (uint32_t *)&uartOutputMessage,
+                              1,
+                              true) != 0)
+        {
+        // Find the corresponding components' message buffer input port
+        targetCommsPlane = uartInputMessage->apvMessagingOutBoundPlanesToken.apvMessagePlanesToken  & APV_MESSAGE_PLANE_MASK;
+        targetSignalPlane = uartInputMessage->apvMessagingOutBoundPlanesToken.apvMessagePlanesToken >> APV_MESSAGE_PLANE_SHIFT;
+    
+        if (apvMessageFramerCheckSignalPlane(targetSignalPlane) == true) // signal plane id exists
+          {
+          if (apvMessagingLayerGetComponentInputPort(targetCommsPlane, 
+                                                     targetSignalPlane,
+                                                     allComponents,
+                                                     targetInputPort_p) == true)
+            {
+            // Re-route the message; first copy the contents. This is a pain but otherwise keeping 
+            // the input and output message buffers straight is a nightmare!
+            *uartOutputMessage = *uartInputMessage;
 
+             // But - change the "inbound" channel codes...the "outbound" channel codes will need to be 
+             // determined by the target channel
+             uartOutputMessage->apvMessagingInBoundPlanesToken.apvMessagePlanesToken = 
+                                                     uartInputMessage->apvMessagingOutBoundPlanesToken.apvMessagePlanesToken;
 
-
-
-
-  // Put the response to the UART input onto the UART outputs' input message buffer ring
-
-
-
-    }
+             apvRingBufferLoad(targetInputPort,
+                               (uint32_t *)&uartOutputMessage,
+                               1,
+                               true);
+            }
+          }
+        }
+      }
+    } // if apvMessageFramerCheckCommsPlane()
 
   // Finally put the exhausted input message buffer back on the messaging layer 
   // message buffer pool. If this fails there is no recovery here
