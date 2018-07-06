@@ -295,7 +295,7 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
 /******************************************************************************/
 
    uint32_t statusRegister = 0;
-   uint8_t  txRxBuffer     = 0;
+   uint32_t txRxBuffer     = 0;
 
 /******************************************************************************/
 
@@ -308,7 +308,7 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
       apvInterruptCounters[APV_RECEIVE_INTERRUPT_COUNTER] = apvInterruptCounters[APV_RECEIVE_INTERRUPT_COUNTER] + 1;
 
       // Read the new character
-      apvUartCharacterReceive(&txRxBuffer);
+      apvUartCharacterReceive((uint8_t *)&txRxBuffer);
 
       // Put it into the current receiver ring buffer if there is room
       if (apvRingBufferLoad( apvPrimarySerialCommsReceiveBuffer,
@@ -333,8 +333,8 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
                                sizeof(uint8_t),
                                false) != 0)
         {
-        ApvUartControlBlock_p->UART_THR = txRxBuffer;
-        ApvUartControlBlock.UART_THR    = txRxBuffer;
+        ApvUartControlBlock_p->UART_THR = (uint8_t)txRxBuffer;
+        ApvUartControlBlock.UART_THR    = (uint8_t)txRxBuffer;
         }
       else
         {

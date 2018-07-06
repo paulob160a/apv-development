@@ -73,6 +73,7 @@
 #include "ApvMessageHandling.h"
 #include "ApvMessagingLayerManager.h"
 #include "ApvControlPortProtocol.h"
+#include "ApvPeripheralControl.h"
 
 /******************************************************************************/
 /* Constants :                                                                */
@@ -366,7 +367,7 @@ void apvMessagingLayerSerialUARTInputHandler(struct apvMessagingLayerComponent_t
       if (protocolMessage < APV_COMMAND_PROTOCOL_MESSAGE_DEFINITIONS)
         {
         // Get a message buffer from the messaging layer message buffer pool ("output" in this case) 
-        // if one exists = otherwise no response is possible
+        // if one exists - otherwise no response is possible
         if (apvRingBufferUnLoad(thisComponent->messagingLayerOutputBufferPool,
                       (uint32_t *)&uartOutputMessage,
                       1,
@@ -390,6 +391,8 @@ void apvMessagingLayerSerialUARTInputHandler(struct apvMessagingLayerComponent_t
                  {
                  strcpy((char *)&uartOutputMessage->apvMessagingPayload[0], (const char *)&apvCommandProtocol[protocolMessage].commandProtocolMessageResponse[0]);
                  }
+
+               uartOutputMessage->apvMessagingLengthOfMessage = strlen((const char *)&apvCommandProtocol[protocolMessage].commandProtocolMessageResponse[0]);
 
                // But - change the "inbound" channel codes...the "outbound" channel codes are not 
                // really of interest as this message is destined for the hardware output port
@@ -448,7 +451,7 @@ void apvMessagingLayerSerialUARTInputHandler(struct apvMessagingLayerComponent_t
   // Finally put the exhausted input message buffer back on the messaging layer 
   // message buffer pool. If this fails there is no recovery here
   apvRingBufferLoad(thisComponent->messagingLayerInputBufferPool,
-                    (uint32_t *)&uartOutputMessage,
+                    (uint32_t *)&uartInputMessage,
                     1,
                     true);
 
@@ -470,7 +473,11 @@ void apvMessagingLayerSerialUARTOutputHandler(struct apvMessagingLayerComponent_
   {
 /******************************************************************************/
 
-  apvMessageStructure_t *uartOutputMessage = NULL;
+  apvMessageStructure_t *uartOutputMessage                    = NULL,
+                         uartModifiedOutputMessage;
+
+  uint16_t               uartModifiedOutputMessageFinalLength = 0,
+                         txCharacters                         = 0;
 
 /******************************************************************************/
 
@@ -480,6 +487,52 @@ void apvMessagingLayerSerialUARTOutputHandler(struct apvMessagingLayerComponent_
                       (uint32_t *)&uartOutputMessage,
                       1,
                       true);
+
+  // Assuming the incoming message is a bit "raw", re-frame the payload using the 
+  // same message parameters otherwise
+  if (apvFrameMessage(&uartModifiedOutputMessage,
+                       uartOutputMessage->apvMessagingInBoundPlanesToken.apvMessagePlanesToken  &  APV_MESSAGE_PLANE_MASK,
+                       uartOutputMessage->apvMessagingInBoundPlanesToken.apvMessagePlanesToken  >> APV_MESSAGE_PLANE_SHIFT,
+                       uartOutputMessage->apvMessagingOutBoundPlanesToken.apvMessagePlanesToken &  APV_MESSAGE_PLANE_MASK,
+                       uartOutputMessage->apvMessagingOutBoundPlanesToken.apvMessagePlanesToken >> APV_MESSAGE_PLANE_SHIFT,
+                      &uartOutputMessage->apvMessagingPayload[0],
+                       strlen((const char *)&uartOutputMessage->apvMessagingPayload[0]),
+                      &uartModifiedOutputMessageFinalLength
+                      ) == APV_ERROR_CODE_NONE)
+    {
+    APV_CRITICAL_REGION_ENTRY();
+
+    if (transmitInterrupt == false)
+      {
+      for (txCharacters = 1; txCharacters < uartOutputMessage->apvMessagingLengthOfMessage; txCharacters++)
+        {
+        // Put as many characters as possible on the serial UART hardware output ring
+        apvRingBufferLoad(apvPrimarySerialCommsTransmitBuffer,
+                          (uint32_t *)&uartOutputMessage->apvMessagingPayload[txCharacters],
+                          1,
+                          false);
+        }
+
+      apvUartCharacterTransmitPrime(ApvUartControlBlock_p,
+                                    uartOutputMessage->apvMessagingPayload[0]);
+
+      transmitInterrupt = true;
+      APV_CRITICAL_REGION_EXIT();
+      }
+    else
+      {
+      for (txCharacters = 0; txCharacters < uartOutputMessage->apvMessagingLengthOfMessage; txCharacters++)
+        {
+        // Put as many characters as possible on the serial UART hardware output ring
+        apvRingBufferLoad(apvPrimarySerialCommsTransmitBuffer,
+                          (uint32_t *)&uartOutputMessage->apvMessagingPayload[txCharacters],
+                          1,
+                          false);
+        }
+      }
+
+    APV_CRITICAL_REGION_EXIT();
+    }
 
   // Finally put the exhausted message buffer back on the messaging layer 
   // message buffer pool. If this fails there is no recovery here

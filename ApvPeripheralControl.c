@@ -450,6 +450,13 @@ APV_ERROR_CODE apvUartCharacterTransmit(uint8_t transmitBuffer)
 
 /******************************************************************************/
 /* apvUartCharacterTransmitPrime() :                                          */
+/*  --> uartControlBlock : address of the serial UART hardware definition     */
+/*  --> transmitBuffer   : a single-character transmit buffer                 */
+/*  <-- uartErrorCode    : error codes                                        */
+/*                                                                            */
+/* - put a single character onto the output port and trigger interrupts to    */
+/*   stream out further characters in an external ring-buffer                 */
+/*                                                                            */
 /******************************************************************************/
 
 APV_ERROR_CODE apvUartCharacterTransmitPrime(Uart     *uartControlBlock,
@@ -469,7 +476,7 @@ APV_ERROR_CODE apvUartCharacterTransmitPrime(Uart     *uartControlBlock,
     }
   else
     {
-    __disable_irq();
+    APV_CRITICAL_REGION_ENTRY();
 
     statusRegister = uartControlBlock->UART_SR;
 
@@ -488,7 +495,7 @@ APV_ERROR_CODE apvUartCharacterTransmitPrime(Uart     *uartControlBlock,
       uartErrorCode = APV_SERIAL_ERROR_CODE_TRANSMITTER_NOT_READY;
       }
 
-    __enable_irq();
+    APV_CRITICAL_REGION_EXIT();
     }
 
 /******************************************************************************/
@@ -530,7 +537,7 @@ APV_ERROR_CODE apvUartBufferTransmitPrime(Uart             *uartControlBlock,
     {
     __disable_irq();
 
-    // Does the tranmit buffer liat have a buffer in it and does this buffer have characters in it ?
+    // Does the transmit buffer liat have a buffer in it and does this buffer have characters in it ?
     if (apvRingBufferUnLoad( uartTransmitBufferList,
                             (uint32_t *)uartTransmitBuffer,
                              sizeof(uint8_t),
