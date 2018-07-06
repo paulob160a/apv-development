@@ -422,6 +422,7 @@ APV_MESSAGING_STATE_CODE apvDeFrameMessageInitialisation(apvRingBuffer_t        
     {
     // Get a message buffer from the "free" list
     if (apvRingBufferUnLoad( messageFreeBuffers,
+                             APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD,
                             (uint32_t *)messageBuffer_p,
                              1,
                              true) != 0)
@@ -585,6 +586,7 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingInBoundSignalAndLogicalPlanes(apvMes
 
   // Get the next token off the ring-buffer if it exists
   if (apvRingBufferUnLoad((apvRingBuffer_t *)(ringBufferPointer.apvPointerConversion),
+                          APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD,
                           ((uint32_t *)(&messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN])),
                           1,
                           true) != 0)
@@ -642,6 +644,7 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingOutBoundSignalAndLogicalPlanes(apvMe
 
   // Get the next token off the ring-buffer if it exists
   if (apvRingBufferUnLoad((apvRingBuffer_t *)(ringBufferPointer.apvPointerConversion),
+                          APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD,
                           ((uint32_t *)(&messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN])),
                           1,
                           true) != 0)
@@ -699,6 +702,7 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingMessageLength(apvMessagingDeFramingS
 
   // Get the next token off the ring-buffer if it exists
   if (apvRingBufferUnLoad((apvRingBuffer_t *)(ringBufferPointer.apvPointerConversion),
+                          APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD,
                           ((uint32_t *)(&messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN])),
                           1,
                           true) != 0)
@@ -761,6 +765,7 @@ APV_MESSAGING_STATE_CODE apvMessageDeFramingDataByte(apvMessagingDeFramingState_
 
   // Get the next token off the ring-buffer if it exists
   if (apvRingBufferUnLoad((apvRingBuffer_t *)(ringBufferPointer.apvPointerConversion),
+                          APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD,
                           ((uint32_t *)(&messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN])),
                           1,
                           true) != 0)
@@ -911,6 +916,7 @@ APV_MESSAGING_STATE_CODE apvMessagingDeFramingCrcBytes(apvMessagingDeFramingStat
     {
      // Get the next token off the ring-buffer if it exists
     if (apvRingBufferUnLoad((apvRingBuffer_t *)(ringBufferPointer.apvPointerConversion),
+                            APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD,
                             ((uint32_t *)(&messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_VARIABLE_NEW_TOKEN])),
                             1,
                             true) != 0)
@@ -1032,6 +1038,7 @@ APV_MESSAGING_STATE_CODE apvMessagingDeFramingReporter(apvMessagingDeFramingStat
           {
           // If possible load the new message onto the messaging layer components' input port
           if (apvRingBufferLoad( targetInputPort,
+                                 APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD,
                                 (uint32_t *)&liveMessageBuffer,
                                  1,
                                  true) != 0)
@@ -1040,6 +1047,7 @@ APV_MESSAGING_STATE_CODE apvMessagingDeFramingReporter(apvMessagingDeFramingStat
             freeMessageBufferRing_p = (apvRingBuffer_t *)messageStateMachine->apvMessageStateVariables->apvMessageStateVariables[APV_MESSAGE_FRAME_STATE_FREE_MESSAGE_BUFFERS_LOW];
 
             if (apvRingBufferUnLoad( freeMessageBufferRing_p,
+                                     APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD,
                                     (uint32_t *)newMessageBuffer_p,
                                      1,
                                      true) != 0)
@@ -1130,6 +1138,7 @@ APV_ERROR_CODE apvCreateMessageBuffers(apvRingBuffer_t       *apvMessageBufferSe
           messageBuffer = (uint32_t)(apvMessageBuffers + apvMessageBufferSetSize);
 
           if (apvRingBufferLoad(apvMessageBufferSet,
+                                APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD,
                                 (uint32_t *)&messageBuffer,
                                 1,
                                 false) == 0)

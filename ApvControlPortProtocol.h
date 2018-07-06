@@ -31,7 +31,7 @@
 ----------------------------\r\n"
 
 #define APV_COMMAND_PROTOCOL_MESSAGE_COMMAND_SIGN_ON           "APV_SIGN_ON"
-#define APV_COMMAND_PROTOCOL_MESSAGE_RESPONSE_SIGN_ON          "APV Primary Control Protocol"
+#define APV_COMMAND_PROTOCOL_MESSAGE_RESPONSE_SIGN_ON          "APV Primary Control Protocol \r"
 
 #define APV_COMMAND_PROTOCOL_MESSAGE_DEFINITIONS                1 // keep this in sync with the defined messages
 

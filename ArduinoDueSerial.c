@@ -288,6 +288,15 @@ APV_SERIAL_ERROR_CODE apvSerialCommsManager(APV_PRIMARY_SERIAL_PORT   apvPrimary
 /******************************************************************************/
 /* apvPrimarySerialCommsHandler() :                                           */
 /*  --> apvPrimarySerialPort : serial port serving as primary                 */
+/*                                                                            */
+/* - handle the serial UART transmit and receive interrupts. Serial I/O is a  */
+/*   per-character operation where the received characters are loaded onto a  */
+/*   known ring-buffer for consumption by higher processing layers and those  */
+/*   layers load a known ring-buffer in the opposite direction for transmit.  */
+/*   Currently the ring-buffers have a native element of 32-bits to allow the */
+/*   storage of 1, 2, 3 and 4-byte values. Hence all operations need to be    */
+/*   four-byte aligned when pushing and pulling values                        */
+/*                                                                            */
 /******************************************************************************/
 
 void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
@@ -312,6 +321,7 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
 
       // Put it into the current receiver ring buffer if there is room
       if (apvRingBufferLoad( apvPrimarySerialCommsReceiveBuffer,
+                             APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD,
                             (uint32_t *)&txRxBuffer,
                              sizeof(uint8_t),
                              false) == 0)
@@ -329,6 +339,7 @@ void apvPrimarySerialCommsHandler(APV_PRIMARY_SERIAL_PORT apvPrimarySerialPort)
 
       // Send the next character if one exists
       if (apvRingBufferUnLoad( apvPrimarySerialCommsTransmitBuffer,
+                               APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD,
                               (uint32_t *)&txRxBuffer,
                                sizeof(uint8_t),
                                false) != 0)

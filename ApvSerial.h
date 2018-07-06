@@ -136,7 +136,8 @@ extern APV_ERROR_CODE        apvUartBufferTransmitPrime(Uart             *uartCo
                                                         apvRingBuffer_t  *uartTransmitBufferList,
                                                         apvRingBuffer_t **uartTransmitBuffer);
 extern APV_ERROR_CODE        apvUartCharacterTransmitPrime(Uart     *uartControlBlock,
-                                                           uint32_t  transmitBuffer);
+                                                           uint32_t  transmitBuffer,
+                                                           bool      interruptControl);
 
 /******************************************************************************/
 

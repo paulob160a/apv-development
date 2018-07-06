@@ -333,6 +333,9 @@ APV_ERROR_CODE apvRingBufferReportFillState(apvRingBuffer_t *ringBuffer,
 /******************************************************************************/
 /* apvRingBufferLoad() :                                                      */
 /*  <--> ringBuffer             : pointer to a ring-buffer structure          */
+/*   --> ringBufferTokenType    : [APV_RING_BUFFER_TOKEN_TYPE_ONE_BYTE  = 1 | */
+/*                                 APV_RING_BUFFER_TOKEN_TYPE_ONE_WORD  = 2 | */
+/*                                 APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD = 4]  */
 /*   --> tokens                 : pointer to a transmitting buffer of         */
 /*                                1 { <token> } n                             */
 /*   --> numberOfTokensToLoad   : number of tokens to load                    */
@@ -353,15 +356,18 @@ APV_ERROR_CODE apvRingBufferReportFillState(apvRingBuffer_t *ringBuffer,
 /*                                                                            */
 /******************************************************************************/
 
-uint16_t apvRingBufferLoad(apvRingBuffer_t *ringBuffer,
-                           uint32_t        *tokens,
-                           uint16_t         numberOfTokensToLoad,
-                           bool             interruptControl)
+uint16_t apvRingBufferLoad(apvRingBuffer_t          *ringBuffer,
+                           apvRingBufferTokenType_t  ringBufferTokenType,
+                           uint32_t                 *tokens,
+                           uint16_t                  numberOfTokensToLoad,
+                           bool                      interruptControl)
   {
 /******************************************************************************/
 
-  uint16_t numberOfTokensLoaded = 0;
+  uint16_t                  numberOfTokensLoaded = 0;
 
+  apvRingBufferTokenSize_t ringBufferTokenSize;       // use this union to convert the pointer to use to store 
+                                                      // tokens
 /******************************************************************************/
 
   if (numberOfTokensToLoad > 0)
@@ -384,9 +390,47 @@ uint16_t apvRingBufferLoad(apvRingBuffer_t *ringBuffer,
       ringBuffer->apvCommsRingBufferLoad = ringBuffer->apvCommsRingBufferLoad + numberOfTokensToLoad;
       numberOfTokensLoaded               = numberOfTokensToLoad;
 
+      /******************************************************************************/
+      /* Cast the token pointer for the type of data to be loaded                   */
+      /******************************************************************************/
+
+      switch(ringBufferTokenType)
+        {
+        case APV_RING_BUFFER_TOKEN_TYPE_ONE_BYTE  : ringBufferTokenSize.token8Bits  = (uint8_t *)tokens;
+                                                    break;
+        case APV_RING_BUFFER_TOKEN_TYPE_ONE_WORD  : ringBufferTokenSize.token16Bits = (uint16_t *)tokens;
+                                                    break;
+        case APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD : ringBufferTokenSize.token32Bits = (uint32_t *)tokens;
+        default                                   : break;
+        case APV_RING_BUFFER_TOKEN_TYPE_HUGE_WORD : ringBufferTokenSize.token64Bits = (uint64_t *)tokens;
+                                                    break;
+        }
+
       while (numberOfTokensToLoad > 0)
         {
-        *(ringBuffer->apvCommsRingBufferHead) = *tokens;
+        /******************************************************************************/
+        /* Store the tokens according to their type, so lower bit-sized tokens will   */
+        /* be correctly aligned in the (32-bit) ring-buffer element when doing a      */
+        /* multiple token load, drastically reducing the function call overhead       */
+        /******************************************************************************/
+
+        switch(ringBufferTokenType)
+          {
+          case APV_RING_BUFFER_TOKEN_TYPE_ONE_BYTE  : *((uint8_t *)ringBuffer->apvCommsRingBufferHead)  = *ringBufferTokenSize.token8Bits;
+                                                       ringBufferTokenSize.token8Bits                   =  ringBufferTokenSize.token8Bits  + 1;
+                                                      break;
+
+          case APV_RING_BUFFER_TOKEN_TYPE_ONE_WORD  : *((uint16_t *)ringBuffer->apvCommsRingBufferHead) = *ringBufferTokenSize.token16Bits;
+                                                       ringBufferTokenSize.token16Bits                  =  ringBufferTokenSize.token16Bits + 1;
+                                                      break;
+
+          case APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD : *((uint32_t *)ringBuffer->apvCommsRingBufferHead) = *ringBufferTokenSize.token32Bits;
+                                                       ringBufferTokenSize.token32Bits                  =  ringBufferTokenSize.token32Bits + 1;
+          default                                   : break;
+
+          case APV_RING_BUFFER_TOKEN_TYPE_HUGE_WORD : *((uint64_t *)ringBuffer->apvCommsRingBufferHead) = *ringBufferTokenSize.token64Bits;
+                                                       ringBufferTokenSize.token64Bits                  =  ringBufferTokenSize.token64Bits + 1;
+          }
 
         // Move the "head" pointer on to the next ring-buffer slot
         if (ringBuffer->apvCommsRingBufferHead == ringBuffer->apvCommsRingBufferEnd)
@@ -399,7 +443,6 @@ uint16_t apvRingBufferLoad(apvRingBuffer_t *ringBuffer,
           ringBuffer->apvCommsRingBufferHead = ringBuffer->apvCommsRingBufferHead + 1;
           }
 
-        tokens               = tokens               + 1;
         numberOfTokensToLoad = numberOfTokensToLoad - 1;
         }
       }
@@ -420,6 +463,9 @@ uint16_t apvRingBufferLoad(apvRingBuffer_t *ringBuffer,
 /******************************************************************************/
 /* apvRingBufferUnLoad() :                                                    */
 /*  <--> ringBuffer             : pointer to a ring-buffer structure          */
+/*   --> ringBufferTokenType    : [APV_RING_BUFFER_TOKEN_TYPE_ONE_BYTE  = 1 | */
+/*                                 APV_RING_BUFFER_TOKEN_TYPE_ONE_WORD  = 2 | */
+/*                                 APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD = 4]  */
 /*   --> tokens                 : pointer to a receiving buffer of            */
 /*                                1 { <token> } n                             */
 /*   --> numberOfTokensToUnLoad : number of tokens to try to unload           */
@@ -438,10 +484,11 @@ uint16_t apvRingBufferLoad(apvRingBuffer_t *ringBuffer,
 /*                                                                            */
 /******************************************************************************/
 
-uint16_t apvRingBufferUnLoad(apvRingBuffer_t *ringBuffer,
-                             uint32_t        *tokens,
-                             uint16_t         numberOfTokensToUnLoad,
-                             bool             interruptControl)
+uint16_t apvRingBufferUnLoad(apvRingBuffer_t          *ringBuffer,
+                             apvRingBufferTokenType_t  ringBufferTokenType,
+                             uint32_t                 *tokens,
+                             uint16_t                  numberOfTokensToUnLoad,
+                             bool                      interruptControl)
   {
 /******************************************************************************/
 

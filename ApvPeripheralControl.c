@@ -460,7 +460,8 @@ APV_ERROR_CODE apvUartCharacterTransmit(uint8_t transmitBuffer)
 /******************************************************************************/
 
 APV_ERROR_CODE apvUartCharacterTransmitPrime(Uart     *uartControlBlock,
-                                             uint32_t  transmitBuffer)
+                                             uint32_t  transmitBuffer,
+                                             bool      interruptControl)
   {
 /******************************************************************************/
 
@@ -476,7 +477,10 @@ APV_ERROR_CODE apvUartCharacterTransmitPrime(Uart     *uartControlBlock,
     }
   else
     {
-    APV_CRITICAL_REGION_ENTRY();
+    if (interruptControl == true)
+     {
+     APV_CRITICAL_REGION_ENTRY();
+     }
 
     statusRegister = uartControlBlock->UART_SR;
 
@@ -495,7 +499,10 @@ APV_ERROR_CODE apvUartCharacterTransmitPrime(Uart     *uartControlBlock,
       uartErrorCode = APV_SERIAL_ERROR_CODE_TRANSMITTER_NOT_READY;
       }
 
-    APV_CRITICAL_REGION_EXIT();
+    if (interruptControl == true)
+      {
+      APV_CRITICAL_REGION_EXIT();
+      }
     }
 
 /******************************************************************************/
@@ -539,11 +546,13 @@ APV_ERROR_CODE apvUartBufferTransmitPrime(Uart             *uartControlBlock,
 
     // Does the transmit buffer liat have a buffer in it and does this buffer have characters in it ?
     if (apvRingBufferUnLoad( uartTransmitBufferList,
+                             APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD,
                             (uint32_t *)uartTransmitBuffer,
                              sizeof(uint8_t),
                              false) != 0)
       {
       if (apvRingBufferUnLoad(*uartTransmitBuffer,
+                               APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD,
                               &transmitBuffer,
                                sizeof(uint8_t),
                                false) != 0)

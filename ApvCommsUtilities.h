@@ -74,6 +74,29 @@ typedef struct apvRingBuffer_tTag
 typedef uint64_t ringBufferEntryPointer_t;
 
 /******************************************************************************/
+/* The generic ring-buffer elements are 32-bits wide to allow the storage of  */
+/* bytes, words and long-words/pointers (note this is sized for a 32-bit ARM) */
+/******************************************************************************/
+
+typedef enum apvRingBufferTokenType_tTag
+  {
+  APV_RING_BUFFER_TOKEN_TYPE_ONE_BYTE  = 1,
+  APV_RING_BUFFER_TOKEN_TYPE_ONE_WORD  = 2,
+  APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD = 4,
+  APV_RING_BUFFER_TOKEN_TYPE_HUGE_WORD = 8,
+  APV_RING_BUFFER_TOKEN_TYPES          = 3
+  } apvRingBufferTokenType_t;
+
+// Convert from the generic 32-bit pointer to 8, 16 or 32-bits
+typedef union apvRingBufferTokenSize_tTag
+  {
+  uint8_t  *token8Bits;
+  uint16_t *token16Bits;
+  uint32_t *token32Bits;
+  uint64_t *token64Bits; // for future use
+  } apvRingBufferTokenSize_t;
+
+/******************************************************************************/
 /* Function Declarations :                                                    */
 /******************************************************************************/
 
@@ -95,14 +118,16 @@ extern APV_ERROR_CODE apvRingBufferInitialise(apvRingBuffer_t *ringBuffer,
 extern APV_ERROR_CODE apvRingBufferReportFillState(apvRingBuffer_t *ringBuffer,
                                                    uint16_t        *numberOfTokens,
                                                    bool             interruptControl);
-extern uint16_t       apvRingBufferLoad(apvRingBuffer_t *ringBuffer,
-                                        uint32_t        *tokens,
-                                        uint16_t         numberOfTokensToLoad,
-                                        bool             interruptControl);
-extern uint16_t       apvRingBufferUnLoad(apvRingBuffer_t *ringBuffer,
-                                          uint32_t        *tokens,
-                                          uint16_t         numberOfTokensToUnLoad,
-                                          bool             interruptControl);
+extern uint16_t       apvRingBufferLoad(apvRingBuffer_t           *ringBuffer,
+                                        apvRingBufferTokenType_t   ringBufferTokenType,
+                                        uint32_t                  *tokens,
+                                        uint16_t                   numberOfTokensToLoad,
+                                        bool                       interruptControl);
+extern uint16_t       apvRingBufferUnLoad(apvRingBuffer_t           *ringBuffer,
+                                          apvRingBufferTokenType_t   ringBufferTokenType,
+                                          uint32_t                  *tokens,
+                                          uint16_t                   numberOfTokensToUnLoad,
+                                          bool                       interruptControl);
 #if (0)
 extern APV_ERROR_CODE apvCreateTestMessage(uint8_t  *testMessage,
                                            uint16_t  testMessageSomLength,

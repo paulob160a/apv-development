@@ -89,6 +89,7 @@ APV_ERROR_CODE apvControlPortSignOn(uint8_t  *apvSignOMessage,
       while (apvSignOnMessageLength > 0)
         { // If the message is too long the extra characters will just be thrown away
         apvRingBufferLoad( apvPrimarySerialCommsTransmitBuffer,
+                           APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD,
                           (uint32_t *)apvSignOMessage,
                            sizeof(uint8_t),
                            false);
@@ -99,6 +100,7 @@ APV_ERROR_CODE apvControlPortSignOn(uint8_t  *apvSignOMessage,
 
       // Push the buffer onto the transmit buffer queue
       apvRingBufferLoad( apvUartPortPrimaryTransmitRingBuffer_p,
+                         APV_RING_BUFFER_TOKEN_TYPE_LONG_WORD,
                         (uint32_t *)&apvPrimarySerialCommsTransmitBuffer,
                          sizeof(uint8_t),
                          false);
