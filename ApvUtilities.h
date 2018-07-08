@@ -41,6 +41,17 @@
 #define APV_PIO_BLOCK_C ((Pio *)0x400E1200U)
 #define APV_PIO_BLOCK_D ((Pio *)0x400E1400U)
 
+
+#define  APV_SYSTEM_INTERRUPT_ID_NMI                      ((int16_t)-14)
+#define  APV_SYSTEM_INTERRUPT_ID_HARD_FAULT               ((int16_t)-13)
+#define  APV_SYSTEM_INTERRUPT_ID_MEMORY_MANAGEMENT_FAULT  ((int16_t)-12)
+#define  APV_SYSTEM_INTERRUPT_ID_BUS_FAULT                ((int16_t)-11)
+#define  APV_SYSTEM_INTERRUPT_ID_USAGE_FAULT              ((int16_t)-10)
+#define  APV_SYSTEM_INTERRUPT_ID_SUPERVISOR_CALL           ((int16_t)-5)
+#define  APV_SYSTEM_INTERRUPT_ID_PEND_SUPERVISORY          ((int16_t)-2)
+#define  APV_SYSTEM_INTERRUPT_ID_SYSTEM_TICK               ((int16_t)-1)
+#define  APV_SYSTEM_INTERRUPT_ID_S                         ((int16_t) 8)
+
 /******************************************************************************/
 /* Type Definitions :                                                         */
 /******************************************************************************/

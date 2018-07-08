@@ -243,6 +243,8 @@ void SysTick_Handler(void)
   // Flag the fast background loop
   apvCoreTimerFlag = APV_CORE_TIMER_FLAG_HIGH;
 
+  apvExecuteDurationTimers(&apvCoreTimeBaseBlock);
+
 /******************************************************************************/
   } /* end of SysTick_Handler                                                 */
 

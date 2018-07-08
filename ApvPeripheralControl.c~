@@ -27,14 +27,13 @@
 /* Global Variable Definitions :                                              */
 /******************************************************************************/
 
-         Pmc                          ApvPeripheralControlBlock;                                      // shadow peripheral control block
-         Pmc                         *ApvPeripheralControlBlock_p = PMC;                              // physical block address
+         Pmc   ApvPeripheralControlBlock;         // shadow peripheral control block
+         Pmc  *ApvPeripheralControlBlock_p = PMC; // physical block address
 
-         Uart                         ApvUartControlBlock;                                            // shadow UART control block
-volatile Uart                        *ApvUartControlBlock_p = UART;                                   // physical block address
+         Uart  ApvUartControlBlock;               // shadow UART control block
+volatile Uart *ApvUartControlBlock_p = UART;      // physical block address
 
-         apvInterruptPriorityLevel_t  apvInterruptPriorities[APV_DEVICE_INTERRUPT_PRIORITIES_PACKED]; // "packed" array of SAM3A device interrupt priorities
-
+apvInterruptPriorityLevel_t 
 /******************************************************************************/
 /* Function Definitions :                                                     */
 /******************************************************************************/
@@ -773,11 +772,10 @@ APV_ERROR_CODE apvGetInterruptPriority(int16_t  interruptSourceNumber,
 
 /******************************************************************************/
 /* apvSetInterruptPriority() :                                                */
-/*  -->  interruptSourceNumber     : APV_SYSTEM_INTERRUPT_ID_NMI              */
-/*                                   { interrupt } APV_PERIPHERAL_IDS         */
-/*  -->  interruptPriority         : [ 0 .. 15 ]                              */
-/*  <--> deviceInterruptPriorities : record of device interrupt priorities    */
-/*  <-- priorityError              : error codes                              */
+/*  --> interruptSourceNumber : APV_SYSTEM_INTERRUPT_ID_NMI { interrupt }     */
+/*                              APV_PERIPHERAL_IDS                            */
+/*  <-- interruptPriority     : [ 0 .. 15 ]                                   */
+/*  <-- priorityError         : error codes                                   */
 /*                                                                            */
 /* - set the priority level for an interrupt source, including the CM3 core   */
 /*   services' interrupts and the peripheral interrupts. ARM core services    */
@@ -789,41 +787,22 @@ APV_ERROR_CODE apvGetInterruptPriority(int16_t  interruptSourceNumber,
 /*                                                                            */
 /******************************************************************************/
 
-APV_ERROR_CODE apvSetInterruptPriority(int16_t                      interruptSourceNumber,
-                                       uint8_t                      interruptPriority,
-                                       apvInterruptPriorityLevel_t *deviceInterruptPriorities)
+APV_ERROR_CODE apvSetInterruptPriority(int16_t interruptSourceNumber,
+                                       uint8_t interruptPriority)
   {
 /******************************************************************************/
 
-  APV_ERROR_CODE priorityError            = APV_ERROR_CODE_NONE;
-
-  uint16_t        interruptPriorityOffset = 0, // used to compute the index into the device interrupt priority table
-                  interruptPriorityPack   = 0;
+  APV_ERROR_CODE priorityError = APV_ERROR_CODE_NONE;
 
 /******************************************************************************/
 
   if (((interruptSourceNumber >= APV_SYSTEM_INTERRUPT_ID_NMI) && (interruptSourceNumber <= APV_SYSTEM_INTERRUPT_ID_USAGE_FAULT)) ||
        (interruptSourceNumber == APV_SYSTEM_INTERRUPT_ID_SUPERVISOR_CALL) ||
       ((interruptSourceNumber >= APV_SYSTEM_INTERRUPT_ID_PEND_SUPERVISORY) && (interruptSourceNumber <= APV_SYSTEM_INTERRUPT_ID_SYSTEM_TICK)) || 
-      ((interruptSourceNumber >= APV_PERIPHERAL_ID_SUPC) && (interruptSourceNumber <= APV_PERIPHERAL_IDS)))
+       (interruptSourceNumber <= APV_PERIPHERAL_IDS))
     {
     NVIC_SetPriority(interruptSourceNumber,
                      interruptPriority);
-
-    /******************************************************************************/
-    /* Device interrupt priorities are recorded locally                           */
-    /******************************************************************************/
-
-    interruptPriorityOffset = (interruptSourceNumber + (-APV_SYSTEM_INTERRUPT_ID_MEMORY_MANAGEMENT_FAULT)) / APV_DEVICE_INTERRUPT_PRIORITIES;
-    interruptPriorityPack   = (interruptSourceNumber + (-APV_SYSTEM_INTERRUPT_ID_MEMORY_MANAGEMENT_FAULT)) % APV_DEVICE_INTERRUPT_PRIORITIES;
-    
-    (deviceInterruptPriorities + interruptPriorityOffset)->deviceInterruptPriorities = 
-          (deviceInterruptPriorities + interruptPriorityOffset)->deviceInterruptPriorities & ((uint32_t)(~(SAM3A_INTERRUPT_PRIORITY_LEVEL_MASK << (interruptPriorityPack * SAM3A_INTERRUPT_PRIORITY_LEVEL_BITS))));
-
-    (deviceInterruptPriorities + interruptPriorityOffset)->deviceInterruptPriorities = 
-          (deviceInterruptPriorities + interruptPriorityOffset)->deviceInterruptPriorities | ((uint32_t)(interruptPriority << (interruptPriorityPack * SAM3A_INTERRUPT_PRIORITY_LEVEL_BITS)));
-
-    /******************************************************************************/
     }
   else
     {

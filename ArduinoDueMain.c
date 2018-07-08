@@ -58,6 +58,9 @@ int main(void)
            uint16_t components                              = 0,
                     messageCount                            = 0;
 
+           int16_t  interruptSource                         = 0;
+           uint8_t  interruptPriority                       = 0;
+
 /******************************************************************************/
 
   // Create the serial UART inter-messaging layer message buffers
@@ -95,6 +98,32 @@ int main(void)
                                                        APV_COMMS_PLANE_SERIAL_UART,
                                                        APV_SIGNAL_PLANE_CONTROL_1,
                                                       &apvMessagingLayerSerialUARTOutputHandler);
+
+  /******************************************************************************/
+  /* Set all the interrupt source priorities to the lowest possible, for all    */
+  /* configurable priorities                                                    */
+  /******************************************************************************/
+
+  for (interruptSource = APV_SYSTEM_INTERRUPT_ID_MEMORY_MANAGEMENT_FAULT; interruptSource < APV_PERIPHERAL_IDS; interruptSource++)
+    {
+    if (apvGetInterruptPriority( interruptSource,
+                                &interruptPriority) == APV_ERROR_CODE_NONE)
+      {
+      apvSetInterruptPriority( interruptSource,
+                               APV_DEVICE_INTERRUPT_PRIORITY_BASE,
+                              &apvInterruptPriorities[0]);
+      }
+    }
+
+  /******************************************************************************/
+  /* Elevate the priority of the elapsed timer block core timer "SysTick"       */
+  /******************************************************************************/
+
+  apvSetInterruptPriority( APV_SYSTEM_INTERRUPT_ID_SYSTEM_TICK,
+                           APV_DEVICE_INTERRUPT_PRIORITY_SYSTICK,
+                          &apvInterruptPriorities[0]);
+
+  /******************************************************************************/
 
   apvSerialErrorCode = apvInitialiseEventTimerBlocks(&apvEventTimerBlock[APV_EVENT_TIMER_0],
                                                       TCCHANNEL_NUMBER);
@@ -143,10 +172,6 @@ int main(void)
   apvSerialErrorCode = apvConfigureUart(APV_UART_PARITY_NONE,
                                         APV_UART_CHANNEL_MODE_NORMAL,
                                         APV_UART_BAUD_RATE_SELECT_19200);
-
-  // Load the sign-on before the transmit/receive interrupt is started
-  // apvSerialErrorCode = apvControlPortSignOn(&apvSignOnMessage[0],
-  //                                            strlen(apvSignOnMessage));
 
   // SWITCH ON THE NVIC/UART IRQ
   apvSerialErrorCode = apvUartSwitchInterrupt(APV_UART_INTERRUPT_SELECT_RECEIVE,
@@ -371,13 +396,13 @@ int main(void)
       /* TASK 1 : run the core-timer to derive process-based timers                 */
       /******************************************************************************/
 
-      if (apvCoreTimerBackgroundFlag == APV_CORE_TIMER_FLAG_HIGH)
+ /*     if (apvCoreTimerBackgroundFlag == APV_CORE_TIMER_FLAG_HIGH)
         {
         apvCoreTimerBackgroundFlag = APV_CORE_TIMER_FLAG_LOW;
 
         // Execute any assigned process timers
         apvSerialErrorCode = apvExecuteDurationTimers(&apvCoreTimeBaseBlock);
-        }
+        } */
 
       /******************************************************************************/
       }
