@@ -108,8 +108,8 @@
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvEventTimersIsrs.h" y="0" path="ApvEventTimersIsrs.h" left="0" selected="0" name="unnamed" top="0" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/CMSIS_3/CMSIS/Include/core_cm3.h" y="1407" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/CMSIS_3/CMSIS/Include/core_cm3.h" left="0" selected="0" name="unnamed" top="1384" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="15" debugPath="ApvEventTimerIsrs.c" y="245" path="ApvEventTimerIsrs.c" left="0" selected="0" name="unnamed" top="211" />
-  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvLsm9ds1.h" y="195" path="ApvLsm9ds1.h" left="0" selected="0" name="unnamed" top="159" />
-  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="42" debugPath="ApvLsm9ds1.c" y="308" path="ApvLsm9ds1.c" left="0" selected="1" name="unnamed" top="295" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="98" debugPath="ApvLsm9ds1.h" y="91" path="ApvLsm9ds1.h" left="0" selected="1" name="unnamed" top="62" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="42" debugPath="ApvLsm9ds1.c" y="308" path="ApvLsm9ds1.c" left="0" selected="0" name="unnamed" top="295" />
  </Files>
  <ARMCrossStudioWindow activeProject="ArduinoDue001" autoConnectTarget="SEGGER J-Link" debugSearchFileMap="" fileDialogInitialDirectory="C:/Users/Paul/Documents/CrossWorks Projects/ArduinoDue001" fileDialogDefaultFilter="*.c" autoConnectCapabilities="388991" debugSearchPath="" buildConfiguration="THUMB Flash Debug" />
 </session>

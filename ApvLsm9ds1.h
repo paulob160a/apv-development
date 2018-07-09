@@ -50,6 +50,57 @@
 #define APV_LSM9DS1_REGISTER_M_INT_CFG_M_DEFAULT         ((APV_LSM9DS1_FIELD_SIZE)0x08)
 
 /******************************************************************************/
+// Register bit descriptions and masks :                                      */
+/******************************************************************************/
+// ACT_THS : activity threshold/gyro inactivity operating mode
+#define APV_LSM9DS1_ACT_THS_GYRO_OPERATING_MODE_MASK     ((APV_LSM9DS1_FIELD_SIZE)0x80)
+#define APV_LSM9DS1_ACT_THS_GYRO_OPERATING_MODE_OFF      ((APV_LSM9DS1_FIELD_SIZE)0x00)
+#define APV_LSM9DS1_ACT_THS_GYRO_OPERATING_MODE_SLEEP    APV_LSM9DS1_ACT_THS_GYRO_OPERATING_MODE_MASK
+#define APV_LSM9DS1_ACT_THS_INACTIVITY_THRESHOLD_MASK    ((APV_LSM9DS1_FIELD_SIZE)(~APV_LSM9DS1_ACT_THS_GYRO_OPERATING_MODE_MASK))
+// ACT_DUR : inactivity duration
+#define APV_LSM9DS1_ACT_DUR_INACTIVITY_DURATION_MASK     ((APV_LSM9DS1_FIELD_SIZE)0xFF) 
+// INT_GEN_CFG_XL : linear acceleration sensor
+#define APV_LSM9DS1_INT_GEN_CFG_XL_XLIE_MASK             ((APV_LSM9DS1_FIELD_SIZE)0x01)              // enable X-LOW  interrupt
+#define APV_LSM9DS1_INT_GEN_CFG_XL_XHIE_MASK             (APV_LSM9DS1_INT_GEN_CFG_XL_XLIE_MASK << 1) // enable X-HIGH interrupt
+#define APV_LSM9DS1_INT_GEN_CFG_XL_YLIE_MASK             (APV_LSM9DS1_INT_GEN_CFG_XL_XHIE_MASK << 1) // enable Y-LOW  interrupt
+#define APV_LSM9DS1_INT_GEN_CFG_XL_YHIE_MASK             (APV_LSM9DS1_INT_GEN_CFG_XL_YLIE_MASK << 1) // enable Y-HIGH interrupt
+#define APV_LSM9DS1_INT_GEN_CFG_XL_ZLIE_MASK             (APV_LSM9DS1_INT_GEN_CFG_XL_YHIE_MASK << 1) // enable Z-LOW  interrupt
+#define APV_LSM9DS1_INT_GEN_CFG_XL_ZHIE_MASK             (APV_LSM9DS1_INT_GEN_CFG_XL_ZLIE_MASK << 1) // enable Z-HIGH interrupt
+#define APV_LSM9DS1_INT_GEN_CFG_6D_MASK                  (APV_LSM9DS1_INT_GEN_CFG_XL_ZHIE_MASK << 1) // enable "6-direction" interrupt
+#define APV_LSM9DS1_INT_GEN_CFG_AOI_MASK                 (APV_LSM9DS1_INT_GEN_CFG_6D_MASK      << 1) // [ 0 == OR | 1 == AND ] inerrupt events
+// INT_GEN_THS_X_XL :  linear acceleration sensor X-axis interrupt threshold register
+#define APV_LSM9DS1_INT_GEN_THS_X_XL_THRESHOLD_MASK      ((APV_LSM9DS1_FIELD_SIZE)0xFF) 
+// INT_GEN_THS_Y_XL :  linear acceleration sensor Y-axis interrupt threshold register
+#define APV_LSM9DS1_INT_GEN_THS_Y_XL_THRESHOLD_MASK      ((APV_LSM9DS1_FIELD_SIZE)0xFF) 
+// INT_GEN_THS_X_XL :  linear acceleration sensor Z-axis interrupt threshold register
+#define APV_LSM9DS1_INT_GEN_THS_Z_XL_THRESHOLD_MASK      ((APV_LSM9DS1_FIELD_SIZE)0xFF) 
+// INT_GEN_DUR_XL : linear acceleration sensor interrupt duration register
+#define APV_LSM9DS1_INT_GEN_DUR_XL_DURATION_MASK         ((APV_LSM9DS1_FIELD_SIZE)0x7F)
+#define APV_LSM9DS1_INT_GEN_DUR_XL_WAIT_MASK             ((APV_LSM9DS1_FIELD_SIZE)(~APV_LSM9DS1_INT_GEN_DUR_XL_DURATION_MASK))
+// REFERENCE_G : angular rate sensor reference for digital Hp-filter
+#define APV_LSM9DS1_REFERENCE_G_MASK                     ((APV_LSM9DS1_FIELD_SIZE)0xFF) 
+// INT1_CTRL : interrupt 1 A/G pin control
+#define APV_LSM9DS1_INT1_CTRL_IG_G_MASK                  ((APV_LSM9DS1_FIELD_SIZE)0x80)              // enable gyroscope interrupt on INT1 A/G pin
+#define APV_LSM9DS1_INT1_CTRL_IG_XL_MASK                 (APV_LSM9DS1_INT1_CTRL_IG_G_MASK      >> 1) // enable accelerometer interrupt on INT1 A/G pin
+#define APV_LSM9DS1_INT1_CTRL_FSS5_MASK                  (APV_LSM9DS1_INT1_CTRL_IG_XL_MASK     >> 1) // enable "FSS5" interrupt on INT1 A/G pin
+#define APV_LSM9DS1_INT1_CTRL_OVR_MASK                   (APV_LSM9DS1_INT1_CTRL_FSS5_MASK      >> 1) // enable overrun interrupt on INT1 A/G pin
+#define APV_LSM9DS1_INT1_CTRL_FTH_MASK                   (APV_LSM9DS1_INT1_CTRL_OVR_MASK       >> 1) // enable FIFO threshold interrupt on INT1 A/G pin
+#define APV_LSM9DS1_INT1_CTRL_BOOT_MASK                  (APV_LSM9DS1_INT1_CTRL_FTH_MASK       >> 1) // enable "boot status available" on INT1 A/G pin
+#define APV_LSM9DS1_INT1_CTRL_DRDY_G_MASK                (APV_LSM9DS1_INT1_CTRL_BOOT_MASK      >> 1) // enable "gyroscope data ready" on INT1 A/G pin
+#define APV_LSM9DS1_INT1_CTRL_DRDY_XL_MASK               (APV_LSM9DS1_INT1_CTRL_DRDY_G_MASK    >> 1) // enable "accelerometer data ready" on INT1 A/G pin
+// INT2_CTRL : interrupt 2 A/G pin control
+#define APV_LSM9DS1_INT2_INACT_MASK                      ((APV_LSM9DS1_FIELD_SIZE)0x80)              // enable inactivity interrupt on INT2 A/G pin
+#define APV_LSM9DS1_INT2_EMPTY_MASK                      (APV_LSM9DS1_INT2_INACT_MASK          >> 1) // no function assigned
+#define APV_LSM9DS1_INT2_CTRL_FSS5_MASK                  (APV_LSM9DS1_INT2_EMPTY_MASK          >> 1) // enable "FSS5" interrupt on INT2 A/G pin
+#define APV_LSM9DS1_INT2_CTRL_OVR_MASK                   (APV_LSM9DS1_INT2_CTRL_FSS5_MASK      >> 1) // enable overrun interrupt on INT2 A/G pin
+#define APV_LSM9DS1_INT2_CTRL_FTH_MASK                   (APV_LSM9DS1_INT2_CTRL_OVR_MASK       >> 1) // enable FIFO threshold interrupt on INT2 A/G pin
+#define APV_LSM9DS1_INT2_CTRL_DRDY_TEMP_MASK             (APV_LSM9DS1_INT2_CTRL_FTH_MASK       >> 1) // enable "temperature data ready" on INT2 A/G pin
+#define APV_LSM9DS1_INT2_CTRL_DRDY_G_MASK                (APV_LSM9DS1_INT2_CTRL_DRDY_TEMP_MASK >> 1) // enable "gyroscope data ready" on INT1 A/G pin
+#define APV_LSM9DS1_INT2_CTRL_DRDY_XL_MASK               (APV_LSM9DS1_INT1_CTRL_DRDY_G_MASK    >> 1) // enable "accelerometer data ready" on INT1 A/G pin
+// WHO_AM_I : "who am I ?"
+#define APV_LSM9DS1_WHO_AM_I_MASK                        ((APV_LSM9DS1_FIELD_SIZE)0xFF)
+
+/******************************************************************************/
 /* Type Definitions :                                                         */
 /******************************************************************************/
 
