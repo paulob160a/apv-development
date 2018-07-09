@@ -69,6 +69,7 @@
         <file file_name="ApvMessageHandling.h" />
         <file file_name="ApvStateMachines.h" />
         <file file_name="ApvMessagingLayerManager.h" />
+        <file file_name="ApvLsm9ds1.h" />
       </folder>
     </folder>
     <folder Name="Source">
@@ -85,6 +86,7 @@
       <file file_name="ApvEventTimerIsrs.c" />
       <file file_name="ApvControlPortProtocol.c" />
       <file file_name="ApvMessagingLayerManager.c" />
+      <file file_name="ApvLsm9ds1.c" />
     </folder>
   </project>
   <configuration
