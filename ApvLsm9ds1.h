@@ -281,6 +281,122 @@
 // high-resolution mode enable
 #define APV_LSM9DS1_CTRL_REG7_XL_HR_ENABLE              APV_LSM9DS1_CTRL_REG7_XL_HR_MASK
 
+// CTRL_REG8 : see Table 73
+#define APV_LSM9DS1_CTRL_REG8_SW_RESET_MASK             ((APV_LSM9DS1_FIELD_SIZE)0x01)               // [ 0 == normal | 1 ==  reset ]
+#define APV_LSM9DS1_CTRL_REG8_BLE_MASK                  (APV_LSM9DS1_CTRL_REG8_SW_RESET_MASK   << 1) // [ 0 == little- | 1 == big- ] endianness
+#define APV_LSM9DS1_CTRL_REG8_IF_ADD_INC_MASK           (APV_LSM9DS1_CTRL_REG8_BLE_MASK        << 1) // [ 0 == disabled | 1 == enable ] auto-increment I2C/SPI addresses
+#define APV_LSM9DS1_CTRL_REG8_SIM_MASK                  (APV_LSM9DS1_CTRL_REG8_IF_ADD_INC_MASK << 1) // [ 0 == 4-wire | 1 == 3-wire ] SPI mode
+#define APV_LSM9DS1_CTRL_REG8_PP_OD_MASK                (APV_LSM9DS1_CTRL_REG8_SIM_MASK        << 1) // [ 0 == push-pull | 1 == open-drain ] on INT1_A/G and INT2_A/G
+#define APV_LSM9DS1_CTRL_REG8_H_LACTIVE_MASK            (APV_LSM9DS1_CTRL_REG8_PP_OD_MASK      << 1) // [ 0 == high | 1 == low ] interrupt activation level
+#define APV_LSM9DS1_CTRL_REG8_BDU_MASK                  (APV_LSM9DS1_CTRL_REG8_H_LACTIVE_MASK  << 1) // [ 0 == continuous update | 1 == MSB + LSB ] block data update
+#define APV_LSM9DS1_CTRL_REG8_BOOT_MASK                 (APV_LSM9DS1_CTRL_REG8_BDU_MASK        << 1) // [ 0 == normal | 1 == reboot ] memory
+
+// CTRL_REG9 : see Table 75
+#define APV_LSM9DS1_CTRL_REG9_STOP_ON_FTH_MASK          ((APV_LSM9DS1_FIELD_SIZE)0x01)                  // 1 == limit FIFO depth to threshold level
+#define APV_LSM9DS1_CTRL_REG9_FIFO_EN_MASK              (APV_LSM9DS1_CTRL_REG9_STOP_ON_FTH_MASK   << 1) // 1 == enable FIFO
+#define APV_LSM9DS1_CTRL_REG9_I2C_DISABLE_MASK          (APV_LSM9DS1_CTRL_REG9_FIFO_EN_MASK       << 1) // [ 0 == I2C + SPI | 1 == SPI only ]
+#define APV_LSM9DS1_CTRL_REG9_DRDY_mask_bit_MASK        (APV_LSM9DS1_CTRL_REG9_I2C_DISABLE_MASK   << 1) // 1 == data available enabled
+#define APV_LSM9DS1_CTRL_REG9_FIFO_TEMP_EN_MASK         (APV_LSM9DS1_CTRL_REG9_DRDY_mask_bit_MASK << 1) // 1 == temperature data stored in FIFO
+#define APV_LSM9DS1_CTRL_REG9_SLEEP_G_MASK              (APV_LSM9DS1_CTRL_REG9_FIFO_TEMP_EN_MASK  << 2) // [ 0 == disabled | 1 == enabled ] sleep - bit 5 is empty
+
+// CTRL_REG10 : see Table 77
+#define APV_LSM9DS1_CTRL_REG10_ST_XL_MASK               ((APV_LSM9DS1_FIELD_SIZE)0x01)           // 1 == accelerometer-sensor self-test
+#define APV_LSM9DS1_CTRL_REG10_ST_G_MASK                (APV_LSM9DS1_CTRL_REG10_ST_XL_MASK << 2) // 1 == gyro self-test, bit 1 is empty
+
+// INT_GEN_SRC_XL : accelerometer interrupt source register - see Table 79
+#define APV_LSM9DS1_INT_GEN_SRC_XL_IA_XL_MASK           ((APV_LSM9DS1_FIELD_SIZE)0x40)
+#define APV_LSM9DS1_NT_GEN_SRC_XL_ZH_XL_MASK            (APV_LSM9DS1_INT_GEN_SRC_XL_IA_XL_MASK >> 1)
+#define APV_LSM9DS1_NT_GEN_SRC_XL_ZL_XL_MASK            (APV_LSM9DS1_NT_GEN_SRC_XL_ZH_XL_MASK  >> 1)
+#define APV_LSM9DS1_NT_GEN_SRC_XL_YH_XL_MASK            (APV_LSM9DS1_NT_GEN_SRC_XL_ZL_XL_MASK  >> 1)
+#define APV_LSM9DS1_NT_GEN_SRC_XL_YL_XL_MASK            (APV_LSM9DS1_NT_GEN_SRC_XL_YH_XL_MASK  >> 1)
+#define APV_LSM9DS1_NT_GEN_SRC_XL_XH_XL_MASK            (APV_LSM9DS1_NT_GEN_SRC_XL_YL_XL_MASK  >> 1)
+#define APV_LSM9DS1_NT_GEN_SRC_XL_XL_XL_MASK            (APV_LSM9DS1_NT_GEN_SRC_XL_XH_XL_MASK  >> 1)
+
+// STATUS_REG_27 : miscellaneous status register - see Table 81
+#define APV_LSM9DS1_STATUS_REG_27_IG_XL_MASK            ((APV_LSM9DS1_FIELD_SIZE)0x40)                    // [ 0 == none | 1 == event ] accelerometer interrupts
+#define APV_LSM9DS1_STATUS_REG_27_IG_G_MASK             (APV_LSM9DS1_STATUS_REG_27_IG_XL_MASK       >> 1) // [ 0 == none | 1 == event ] gyro interrupts
+#define APV_LSM9DS1_STATUS_REG_27_INACT_MASK            (APV_LSM9DS1_STATUS_REG_27_IG_G_MASK        >> 1) // [ 0 == none | 1 == event ] interrupt events
+#define APV_LSM9DS1_STATUS_REG_27_BOOT_STATUS_MASK      (APV_LSM9DS1_STATUS_REG_27_INACT_MASK       >> 1) // [ 0 == not | 1 == running ] boot
+#define APV_LSM9DS1_STATUS_REG_27_TDA_MASK              (APV_LSM9DS1_STATUS_REG_27_BOOT_STATUS_MASK >> 1) // [ 0 == none | 1 == available ] temperature data
+#define APV_LSM9DS1_STATUS_REG_27_GDA_MASK              (APV_LSM9DS1_STATUS_REG_27_TDA_MASK         >> 1) // [ 0 == none | 1 == available ] gyro data
+#define APV_LSM9DS1_STATUS_REG_27_XLDA_MASK             (APV_LSM9DS1_STATUS_REG_27_GDA_MASK         >> 1) // [ 0 == none | 1 == available ] accelerometer data
+
+// OUT_XL (OUT_X_XL, OUT_Y_XL, OUT_Z_XL) : accelerometer axes output
+#define APV_LSM9DS1_OUT_X_XL APV_LSM9DS1_OUT_G
+#define APV_LSM9DS1_OUT_Y_XL APV_LSM9DS1_OUT_G
+#define APV_LSM9DS1_OUT_Z_XL APV_LSM9DS1_OUT_G
+
+// FIFO_CTRL : FIFO control - see Tables 83 and 84
+#define APV_LSM9DS1_FIFO_CTRL_FTH_MASK                  ((APV_LSM9DS1_FIELD_SIZE)0x1F)
+#define APV_LSM9DS1_FIFO_CTRL_FMODE_SHIFT               (5)
+#define APV_LSM9DS1_FIFO_CTRL_FMODE_MASK                ((APV_LSM9DS1_FIELD_SIZE)~APV_LSM9DS1_FIFO_CTRL_FTH_MASK)
+// FMODE2 : FIFO mode selection
+#define APV_LSM9DS1_FIFO_CTRL_FMODE_OFF_MASK            (0x00 << APV_LSM9DS1_FIFO_CTRL_FMODE_SHIFT) // bypass, FIFO off
+#define APV_LSM9DS1_FIFO_CTRL_FMODE_STOP_ON_FULL_MASK   (0x01 << APV_LSM9DS1_FIFO_CTRL_FMODE_SHIFT) // stop on FIFO full
+#define APV_LSM9DS1_FIFO_CTRL_FMODE_TRIGGER_N_FIFO_MASK (0x03 << APV_LSM9DS1_FIFO_CTRL_FMODE_SHIFT) // [ trigger == continuous | trigger_n == FIFO ]
+#define APV_LSM9DS1_FIFO_CTRL_FMODE_TRIGGER_BYPASS_MASK (0x04 << APV_LSM9DS1_FIFO_CTRL_FMODE_SHIFT) // [ trigger == bypass     | trigger_n == continuous ]
+#define APV_LSM9DS1_FIFO_CTRL_FMODE_CONTINUOUS_MASK     (0x06 << APV_LSM9DS1_FIFO_CTRL_FMODE_SHIFT) // continuous == FIFO in ring-buffer mode
+
+// FIFO_SRC : the FIFO is 32 (8-bit ?) sanples deep - see Table 87
+#define APV_LSM9DS1_FIFO_SRC_FSS_MASK                   ((APV_LSM9DS1_FIELD_SIZE)0x3F)                                 // number of unread samples in the FIFO
+#define APV_LSM9DS1_FIFO_SRC_OVRN                       ((APV_LSM9DS1_FIELD_SIZE)0x01)                                 // [ 0 == FIFO not full | 1 == FIFO overran ]
+#define APV_LSM9DS1_FIFO_SRC_OVRN_SHIFT                 (6)
+#define APV_LSM9DS1_FIFO_SRC_OVRN_MASK                  (APV_LSM9DS1_FIFO_SRC_OVRN << APV_LSM9DS1_FIFO_SRC_OVRN_SHIFT)
+#define APV_LSM9DS1_FIFO_SRC_FTH                        ((APV_LSM9DS1_FIELD_SIZE)0x01)                                 // [ 0 == FIFO < threshold | 1 == FIFO >= threshold ]
+#define APV_LSM9DS1_FIFO_SRC_FTH_SHIFT                  (1 + APV_LSM9DS1_FIFO_SRC_OVRN_SHIFT)
+#define APV_LSM9DS1_FIFO_SRC_FTH_MASK                   (APV_LSM9DS1_FIFO_SRC_FTH << APV_LSM9DS1_FIFO_SRC_FTH_SHIFT)
+
+// INT_GEN_CFG_G :  gyro interrupt configuration - see Table 89
+#define APV_LSM9DS1_INT_GEN_CFG_G_AOI_G_MASK            ((APV_LSM9DS1_FIELD_SIZE)0x80)               // [ 0 == OR | 1 == AND ] gyro interrupt sources
+#define APV_LSM9DS1_INT_GEN_CFG_G_LIR_G_MASK            (APV_LSM9DS1_INT_GEN_CFG_G_AOI_G_MASK  >> 1) // [ 0 == latch | 1 == latch ] interrupt events
+#define APV_LSM9DS1_INT_GEN_CFG_G_ZHIE_G_MASK           (APV_LSM9DS1_INT_GEN_CFG_G_LIR_G_MASK( >> 1)
+#define APV_LSM9DS1_INT_GEN_CFG_G_ZLIE_G_MASK           (APV_LSM9DS1_INT_GEN_CFG_G_ZHIE_G_MASK >> 1)
+#define APV_LSM9DS1_INT_GEN_CFG_G_YHIE_G_MASK           (APV_LSM9DS1_INT_GEN_CFG_G_ZLIE_G_MASK >> 1)
+#define APV_LSM9DS1_INT_GEN_CFG_G_YLIE_G_MASK           (APV_LSM9DS1_INT_GEN_CFG_G_YHIE_G_MASK >> 1)
+#define APV_LSM9DS1_INT_GEN_CFG_G_XHIE_G_MASK           (APV_LSM9DS1_INT_GEN_CFG_G_YLIE_G_MASK >> 1)
+#define APV_LSM9DS1_INT_GEN_CFG_G_XLIE_G_MASK           (APV_LSM9DS1_INT_GEN_CFG_G_XHIE_G_MASK >> 1)
+
+// INT_GEN_THS_G (INT_GEN_THS_X_G, INT_GEN_THS_Y_G, INT_GEN_THS_Z_G) : gyro threshold registers
+#define APV_LSM9DS1_INT_GEN_THS_G_MASK                  ((APV_LSM9DS1_FIELD_SIZE)0x7F)                            // threshold mask
+#define APV_LSM9DS1_INT_GEN_THS_G_SHIFT                 (8)
+#define APV_LSM9DS1_INT_GEN_THS_G_DCRM_G_MASK           ((APV_LSM9DS1_FIELD_SIZE)~APV_LSM9DS1_INT_GEN_THS_G_MASK) // [ 0 == reset | 1 == decrement ]
+#define APV_LSM9DS1_INT_GEN_THS_G_DCRM_G_SHIFT          (7)
+
+#define APV_LSM9DS1_INT_GEN_THS_G_READ(threshold,registerLow,registerHigh) \\
+          { \\
+          (threshold) = (int16_t)((uint8_t)(registerLow)); \\
+          (threshold) = (int16_t)(((uint16_t)(threshold)) + ((uint16_t)(((uint8_t)registerHigh) & APV_LSM9DS1_INT_GEN_THS_G_MASK))); \\
+          }
+
+#define APV_LSM9DS1_INT_GEN_THS_DCRM_G_READ(dcrm,registerHigh) \\
+          { \\
+          (dcrm) = ((registerHigh) & APV_LSM9DS1_INT_GEN_THS_G_DCRM_G_MASK) >> APV_LSM9DS1_INT_GEN_THS_G_DCRM_G_SHIFT; \\
+          }
+
+#define APV_LSM9DS1_INT_GEN_THS_G_WRITE(threshold,dcrm,registerLow,registerHigh) \\
+          { \\
+          (registerlow)  = (uint8_t)((uint16_t)(threshold)); \\
+          (registerHigh) = (uint8_t)((((uint16_t)(threshold)) >> APV_LSM9DS1_INT_GEN_THS_G_SHIFT) & APV_LSM9DS1_INT_GEN_THS_G_MASK); \\
+          (registerHigh) = ((uint8_t)(threshold)) + ((dcrm) << APV_LSM9DS1_INT_GEN_THS_G_DCRM_G_SHIFT); \\
+          }
+
+// Read macros
+#define APV_LSM9DS1_INT_GEN_THS_X_G_READ      APV_LSM9DS1_INT_GEN_THS_G_READ
+#define APV_LSM9DS1_INT_GEN_THS_Y_G_READ      APV_LSM9DS1_INT_GEN_THS_G_READ
+#define APV_LSM9DS1_INT_GEN_THS_Z_G_READ      APV_LSM9DS1_INT_GEN_THS_G_READ
+
+#define APV_LSM9DS1_INT_GEN_THS_X_DCRM_G_READ APV_LSM9DS1_INT_GEN_THS_DCRM_G_READ
+#define APV_LSM9DS1_INT_GEN_THS_Y_DCRM_G_READ APV_LSM9DS1_INT_GEN_THS_DCRM_G_READ
+#define APV_LSM9DS1_INT_GEN_THS_Z_DCRM_G_READ APV_LSM9DS1_INT_GEN_THS_DCRM_G_READ
+// Write macros
+#define APV_LSM9DS1_INT_GEN_THS_X_G_WRITE     APV_LSM9DS1_INT_GEN_THS_G_WRITE
+#define APV_LSM9DS1_INT_GEN_THS_Y_G_WRITE     APV_LSM9DS1_INT_GEN_THS_G_WRITE
+#define APV_LSM9DS1_INT_GEN_THS_Z_G_WRITE     APV_LSM9DS1_INT_GEN_THS_G_WRITE
+
+// INT_GEN_DUR_G : see Table 100
+#define APV_LSM9DS1_INT_GEN_DUR_G_DUR_G_MASK  ((APV_LSM9DS1_FIELD_SIZE)0x7F)                                  // interrupt duration mask
+#define APV_LSM9DS1_INT_GEN_DUR_G_WAIT_G_MASK ((APV_LSM9DS1_FIELD_SIZE)~APV_LSM9DS1_INT_GEN_DUR_G_DUR_G_MASK) // [ 0 == no wait | 1 == wait ] for "DUR_G" samples 
+                                                                                                              // before sampling and interrupt exit
 /******************************************************************************/
 /* Type Definitions :                                                         */
 /******************************************************************************/
