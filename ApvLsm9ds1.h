@@ -52,13 +52,16 @@
 /******************************************************************************/
 // Register bit descriptions and masks :                                      */
 /******************************************************************************/
+
 // ACT_THS : activity threshold/gyro inactivity operating mode
 #define APV_LSM9DS1_ACT_THS_GYRO_OPERATING_MODE_MASK     ((APV_LSM9DS1_FIELD_SIZE)0x80)
 #define APV_LSM9DS1_ACT_THS_GYRO_OPERATING_MODE_OFF      ((APV_LSM9DS1_FIELD_SIZE)0x00)
 #define APV_LSM9DS1_ACT_THS_GYRO_OPERATING_MODE_SLEEP    APV_LSM9DS1_ACT_THS_GYRO_OPERATING_MODE_MASK
 #define APV_LSM9DS1_ACT_THS_INACTIVITY_THRESHOLD_MASK    ((APV_LSM9DS1_FIELD_SIZE)(~APV_LSM9DS1_ACT_THS_GYRO_OPERATING_MODE_MASK))
+
 // ACT_DUR : inactivity duration
 #define APV_LSM9DS1_ACT_DUR_INACTIVITY_DURATION_MASK     ((APV_LSM9DS1_FIELD_SIZE)0xFF) 
+
 // INT_GEN_CFG_XL : linear acceleration sensor
 #define APV_LSM9DS1_INT_GEN_CFG_XL_XLIE_MASK             ((APV_LSM9DS1_FIELD_SIZE)0x01)              // enable X-LOW  interrupt
 #define APV_LSM9DS1_INT_GEN_CFG_XL_XHIE_MASK             (APV_LSM9DS1_INT_GEN_CFG_XL_XLIE_MASK << 1) // enable X-HIGH interrupt
@@ -68,17 +71,23 @@
 #define APV_LSM9DS1_INT_GEN_CFG_XL_ZHIE_MASK             (APV_LSM9DS1_INT_GEN_CFG_XL_ZLIE_MASK << 1) // enable Z-HIGH interrupt
 #define APV_LSM9DS1_INT_GEN_CFG_6D_MASK                  (APV_LSM9DS1_INT_GEN_CFG_XL_ZHIE_MASK << 1) // enable "6-direction" interrupt
 #define APV_LSM9DS1_INT_GEN_CFG_AOI_MASK                 (APV_LSM9DS1_INT_GEN_CFG_6D_MASK      << 1) // [ 0 == OR | 1 == AND ] inerrupt events
+
 // INT_GEN_THS_X_XL :  linear acceleration sensor X-axis interrupt threshold register
 #define APV_LSM9DS1_INT_GEN_THS_X_XL_THRESHOLD_MASK      ((APV_LSM9DS1_FIELD_SIZE)0xFF) 
+
 // INT_GEN_THS_Y_XL :  linear acceleration sensor Y-axis interrupt threshold register
 #define APV_LSM9DS1_INT_GEN_THS_Y_XL_THRESHOLD_MASK      ((APV_LSM9DS1_FIELD_SIZE)0xFF) 
+
 // INT_GEN_THS_X_XL :  linear acceleration sensor Z-axis interrupt threshold register
 #define APV_LSM9DS1_INT_GEN_THS_Z_XL_THRESHOLD_MASK      ((APV_LSM9DS1_FIELD_SIZE)0xFF) 
+
 // INT_GEN_DUR_XL : linear acceleration sensor interrupt duration register
 #define APV_LSM9DS1_INT_GEN_DUR_XL_DURATION_MASK         ((APV_LSM9DS1_FIELD_SIZE)0x7F)
 #define APV_LSM9DS1_INT_GEN_DUR_XL_WAIT_MASK             ((APV_LSM9DS1_FIELD_SIZE)(~APV_LSM9DS1_INT_GEN_DUR_XL_DURATION_MASK))
+
 // REFERENCE_G : angular rate sensor reference for digital Hp-filter
 #define APV_LSM9DS1_REFERENCE_G_MASK                     ((APV_LSM9DS1_FIELD_SIZE)0xFF) 
+
 // INT1_CTRL : interrupt 1 A/G pin control
 #define APV_LSM9DS1_INT1_CTRL_IG_G_MASK                  ((APV_LSM9DS1_FIELD_SIZE)0x80)              // enable gyroscope interrupt on INT1 A/G pin
 #define APV_LSM9DS1_INT1_CTRL_IG_XL_MASK                 (APV_LSM9DS1_INT1_CTRL_IG_G_MASK      >> 1) // enable accelerometer interrupt on INT1 A/G pin
@@ -88,6 +97,7 @@
 #define APV_LSM9DS1_INT1_CTRL_BOOT_MASK                  (APV_LSM9DS1_INT1_CTRL_FTH_MASK       >> 1) // enable "boot status available" on INT1 A/G pin
 #define APV_LSM9DS1_INT1_CTRL_DRDY_G_MASK                (APV_LSM9DS1_INT1_CTRL_BOOT_MASK      >> 1) // enable "gyroscope data ready" on INT1 A/G pin
 #define APV_LSM9DS1_INT1_CTRL_DRDY_XL_MASK               (APV_LSM9DS1_INT1_CTRL_DRDY_G_MASK    >> 1) // enable "accelerometer data ready" on INT1 A/G pin
+
 // INT2_CTRL : interrupt 2 A/G pin control
 #define APV_LSM9DS1_INT2_INACT_MASK                      ((APV_LSM9DS1_FIELD_SIZE)0x80)              // enable inactivity interrupt on INT2 A/G pin
 #define APV_LSM9DS1_INT2_EMPTY_MASK                      (APV_LSM9DS1_INT2_INACT_MASK          >> 1) // no function assigned
@@ -97,8 +107,179 @@
 #define APV_LSM9DS1_INT2_CTRL_DRDY_TEMP_MASK             (APV_LSM9DS1_INT2_CTRL_FTH_MASK       >> 1) // enable "temperature data ready" on INT2 A/G pin
 #define APV_LSM9DS1_INT2_CTRL_DRDY_G_MASK                (APV_LSM9DS1_INT2_CTRL_DRDY_TEMP_MASK >> 1) // enable "gyroscope data ready" on INT1 A/G pin
 #define APV_LSM9DS1_INT2_CTRL_DRDY_XL_MASK               (APV_LSM9DS1_INT1_CTRL_DRDY_G_MASK    >> 1) // enable "accelerometer data ready" on INT1 A/G pin
+
 // WHO_AM_I : "who am I ?"
 #define APV_LSM9DS1_WHO_AM_I_MASK                        ((APV_LSM9DS1_FIELD_SIZE)0xFF)
+
+// CTRL_REG1_G : gyro control #1
+#define APV_LSM9DS1_CTRL_REG1_G_BANDWIDTH_SELECT_MASK    ((APV_LSM9DS1_FIELD_SIZE)0x03)
+#define APV_LSM9DS1_CTRL_REG1_G_FULL_SCALE_SELECT        ((APV_LSM9DS1_FIELD_SIZE)0x03)
+#define APV_LSM9DS1_CTRL_REG1_G_FULL_SCALE_SELECT_SHIFT  (3) // bit 2 is empty
+#define APV_LSM9DS1_CTRL_REG1_G_FULL_SCALE_SELECT_MASK   (APV_LSM9DS1_CTRL_REG1_G_FULL_SCALE_SELECT << APV_LSM9DS1_CTRL_REG1_G_FULL_SCALE_SELECT_SHIFT)
+#define APV_LSM9DS1_CTRL_REG1_G_DATA_RATE_SELECT         ((APV_LSM9DS1_FIELD_SIZE)0x07)
+#define APV_LSM9DS1_CTRL_REG1_G_DATA_RATE_SELECT_SHIFT   (2 + APV_LSM9DS1_CTRL_REG1_G_FULL_SCALE_SELECT_SHIFT)
+#define APV_LSM9DS1_CTRL_REG1_G_DATA_RATE_SELECT_MASK    (APV_LSM9DS1_CTRL_REG1_G_DATA_RATE_SELECT << APV_LSM9DS1_CTRL_REG1_G_DATA_RATE_SELECT_SHIFT)
+// bandwidth select :  these are dependent on the data rates see Table 47
+#define APV_LSM9DS1_CTRL_REG1_G_BANDWIDTH_LOW            (0x00)
+#define APV_LSM9DS1_CTRL_REG1_G_BANDWIDTH_LMID1          (0x01)
+#define APV_LSM9DS1_CTRL_REG1_G_BANDWIDTH_LMID2          (0x02)
+#define APV_LSM9DS1_CTRL_REG1_G_BANDWIDTH_LHIGH          (0x03)
+// gyro full-scale selection (degrees per second) [ 245 | 500 | n/a | 2000 ]
+#define APV_LSM9DS1_CTRL_REG1_G_245_dps                  (0x00 << APV_LSM9DS1_CTRL_REG1_G_FULL_SCALE_SELECT_SHIFT)
+#define APV_LSM9DS1_CTRL_REG1_G_500_dps                  (0x01 << APV_LSM9DS1_CTRL_REG1_G_FULL_SCALE_SELECT_SHIFT)
+#define APV_LSM9DS1_CTRL_REG1_G_2000_dps                 (0x03 << APV_LSM9DS1_CTRL_REG1_G_FULL_SCALE_SELECT_SHIFT)
+// data rates
+#define APV_LSM9DS1_CTRL_REG1_G_14p9_Hz                  (0x01 << APV_LSM9DS1_CTRL_REG1_G_DATA_RATE_SELECT_SHIFT)
+#define APV_LSM9DS1_CTRL_REG1_G_59p5_Hz                  (0x02 << APV_LSM9DS1_CTRL_REG1_G_DATA_RATE_SELECT_SHIFT)
+#define APV_LSM9DS1_CTRL_REG1_G_119_Hz                   (0x03 << APV_LSM9DS1_CTRL_REG1_G_DATA_RATE_SELECT_SHIFT)
+#define APV_LSM9DS1_CTRL_REG1_G_238_Hz                   (0x04 << APV_LSM9DS1_CTRL_REG1_G_DATA_RATE_SELECT_SHIFT)
+#define APV_LSM9DS1_CTRL_REG1_G_476_Hz                   (0x05 << APV_LSM9DS1_CTRL_REG1_G_DATA_RATE_SELECT_SHIFT)
+#define APV_LSM9DS1_CTRL_REG1_G_952_Hz                   (0x06 << APV_LSM9DS1_CTRL_REG1_G_DATA_RATE_SELECT_SHIFT)
+
+// CTRL_REG2_G : ... control #2
+#define APV_LSM9DS1_CTRL_REG2_G_OUTPUT_SELECT_MASK       ((APV_LSM9DS1_FIELD_SIZE)0x03)
+#define APV_LSM9DS1_CTRL_REG2_G_INTERRUPT_SELECT         ((APV_LSM9DS1_FIELD_SIZE)0x03)
+#define APV_LSM9DS1_CTRL_REG2_G_INTERRUPT_SELECT_SHIFT   (2)
+#define APV_LSM9DS1_CTRL_REG2_G_INTERRUPT_SELECT_MASK    (APV_LSM9DS1_CTRL_REG2_G_INTERRUPT_SELECT << APV_LSM9DS1_CTRL_REG2_G_INTERRUPT_SELECT_SHIFT)
+
+// CTRL_REG3_G : ... control #3
+#define APV_LSM9DS1_CTRL_REG3_G_HIGH_PASS_CUTOFF_MASK   ((APV_LSM9DS1_FIELD_SIZE)0x0F) // see Table 52
+#define APV_LSM9DS1_CTRL_REG3_G_HIGH_PASS_ENABLE        ((APV_LSM9DS1_FIELD_SIZE)0x01)
+#define APV_LSM9DS1_CTRL_REG3_G_HIGH_PASS_ENABLE_SHIFT  (6) // bits 4,5 are empty
+#define APV_LSM9DS1_CTRL_REG3_G_HIGH_PASS_ENABLE_MASK   (APV_LSM9DS1_CTRL_REG3_G_HIGH_PASS_ENABLE << APV_LSM9DS1_CTRL_REG3_G_HIGH_PASS_ENABLE_SHIFT)
+#define APV_LSM9DS1_CTRL_REG3_G_LOW_POWER_ENABLE        ((APV_LSM9DS1_FIELD_SIZE)0x01)
+#define APV_LSM9DS1_CTRL_REG3_G_LOW_POWER_ENABLE_SHIFT  (1 + APV_LSM9DS1_CTRL_REG3_G_HIGH_PASS_ENABLE_SHIFT)
+#define APV_LSM9DS1_CTRL_REG3_G_LOW_POWER_ENABLE_MASK   (APV_LSM9DS1_CTRL_REG3_G_LOW_POWER_ENABLE << APV_LSM9DS1_CTRL_REG3_G_LOW_POWER_ENABLE_SHIFT)
+
+// ORIENT_CFG_G : ... sign and orientation register
+#define APV_LSM9DS1_ORIENT_CFG_G_ORIENTATION_MASK       ((APV_LSM9DS1_FIELD_SIZE)0x07)
+#define APV_LSM9DS1_ORIENT_CFG_G_Z_AXIS_YAW_SIGN        ((APV_LSM9DS1_FIELD_SIZE)0x01)
+#define APV_LSM9DS1_ORIENT_CFG_G_Z_AXIS_YAW_SHIFT       (3)
+#define APV_LSM9DS1_ORIENT_CFG_G_Z_AXIS_YAW             (APV_LSM9DS1_ORIENT_CFG_G_Z_AXIS_YAW_SIGN << APV_LSM9DS1_ORIENT_CFG_G_Z_AXIS_YAW_SHIFT)
+#define APV_LSM9DS1_ORIENT_CFG_G_Y_AXIS_ROLL_SIGN       ((APV_LSM9DS1_FIELD_SIZE)0x01)
+#define APV_LSM9DS1_ORIENT_CFG_G_Y_AXIS_ROLL_SHIFT      (1 + APV_LSM9DS1_ORIENT_CFG_G_Z_AXIS_YAW_SHIFT)
+#define APV_LSM9DS1_ORIENT_CFG_G_Y_AXIS_ROLL_MASK       (APV_LSM9DS1_ORIENT_CFG_G_Y_AXIS_ROLL_SIGN << APV_LSM9DS1_ORIENT_CFG_G_Y_AXIS_ROLL_SHIFT)
+#define APV_LSM9DS1_ORIENT_CFG_G_X_AXIS_PITCH_SIGN      ((APV_LSM9DS1_FIELD_SIZE)0x01)
+#define APV_LSM9DS1_ORIENT_CFG_G_X_AXIS_PITCH_SHIFT     (1 + APV_LSM9DS1_ORIENT_CFG_G_Y_AXIS_ROLL_SHIFT)
+#define APV_LSM9DS1_ORIENT_CFG_G_X_AXIS_PITCH_MASK      (APV_LSM9DS1_ORIENT_CFG_G_X_AXIS_PITCH_SIGN << APV_LSM9DS1_ORIENT_CFG_G_X_AXIS_PITCH_SHIFT)
+
+// INT_GEN_SRC_G : ... interrupt source register see Table 56
+#define APV_LSM9DS1_INT_GEN_SRC_G_ACTIVE_MASK           (APV_LSM9DS1_FIELD_SIZE)0x40)
+#define APV_LSM9DS1_INT_GEN_SRC_G_Z_AXIS_HIGH_MASK      (APV_LSM9DS1_INT_GEN_SRC_G_ACTIVE_MASK      >> 1)
+#define APV_LSM9DS1_INT_GEN_SRC_G_Z_AXIS_LOW_MASK       (APV_LSM9DS1_INT_GEN_SRC_G_Z_AXIS_HIGH_MASK >> 1)
+#define APV_LSM9DS1_INT_GEN_SRC_G_Y_AXIS_HIGH_MASK      (APV_LSM9DS1_INT_GEN_SRC_G_Z_AXIS_LOW_MASK  >> 1)
+#define APV_LSM9DS1_INT_GEN_SRC_G_Y_AXIS_LOW_MASK       (APV_LSM9DS1_INT_GEN_SRC_G_Y_AXIS_HIGH_MASK >> 1)
+#define APV_LSM9DS1_INT_GEN_SRC_G_X_AXIS_HIGH_MASK      (APV_LSM9DS1_INT_GEN_SRC_G_Y_AXIS_LOW_MASK  >> 1)
+#define APV_LSM9DS1_INT_GEN_SRC_G_X_AXIS_LOW_MASK       (APV_LSM9DS1_INT_GEN_SRC_G_X_AXIS_HIGH_MASK >> 1)
+
+// OUT_TEMP_L, OUT_TEMP_H : temperature registers
+#define APV_LSM9DS1_OUT_TEMP_L_BITS_0_7_MASK            ((APV_LSM9DS1_FIELD_SIZE)0xFF)
+#define APV_LSM9DS1_OUT_TEMP_H_BITS_8_11_MASK           ((APV_LSM9DS1_FIELD_SIZE)0x0F)
+#define APV_LSM9DS1_OUT_TEMP_H_SIGN_EXTEND_MASK         ((APV_LSM9DS1_FIELD_SIZE)(~APV_LSM9DS1_OUT_TEMP_H_BITS_8_11_MASK))
+
+// Get the temperature : add the two 8-bit registers and sign for a signed 16-bit result :
+//  - temperature  : int16_t
+//  - registerLow  : OUT_TEMP_L
+//  - registerHigh : OUT_TEMP_H
+#define APV_LSM9DS1_OUT_TEMP(temperature,registerLow,registerHigh) \\
+          { \\
+          (temperature) = (int16_t)((uint8_t)(registerLow)); \\
+          (temperature) = (int16_t)(((uint16_t)(temperature)) + ((uint16_t)((uint8_t)(registerHigh)))) \\
+          }
+
+// STATUS_REG_17 :  see Table 61
+#define APV_LSM9DS1_STATUS_REG_17_IG_XL_MASK            (APV_LSM9DS1_FIELD_SIZE)0x40)               // accelerometer interrupt
+#define APV_LSM9DS1_STATUS_REG_17_IG_G_MASK             (APV_LSM9DS1_STATUS_REG_17_IG_XL_MASK >> 1) // gyro interrupt
+#define APV_LSM9DS1_STATUS_REG_17_INACT_MASK            (APV_LSM9DS1_STATUS_REG_17_IG_G_MASK  >> 1) // inactivity
+#define APV_LSM9DS1_STATUS_REG_17_BOOT_MASK             (APV_LSM9DS1_STATUS_REG_17_INACT_MASK >> 1) // boot running
+#define APV_LSM9DS1_STATUS_REG_17_TDA_MASK              (APV_LSM9DS1_STATUS_REG_17_BOOT_MASK  >> 1) // new temperature data
+#define APV_LSM9DS1_STATUS_REG_17_GDA_MASK              (APV_LSM9DS1_STATUS_REG_17_TDA_MASK   >> 1) // new gyro data
+#define APV_LSM9DS1_STATUS_REG_17_XLDA_MASK             (APV_LSM9DS1_STATUS_REG_17_GDA_MASK   >> 1) // new accelerometer data
+
+// OUT_X_G (OUT_X_L_G, OUT_X_H_G) : pitch axis angular rate
+#define APV_LSM9DS1_OUT_L_G_BITS_0_7_MASK               ((APV_LSM9DS1_FIELD_SIZE)0xFF)
+#define APV_LSM9DS1_OUT_L_G_BITS_8_15_MASK              ((APV_LSM9DS1_FIELD_SIZE)0x7F)
+#define APV_LSM9DS1_OUT_L_G_SIGN_EXTEND_MASK            ((APV_LSM9DS1_FIELD_SIZE)(~APV_LSM9DS1_OUT_L_G_BITS_8_15_MASK))
+
+// Get the rate sensor axes' angular rate
+#define APV_LSM9DS1_OUT_G(angularRate,registerLow,registerHigh) \\
+  { \\
+  (angularRate) = (int16_t)((uint8_t)(registerLow)); \\
+  (angularRate) = (int16_t)(((uint16_t)(angularRate)) + ((uint16_t)((uint8_t)(registerHigh)))) \\
+  }
+
+#define APV_LSM9DS1_OUT_X_G APV_LSM9DS1_OUT_G
+#define APV_LSM9DS1_OUT_Y_G APV_LSM9DS1_OUT_G
+#define APV_LSM9DS1_OUT_Z_G APV_LSM9DS1_OUT_G
+
+// CTRL_REG4 :  gyroscope output enable see Table 63
+#define APV_LSM9DS1_CTRL_REG4_ZEN_G_MASK                ((APV_LSM9DS1_FIELD_SIZE)0x20)           // enable gyro Z-axis
+#define APV_LSM9DS1_CTRL_REG4_YEN_G_MASK                (APV_LSM9DS1_CTRL_REG4_ZEN_G_MASK  >> 1) // enable gyro Y-axis
+#define APV_LSM9DS1_CTRL_REG4_XEN_G_MASK                (APV_LSM9DS1_CTRL_REG4_YEN_G_MASK  >> 1) // enable gyro X-axis
+#define APV_LSM9DS1_CTRL_REG4_LIR_XL_MASK               (APV_LSM9DS1_CTRL_REG4_XEN_G_MASK  >> 2) // latch interrupts (bit 2 is empty)
+#define APV_LSM9DS1_CTRL_REG4_4D_XL_MASK                (APV_LSM9DS1_CTRL_REG4_LIR_XL_MASK >> 1) // [ 0 == 6D | 1 == 4D ] position recognition for interrupt
+
+// CTRL_REG5_XL : accelerometer output enable see Table 65
+#define APV_LSM9DS1_CTRL_REG5_XL_DEC_MASK               ((APV_LSM9DS1_FIELD_SIZE)0xC0)       // update decimation
+#define APV_LSM9DS1_CTRL_REG5_XL_ZEN_XL_MASK            ((APV_LSM9DS1_FIELD_SIZE)0x20)       // enable accelerometer Z-axis
+#define APV_LSM9DS1_CTRL_REG5_XL_YEN_XL_MASK            (APV_LSM9DS1_CTRL_REG_4_ZEN_XL >> 1) // enable accelerometer Y-axis
+#define APV_LSM9DS1_CTRL_REG5_XL_XEN_XL_MASK            (APV_LSM9DS1_CTRL_REG_4_YEN_XL >> 1) // enable accelerometer X-axis
+
+// CTRL_REG6_XL : accelerometer data output control see Table 67
+#define APV_LSM9DS1_CTRL_REG6_XL_BW_XL_MASK             ((APV_LSM9DS1_FIELD_SIZE)0x03)
+#define APV_LSM9DS1_CTRL_REG6_XL_BW_SCAL_ODR            ((APV_LSM9DS1_FIELD_SIZE)0x01)
+#define APV_LSM9DS1_CTRL_REG6_XL_BW_SCAL_ODR_SHIFT      (2)
+#define APV_LSM9DS1_CTRL_REG6_XL_BW_SCAL_ODR_MASK       (APV_LSM9DS1_CTRL_REG6_XL_BW_SCAL_ODR << APV_LSM9DS1_CTRL_REG6_XL_BW_SCAL_ODR_SHIFT)
+#define APV_LSM9DS1_CTRL_REG6_XL_FS_XL                  ((APV_LSM9DS1_FIELD_SIZE)0x03)
+#define APV_LSM9DS1_CTRL_REG6_XL_FS_XL_SHIFT            (1 + APV_LSM9DS1_CTRL_REG6_XL_BW_SCAL_ODR_SHIFT)
+#define APV_LSM9DS1_CTRL_REG6_XL_FS_XL_MASK             (APV_LSM9DS1_CTRL_REG6_XL_FS_XL << APV_LSM9DS1_CTRL_REG6_XL_FS_XL_SHIFT)
+#define APV_LSM9DS1_CTRL_REG6_XL_ODR_XL                 ((APV_LSM9DS1_FIELD_SIZE)0x07)
+#define APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_SHIFT           (2 + APV_LSM9DS1_CTRL_REG6_XL_FS_XL_SHIFT)
+#define APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_MASK            (APV_LSM9DS1_CTRL_REG6_XL_ODR_XL << APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_SHIFT)
+// bandwidth :
+#define APV_LSM9DS1_CTRL_REG6_XL_BW_XL_408_Hz           (0x00)
+#define APV_LSM9DS1_CTRL_REG6_XL_BW_XL_211_Hz           (0x01)
+#define APV_LSM9DS1_CTRL_REG6_XL_BW_XL_105_Hz           (0x02)
+#define APV_LSM9DS1_CTRL_REG6_XL_BW_XL_50_Hz            (0x03)
+// bandwidth selection :
+#define APV_LSM9DS1_CTRL_REG6_XL_BW_SCAL_ODR_ODR_XL     (0x00 << APV_LSM9DS1_CTRL_REG6_XL_BW_SCAL_ODR_SHIFT)
+#define APV_LSM9DS1_CTRL_REG6_XL_BW_SCAL_ODR_BW_XL      (0x01 << APV_LSM9DS1_CTRL_REG6_XL_BW_SCAL_ODR_SHIFT)
+// accelerometer full-scale :
+#define APV_LSM9DS1_CTRL_REG6_XL_FS_XL_2g               (0x00 << APV_LSM9DS1_CTRL_REG6_XL_FS_XL_SHIFT)
+#define APV_LSM9DS1_CTRL_REG6_XL_FS_XL_6g               (0x01 << APV_LSM9DS1_CTRL_REG6_XL_FS_XL_SHIFT)
+#define APV_LSM9DS1_CTRL_REG6_XL_FS_XL_4g               (0x02 << APV_LSM9DS1_CTRL_REG6_XL_FS_XL_SHIFT)
+#define APV_LSM9DS1_CTRL_REG6_XL_FS_XL_8g               (0x03 << APV_LSM9DS1_CTRL_REG6_XL_FS_XL_SHIFT)
+// output data-rate : see Table 68
+#define APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_none            (0x00 << APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_SHIFT)
+#define APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_10_Hz           (0x01 << APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_SHIFT)
+#define APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_50_Hz           (0x02 << APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_SHIFT)
+#define APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_119_Hz          (0x03 << APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_SHIFT)
+#define APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_238_Hz          (0x04 << APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_SHIFT)
+#define APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_476_Hz          (0x05 << APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_SHIFT)
+#define APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_952_Hz          (0x06 << APV_LSM9DS1_CTRL_REG6_XL_ODR_XL_SHIFT)
+
+// CTRL_REG7_XL : 
+#define APV_LSM9DS1_CTRL_REG7_XL_HPIS1_MASK             ((APV_LSM9DS1_FIELD_SIZE)0x01)
+#define APV_LSM9DS1_CTRL_REG7_XL_FDS                    ((APV_LSM9DS1_FIELD_SIZE)0x01)
+#define APV_LSM9DS1_CTRL_REG7_XL_FDS_SHIFT              (2) // bit 1 is empty
+#define APV_LSM9DS1_CTRL_REG7_XL_FDS_MASK               (APV_LSM9DS1_CTRL_REG7_XL_FDS << APV_LSM9DS1_CTRL_REG7_XL_FDS_SHIFT)
+#define APV_LSM9DS1_CTRL_REG7_XL_DCF                    ((APV_LSM9DS1_FIELD_SIZE)0x03)
+#define APV_LSM9DS1_CTRL_REG7_XL_DCF_SHIFT              (3 + APV_LSM9DS1_CTRL_REG7_XL_FDS_SHIFT) // bits 4,5 empty
+#define APV_LSM9DS1_CTRL_REG7_XL_DCF_MASK               (APV_LSM9DS1_CTRL_REG7_XL_DCF << APV_LSM9DS1_CTRL_REG7_XL_DCF_SHIFT)
+#define APV_LSM9DS1_CTRL_REG7_XL_HR                     ((APV_LSM9DS1_FIELD_SIZE)0x01)
+#define APV_LSM9DS1_CTRL_REG7_XL_HR_SHIFT               (1 + APV_LSM9DS1_CTRL_REG7_XL_DCF_SHIFT)
+#define APV_LSM9DS1_CTRL_REG7_XL_HR_MASK                (APV_LSM9DS1_CTRL_REG7_XL_HR << APV_LSM9DS1_CTRL_REG7_XL_HR_SHIFT)
+// high-pass filter enable
+#define APV_LSM9DS1_CTRL_REG7_XL_HPIS1_ENABLE           APV_LSM9DS1_CTRL_REG7_XL_HPIS1_MASK
+// filtered data selection
+#define APV_LSM9DS1_CTRL_REG7_XL_FDS_ENABLE             APV_LSM9DS1_CTRL_REG7_XL_FDS_MASK
+// accelerometer filter cut-offs (on HR == 1 (high-resolution mode)) see Table 71
+#define APV_LSM9DS1_CTRL_REG7_XL_DCF_ODR_BY_50          (0x00 << APV_LSM9DS1_CTRL_REG7_XL_DCF_SHIFT)
+#define APV_LSM9DS1_CTRL_REG7_XL_DCF_ODR_BY_100         (0x01 << APV_LSM9DS1_CTRL_REG7_XL_DCF_SHIFT)
+#define APV_LSM9DS1_CTRL_REG7_XL_DCF_ODR_BY_9           (0x02 << APV_LSM9DS1_CTRL_REG7_XL_DCF_SHIFT)
+#define APV_LSM9DS1_CTRL_REG7_XL_DCF_ODR_BY_400         (0x03 << APV_LSM9DS1_CTRL_REG7_XL_DCF_SHIFT)
+// high-resolution mode enable
+#define APV_LSM9DS1_CTRL_REG7_XL_HR_ENABLE              APV_LSM9DS1_CTRL_REG7_XL_HR_MASK
 
 /******************************************************************************/
 /* Type Definitions :                                                         */
@@ -242,8 +423,8 @@ typedef struct apvLsm9ds1RegisterDescriptor_tTag
 /* Global Variable Declarations :                                             */
 /******************************************************************************/
 
-extern apvLsm9ds1RegisterDescriptor_t apvLsm9ds1AccelerometerAndGyroRegisters[APV_LSM9DS1_ACCELEROMETER_GYRO_REGISTER_SET_SIZE];
-extern apvLsm9ds1RegisterDescriptor_t apvLsm9ds1MagnetometerRegisters[APV_LSM9DS1_MAGNETOMETER_REGISTER_SET_SIZE];
+extern const apvLsm9ds1RegisterDescriptor_t apvLsm9ds1AccelerometerAndGyroRegisters[APV_LSM9DS1_ACCELEROMETER_GYRO_REGISTER_SET_SIZE];
+extern const apvLsm9ds1RegisterDescriptor_t apvLsm9ds1MagnetometerRegisters[APV_LSM9DS1_MAGNETOMETER_REGISTER_SET_SIZE];
 
 /******************************************************************************/
 

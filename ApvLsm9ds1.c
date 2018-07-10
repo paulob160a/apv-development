@@ -22,7 +22,7 @@
 /******************************************************************************/
 
 // Section 6, "Register Mapping", Table 21
-apvLsm9ds1RegisterDescriptor_t apvLsm9ds1AccelerometerAndGyroRegisters[APV_LSM9DS1_ACCELEROMETER_GYRO_REGISTER_SET_SIZE] = 
+const apvLsm9ds1RegisterDescriptor_t apvLsm9ds1AccelerometerAndGyroRegisters[APV_LSM9DS1_ACCELEROMETER_GYRO_REGISTER_SET_SIZE] = 
   {
     {
       APV_LSM9DS1_REGISTER_ADDRESS_RESERVED_00,
@@ -307,7 +307,7 @@ apvLsm9ds1RegisterDescriptor_t apvLsm9ds1AccelerometerAndGyroRegisters[APV_LSM9D
   };
 
 // Section 6, "Register Mapping", Table 22
-apvLsm9ds1RegisterDescriptor_t apvLsm9ds1MagnetometerRegisters[APV_LSM9DS1_MAGNETOMETER_REGISTER_SET_SIZE] = 
+const apvLsm9ds1RegisterDescriptor_t apvLsm9ds1MagnetometerRegisters[APV_LSM9DS1_MAGNETOMETER_REGISTER_SET_SIZE] = 
   {
     {  
     APV_LSM9DS1_REGISTER_ADDRESS_RESERVED_M_00,
