@@ -31,7 +31,10 @@
          Pmc                         *ApvPeripheralControlBlock_p = PMC;                              // physical block address
 
          Uart                         ApvUartControlBlock;                                            // shadow UART control block
-volatile Uart                        *ApvUartControlBlock_p = UART;                                   // physical block address
+volatile Uart                        *ApvUartControlBlock_p       = UART;                             // physical block address
+
+         Spi                          ApvSpi0ControlBlock,                                            // Shadow SPI control block
+                                     *ApvSpi0ControlBlock_p       = SPI0;                             // physical block address
 
          apvInterruptPriorityLevel_t  apvInterruptPriorities[APV_DEVICE_INTERRUPT_PRIORITIES_PACKED]; // "packed" array of SAM3A device interrupt priorities
 
@@ -836,6 +839,471 @@ APV_ERROR_CODE apvSetInterruptPriority(int16_t                      interruptSou
 
 /******************************************************************************/
   } /* end of apvSetInterruptPriority                                         */
+
+/******************************************************************************/
+/* SPI Peripheral Function Definitions :                                      */
+/******************************************************************************/
+/* apvSPIEnable() :                                                           */
+/*  --> spiControlBlock_p : address of the SPI hardware peripheral block      */
+/*  --> spiEnable         : [ false == disable SPI | true == enable SPI ]     */
+/*  <-- spiError          : error codes                                       */
+/*                                                                            */
+/* - enable the SPI peripheral                                                */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvSPIEnable(Spi  *spiControlBlock_p,
+                            bool  spiEnable)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE spiError = APV_ERROR_CODE_NONE;
+
+/******************************************************************************/
+
+  if (spiControlBlock_p != NULL)
+    {
+    if (spiEnable == true)
+      {
+      spiControlBlock_p->SPI_CR = SPI_CR_SPIEN;
+      }
+    else
+      {
+      spiControlBlock_p->SPI_CR = SPI_CR_SPIDIS;
+      }
+    }
+  else
+    {
+    spiError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+
+/******************************************************************************/
+
+  return(spiError);
+
+/******************************************************************************/
+  } /* end of apvSPIEnable                                                    */
+
+/******************************************************************************/
+/* apvSPISetNPCSEndOfCharacterState() :                                       */
+/*  --> spiControlBlock_p : address of the SPI hardware peripheral block      */
+/*  --> lastTransferState : [ chip select asserts | de-asserts ]              */
+/*  <-- spiError          : error codes                                       */
+/*                                                                            */
+/* - the current chip select can be set to de-assert or remain asserted after */
+/*   the current transmit character has finished transmission                 */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvSPISetNPCSEndOfCharacterState(Spi                           *spiControlBlock_p,
+                                                apvSPILastTransferNPCSState_t  lastTransferState)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE spiError = APV_ERROR_CODE_NONE;
+
+/******************************************************************************/
+
+  if (spiControlBlock_p != NULL)
+    {
+    if (lastTransferState == APV_SPI_LAST_TRANSFER_NPCS_STATE_ASSERT)
+      {
+      spiControlBlock_p->SPI_CR = SPI_CR_LASTXFER;
+      }
+    }
+  else
+    {
+    spiError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+    
+/******************************************************************************/
+
+  return(spiError);
+
+/******************************************************************************/
+  } /* apvSPISetNPCSEndOfCharacterState                                       */
+
+/******************************************************************************/
+/* apvSPISetOperatingMode() :                                                 */
+/*  --> spiControlBlock_p       : address of the SPI hardware peripheral      */
+/*                                block                                       */
+/*  --> controlMode             : operate as a master or a slave              */
+/*  --> peripheralMode          :                                             */
+/*  --> chipSelectDecode        : chip-selects are direct or encode 4 bits to */
+/*                                16 selects                                  */
+/*  --> modeFaultDetect         : enable/disable mode fault detection         */
+/*  --> waitOnDataRead          : (in master mode) no further transfers are   */
+/*                                allowed until the receiver register is      */
+/*                                empty                                       */
+/*  --> loopbackEnable          : enable/disable local loopback               */
+/*  --> delayBetweenChipSelects : inter-NPCS delay                            */
+/*  <-- spiError                : error codes                                 */
+/*                                                                            */
+/* - set the SPI peripheral operating mode in one operation                   */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvSPISetOperatingMode(Spi                      *spiControlBlock_p,
+                                      apvSPIMasterSlaveMode_t   controlMode,
+                                      apvSPIPeripheralSelect_t  peripheralMode,
+                                      apvSPIChipSelectDecode_t  chipSelectDecode,
+                                      apvSPIModeFaultDetect_t   modeFaultDetect,
+                                      apvSPIWaitOnDataRead_t    waitOnDataRead,
+                                      apvSPILoopbackEnable_t    loopbackEnable,
+                                      uint8_t                   delayBetweenChipSelects)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE spiError        = APV_ERROR_CODE_NONE;
+
+  uint32_t       spiModeRegister = 0; // used to build the final write to the 
+                                      // register
+
+/******************************************************************************/
+
+  if (spiControlBlock_p != NULL)
+    {
+    if (controlMode == APV_SPI_MASTER_MODE) // default to slave
+      {
+      spiModeRegister = SPI_MR_MSTR;
+      }
+
+    if (chipSelectDecode == APV_SPI_CHIP_SELECT_DECODE_4_TO_16) // default to 1:1 NPCS
+      {
+      spiModeRegister = spiModeRegister | SPI_MR_PCSDEC;
+      }
+
+    if (modeFaultDetect == APV_SPI_MODE_FAULT_DETECTION_ENABLED) // default to disabled
+      {
+      spiModeRegister = spiModeRegister & (~((uint32_t)APV_SPI_MODE_FAULT_DETECTION_ENABLED));
+      }
+    else
+      {
+      spiModeRegister = spiModeRegister | SPI_MR_MODFDIS;
+      }
+
+    if (waitOnDataRead == APV_SPI_WAIT_ON_DATA_READ_ENABLED) // default to "no wait"
+      {
+      spiModeRegister = spiModeRegister | SPI_MR_WDRBT;
+      }
+
+    if (loopbackEnable == APV_SPI_LOOPBACK_ENABLED) // default to "no loopback"
+      {
+      spiModeRegister = spiModeRegister | SPI_MR_LLB;
+      }
+
+    spiModeRegister = spiModeRegister | SPI_MR_DLYBCS(delayBetweenChipSelects); // 6 =< delays <= (delayBetweenChipSelects) / MCLK
+
+    // Write the whole ensemble
+    spiControlBlock_p->SPI_MR = spiModeRegister;
+    }
+  else
+    {
+    spiError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+
+/******************************************************************************/
+
+  return(spiError);
+
+/******************************************************************************/
+  } /* end of apvSPISetOperatingMode                                          */
+
+/******************************************************************************/
+/* apvSPIDriveChipSelect() :                                                  */
+/*  --> spiControlBlock_p : address of the SPI hardware peripheral block      */
+/*  --> chipSelectCode    : direct or encoded NPCS                            */
+/*  <-- spiError          : error codes                                       */
+/*                                                                            */
+/* - assert or de-assert SPI chip-select :                                    */
+/*    - DIRECT  : 0 { NPCS }  3                                               */
+/*    - ENCODED : 1 { NPCS } 15                                               */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvSPIDriveChipSelect(Spi     *spiControlBlock_p,
+                                     uint8_t  chipSelectCode)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE spiError = APV_ERROR_CODE_NONE;
+
+/******************************************************************************/
+
+  if (spiControlBlock_p != NULL)
+    {
+    if (spiControlBlock_p->SPI_MR & SPI_MR_PCSDEC) // chip-select decoding is selected
+      {
+      if ((chipSelectCode >= APV_SPI_MINIMUM_ENCODED_CHIP_SELECT) && (chipSelectCode <= APV_SPI_MAXIMUM_ENCODED_CHIP_SELECT))
+        {
+        spiControlBlock_p->SPI_MR = (spiControlBlock_p->SPI_MR & (~((uint32_t)SPI_MR_PCS_Msk))) | SPI_MR_PCS(chipSelectCode);
+        }
+      else
+        {
+        spiError = APV_ERROR_CODE_PARAMETER_OUT_OF_RANGE;
+        }
+      }
+    else
+      {
+      if (chipSelectCode <= APV_SPI_MAXIMUM_DIRECT_CHIP_SELECT)
+        {
+        spiControlBlock_p->SPI_MR = (spiControlBlock_p->SPI_MR & (~((uint32_t)SPI_MR_PCS_Msk))) | SPI_MR_PCS(chipSelectCode);
+        }
+      else
+        {
+        spiError = APV_ERROR_CODE_PARAMETER_OUT_OF_RANGE;
+        }
+      }
+    }
+  else
+    {
+    spiError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+      
+/******************************************************************************/
+
+  return(spiError);
+
+/******************************************************************************/
+  } /* end of apvSPIDriveChipSelect                                           */
+
+/******************************************************************************/
+/* apvSPIReset() :                                                            */
+/*  --> spiControlBlock_p : address of the SPI hardware peripheral block      */
+/*  <-- spiError          : error codes                                       */
+/*                                                                            */
+/* - reset the SPI hardware using a software trigger                          */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvSPIReset(Spi *spiControlBlock_p)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE spiError = APV_ERROR_CODE_NONE;
+
+/******************************************************************************/
+
+  if (spiControlBlock_p != NULL)
+    {
+    spiControlBlock_p->SPI_CR = SPI_CR_SWRST;
+    }
+  else
+    {
+    spiError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+      
+/******************************************************************************/
+
+  return(spiError);
+
+/******************************************************************************/
+  } /* end of apvSPIReset                                                     */
+
+/******************************************************************************/
+/* apvSPISwitchInterrupt() :                                                  */
+/*  --> spiControlBlock_p : address of the SPI hardware peripheral block      */
+/*  --> interruptSelect   : the interrupt source to switch                    */
+/*  --> interruptSwitch   : [ interrupt enable == false |                     */
+/*                                                interrupt disable == true ] */
+/*                                                                            */
+/* - enable or disable one SPI peripheral interrupt                           */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvSPISwitchInterrupt(Spi                     *spiControlBlock_p,
+                                     apvSPIInterruptSelect_t  interruptSelect,
+                                     bool                     interruptSwitch)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE spiError = APV_ERROR_CODE_NONE;
+
+/******************************************************************************/
+
+  if (spiControlBlock_p != NULL)
+    {
+    if (interruptSwitch == true)
+      {
+      switch(interruptSelect)
+        {
+        case APV_SPI_INTERRUPT_SELECT_RECEIVE_DATA   : spiControlBlock_p->SPI_IER = SPI_IER_RDRF;
+                                                       break;
+
+        case APV_SPI_INTERRUPT_SELECT_TRANSMIT_DATA  : spiControlBlock_p->SPI_IER = SPI_IER_TDRE;
+                                                       break;
+
+        case APV_SPI_INTERRUPT_SELECT_MODE_FAULT     : spiControlBlock_p->SPI_IER = SPI_IER_MODF;
+                                                       break;
+
+        case APV_SPI_INTERRUPT_SELECT_OVERRUN        : spiControlBlock_p->SPI_IER = SPI_IER_OVRES;
+                                                       break;
+
+        case APV_SPI_INTERRUPT_SELECT_NSS_RISING     : spiControlBlock_p->SPI_IER = SPI_IER_NSSR;
+                                                       break;
+
+        case APV_SPI_INTERRUPT_SELECT_TRANSMIT_EMPTY : spiControlBlock_p->SPI_IER = SPI_IER_TXEMPTY;
+                                                       break;
+
+        case APV_SPI_INTERRUPT_SELECT_UNDERRUN       : spiControlBlock_p->SPI_IER = SPI_IER_UNDES;
+                                                       break;
+
+        default :                                      break;
+        }
+      }
+    else
+      {
+      switch(interruptSelect)
+        {
+        case APV_SPI_INTERRUPT_SELECT_RECEIVE_DATA   : spiControlBlock_p->SPI_IDR = SPI_IDR_RDRF;
+                                                       break;
+
+        case APV_SPI_INTERRUPT_SELECT_TRANSMIT_DATA  : spiControlBlock_p->SPI_IDR = SPI_IDR_TDRE;
+                                                       break;
+
+        case APV_SPI_INTERRUPT_SELECT_MODE_FAULT     : spiControlBlock_p->SPI_IDR = SPI_IDR_MODF;
+                                                       break;
+
+        case APV_SPI_INTERRUPT_SELECT_OVERRUN        : spiControlBlock_p->SPI_IDR = SPI_IDR_OVRES;
+                                                       break;
+
+        case APV_SPI_INTERRUPT_SELECT_NSS_RISING     : spiControlBlock_p->SPI_IDR = SPI_IDR_NSSR;
+                                                       break;
+
+        case APV_SPI_INTERRUPT_SELECT_TRANSMIT_EMPTY : spiControlBlock_p->SPI_IDR = SPI_IDR_TXEMPTY;
+                                                       break;
+
+        case APV_SPI_INTERRUPT_SELECT_UNDERRUN       : spiControlBlock_p->SPI_IDR = SPI_IDR_UNDES;
+                                                       break;
+
+        default :                                      break;
+        }
+      }
+    }
+  else
+    {
+    spiError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+
+/******************************************************************************/
+
+  return(spiError);
+
+/******************************************************************************/
+  } /* end of apvSPISwitchInterrupt                                           */
+
+/******************************************************************************/
+/* apvSetChipSelectCharacteristics() :                                        */
+/*  --> spiControlBlock_p               : address of the SPI hardware         */
+/*                                        peripheral block                    */
+/*  --> chipSelectRegisterNumber        : 0 { ... } 3                         */
+/*  --> serialClockPolarity             : CPOL                                */
+/*  --> serialClockDataChange           : CPHA                                */
+/*  --> chipSelectSingleSlave           : CSNAAT                              */
+/*  --> chipSelectChangeSlave           : CSAAT                               */
+/*  --> busDataWidth                    : BITS ( 8 { ... } 16 )               */
+/*  --> serialClockBaudRate             : SCBR ( 1 { ... } 255 )              */
+/*  --> serialClockFirstTransitionDelay : DLYBS  ( 0 { ... } 255 )            */
+/*  --> serialClockInterTransferDelay   : DLYBCT ( 0 { ... } 255 )            */
+/*                                                                            */
+/* - set the characteristics for the NPCS[0:3] in one operation. NOTE : this  */
+/*   must ALWAYS be done as the BITS field of the underlying register is un-  */
+/*   defined until written                                                    */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvSetChipSelectCharacteristics(Spi                                    *spiControlBlock_p,
+                                               apvChipSelectRegisterInstance_t         chipSelectRegisterNumber,
+                                               apvSPISerialClockPolarity_t             serialClockPolarity,
+                                               apvSPISerialClockPhase_t                serialClockDataChange,
+                                               apvSPIChipSelectBehaviourSingleSlave_t  chipSelectSingleSlave,
+                                               apvSPIChipSelectBehaviourChangeSlave_t  chipSelectChangeSlave,
+                                               uint8_t                                 busDataWidth,
+                                               uint32_t                                serialClockBaudRate,
+                                               uint8_t                                 serialClockFirstTransitionDelay,
+                                               uint8_t                                 serialClockInterTransferDelay)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE spiError      = APV_ERROR_CODE_NONE;
+
+  uint32_t       spiCSRegister = 0; // used to build the final write to the 
+                                    // register
+
+/******************************************************************************/
+
+  if (spiControlBlock_p != NULL)
+    { // Chip select register range = 0 { ... } 3
+    if (chipSelectRegisterNumber <= APV_SPI_CHIP_SELECT_REGISTER_3)
+      { // Data bus width range = 8 { ... } 16
+      if ((busDataWidth >= APV_SPI_MINIMUM_BIT_TRANSFER_WIDTH) && (busDataWidth <= APV_SPI_MAXIMUM_BIT_TRANSFER_WIDTH))
+        { // The serial clock baudrate divisor cannot be 0 or > 255
+        if ((serialClockBaudRate >= APV_SPI_MINIMUM_BAUD_RATE) && (serialClockBaudRate <= APV_SPI_MAXIMUM_BAUD_RATE))
+          { // Compute the baud rate divisor
+          spiCSRegister = SPI_CSR_SCBR( ((uint8_t)( APV_SPI_MAXIMUM_BAUD_RATE / serialClockBaudRate )) );
+
+          // Load the pre-serial-clock delay
+          spiCSRegister = spiCSRegister | SPI_CSR_DLYBS(serialClockFirstTransitionDelay);
+
+          // Load the inter-transfer delay
+          spiCSRegister = spiCSRegister | SPI_CSR_DLYBCT(serialClockInterTransferDelay);
+
+          // Load the data-width in bits
+          spiCSRegister = spiCSRegister | ((busDataWidth - APV_SPI_DATA_WIDTH_NORMALISE) << SPI_CSR_BITS_Pos);
+
+          // Load the CSAAT
+          if (chipSelectChangeSlave == APV_SPI_CHIP_SELECT_CHANGE_SLAVE_RISE_N)
+            {
+            spiCSRegister = spiCSRegister | SPI_CSR_CSAAT;
+            }
+
+          // Load the CSNAAT
+          if (chipSelectSingleSlave == APV_SPI_CHIP_SELECT_SINGLE_SLAVE_RISE)
+            {
+            spiCSRegister = spiCSRegister | SPI_CSR_CSNAAT;
+            }
+
+          // Load the CPHA
+          if (serialClockDataChange == APV_SPI_SERIAL_CLOCK_PHASE_DATA_CHANGE_FOLLOWING)
+            {
+            spiCSRegister = spiCSRegister | SPI_CSR_NCPHA;
+            }
+
+          // Load the CPOL
+          if (serialClockPolarity == APV_SPI_SERIAL_CLOCK_POLARITY_ONE)
+            {
+            spiCSRegister = spiCSRegister | SPI_CSR_CPOL;
+            }
+
+          // Finally load the chip-select register
+          spiControlBlock_p->SPI_CSR[chipSelectRegisterNumber] = spiCSRegister;
+          }
+        else
+          {
+          spiError = APV_ERROR_CODE_NULL_PARAMETER;
+          }
+        }
+      else
+        {
+        spiError = APV_ERROR_CODE_NULL_PARAMETER;
+        }
+      }
+    else
+      {
+      spiError = APV_ERROR_CODE_PARAMETER_OUT_OF_RANGE;
+      }
+    }
+  else
+    {
+    spiError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+
+/******************************************************************************/
+
+  return(spiError);
+
+/******************************************************************************/
+  } /* end of apvSetChipSelectCharacteristics                                 */
 
 /******************************************************************************/
 /* (C) PulsingCoreSoftware Limited 2018 (C)                                   */

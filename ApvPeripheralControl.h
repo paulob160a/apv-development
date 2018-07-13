@@ -60,6 +60,36 @@
 #define APV_DEVICE_INTERRUPT_PRIORITY_SYSTICK   APV_INTERRUPT_LEVEL_PRIORITY_14 // SysTick has elevated priority : 080718
 
 /******************************************************************************/
+/* SPI Constants :                                                            */
+/******************************************************************************/
+
+// Direct NPCS are 0 { ... } 3
+#define APV_SPI_MINIMUM_DIRECT_CHIP_SELECT   (0)
+#define APV_SPI_MAXIMUM_DIRECT_CHIP_SELECT   (3)
+// Encoded NPCS are 1 { ... } 15 using an external 4-16 encoder
+#define APV_SPI_MINIMUM_ENCODED_CHIP_SELECT  (1)
+#define APV_SPI_MAXIMUM_ENCODED_CHIP_SELECT (15)
+// SPI bus transfers are 8 - 16 bits wide
+#define APV_SPI_MINIMUM_BIT_TRANSFER_WIDTH   (8)
+#define APV_SPI_MAXIMUM_BIT_TRANSFER_WIDTH  (16)
+// Data bits are numbered in the chip-select register field as :
+//  0 == 8-bits
+//  1 == 9-bits
+//  2 == 10-bits
+//  3 == 11-bits
+//  4 == 12-bits
+//  5 == 13-bits
+//  6 == 14-bits
+//  7 == 15-bits
+//  8 == 16-bits
+#define APV_SPI_DATA_WIDTH_NORMALISE         (8) // i.e. subtract 8!
+
+#define APV_SPI_MINIMUM_BAUD_DIVISOR         (1)
+#define APV_SPI_MAXIMUM_BAUD_DIVISOR       (255)
+#define APV_SPI_MAXIMUM_BAUD_RATE            APV_SYSTEM_TIMER_TIMEBASE_BASECLOCK                                 // this may not be realisable!
+#define APV_SPI_MINIMUM_BAUD_RATE           (APV_SYSTEM_TIMER_TIMEBASE_BASECLOCK / APV_SPI_MAXIMUM_BAUD_DIVISOR) // 329411 bps
+
+/******************************************************************************/
 /* Type Definitions :                                                         */
 /******************************************************************************/
 
@@ -154,11 +184,125 @@ typedef union apvInterruptPriorityLevel_tTag
   } apvInterruptPriorityLevel_t;
 
 /******************************************************************************/
+/* SPI Peripheral Definitions :                                               */
+/******************************************************************************/
+
+typedef enum apvSPILastTransferNPCSState_tTag
+  {
+  APV_SPI_LAST_TRANSFER_NPCS_STATE_DEASSERT = 0,
+  APV_SPI_LAST_TRANSFER_NPCS_STATE_ASSERT   = 1,
+  APV_SPI_LAST_TRANSFER_NPCS_STATES
+  } apvSPILastTransferNPCSState_t;
+
+typedef enum apvSPIMasterSlaveMode_tTag
+  {
+  APV_SPI_SLAVE_MODE = 0,
+  APV_SPI_MASTER_MODE,
+  APV_SPI_CONTROL_MODES
+  } apvSPIMasterSlaveMode_t;
+
+typedef enum apvSPIPeripheralSelect_tTag
+  {
+  APV_SPI_PERIPHERAL_SELECT_FIXED = 0,
+  APV_SPI_PERIPHERAL_SELECT_VARIABLE,
+  APV_SPI_PERIPHERAL_SELECT_SET
+  } apvSPIPeripheralSelect_t;
+
+typedef enum apvSPIChipSelectDecode_tTag
+  {
+  APV_SPI_CHIP_SELECT_DECODE_DIRECT = 0,
+  APV_SPI_CHIP_SELECT_DECODE_4_TO_16,
+  APV_SPI_CHIP_SELECT_DECODE_SET
+  } apvSPIChipSelectDecode_t;
+
+typedef enum apvSPIModeFaultDetect_tTag
+  {
+  APV_SPI_MODE_FAULT_DETECTION_ENABLED = 0,
+  APV_SPI_MODE_FAULT_DETECTION_DISABLED,
+  APV_SPI_MODE_FAULT_DETECTION_SET
+  } apvSPIModeFaultDetect_t;
+
+typedef enum apvSPIWaitOnDataRead_tTag
+  {
+  APV_SPI_WAIT_ON_DATA_READ_DISABLED = 0,
+  APV_SPI_WAIT_ON_DATA_READ_ENABLED,
+  APV_SPI_WAIT_ON_DATA_READ_SET
+  } apvSPIWaitOnDataRead_t;
+
+typedef enum apvSPILoopbackEnable_tTag
+  {
+  APV_SPI_LOOPBACK_DISABLED = 0,
+  APV_SPI_LOOPBACK_ENABLED,
+  APV_SPI_LOOPBACK_SET
+  } apvSPILoopbackEnable_t;
+
+typedef enum apvSPIInterruptSelect_tTag
+  {
+  APV_SPI_INTERRUPT_SELECT_RECEIVE_DATA = 0,
+  APV_SPI_INTERRUPT_SELECT_TRANSMIT_DATA,
+  APV_SPI_INTERRUPT_SELECT_MODE_FAULT,
+  APV_SPI_INTERRUPT_SELECT_OVERRUN,
+  APV_SPI_INTERRUPT_SELECT_NSS_RISING,
+  APV_SPI_INTERRUPT_SELECT_TRANSMIT_EMPTY,
+  APV_SPI_INTERRUPT_SELECT_UNDERRUN,
+  APV_SPI_INTERRUPT_SELECT_SET
+  } apvSPIInterruptSelect_t;
+
+// CPOL : The logic level of the SPCK "inactive" state
+typedef enum apvSPISerialClockPolarity_tTag
+  {
+  APV_SPI_SERIAL_CLOCK_POLARITY_ZERO = 0,
+  APV_SPI_SERIAL_CLOCK_POLARITY_ONE,
+  APV_SPI_SERIAL_CLOCK_POLARITY_SET
+  } apvSPISerialClockPolarity_t;
+
+// CPHA : The edge of SPCK when data is changed (data is captured on the opposite edge)
+typedef enum apvSPISerialClockPhase_tTag
+  {
+  APV_SPI_SERIAL_CLOCK_PHASE_DATA_CHANGE_LEADING = 0,
+  APV_SPI_SERIAL_CLOCK_PHASE_DATA_CHANGE_FOLLOWING,
+  APV_SPI_SERIAL_CLOCK_PHASE_DATA_CHANGE_SET
+  } apvSPISerialClockPhase_t;
+
+// CSNAAT : Defines the chip select behaviour between data transfers when the same chip-
+// select is used (when the transmit buffer is reloaded before the previous 
+// transfer has completed). THIS IS CONDITIONAL ON (CSAAT == 0) :
+//   "apvSPIChipSelectBehaviourChangeSlave_t" == "APV_SPI_CHIP_SELECT_CHANGE_SLAVE_RISE"
+// 0 == chip-select is held low (active)
+// 1 == chip-select always rises after each transfer
+typedef enum apvSPIChipSelectBehaviourSingleSlave_tTag
+  {
+  APV_SPI_CHIP_SELECT_SINGLE_SLAVE_RISE_N = 0,
+  APV_SPI_CHIP_SELECT_SINGLE_SLAVE_RISE,
+  APV_SPI_CHIP_SELECT_SINGLE_SLAVE_RISE_SET
+  } apvSPIChipSelectBehaviourSingleSlave_t;
+
+// CSAAT : Defines the chip select behaviour after a data transfer : 
+// 0 == chip-select always rises
+// 1 == chip-select never rises until a transfer is requested using a different 
+//      chip-select
+typedef enum apvSPIChipSelectBehaviourChangeSlave_tTag
+  {
+  APV_SPI_CHIP_SELECT_CHANGE_SLAVE_RISE   = 0,
+  APV_SPI_CHIP_SELECT_CHANGE_SLAVE_RISE_N,
+  APV_SPI_CHIP_SELECT_CHANGE_SLAVE_RISE_SET
+  } apvSPIChipSelectBehaviourChangeSlave_t;
+
+typedef enum apvChipSelectRegisterInstance_tTag
+  {
+  APV_SPI_CHIP_SELECT_REGISTER_0 = 0,
+  APV_SPI_CHIP_SELECT_REGISTER_1,
+  APV_SPI_CHIP_SELECT_REGISTER_2,
+  APV_SPI_CHIP_SELECT_REGISTER_3,
+  APV_SPI_CHIP_SELECT_REGISTER_SET
+  } apvChipSelectRegisterInstance_t;
+
+/******************************************************************************/
 /* Global Variable Definitions :                                              */
 /******************************************************************************/
 
-extern          Pmc                         ApvPeripheralControlBlock;                                       // shadow peripheral control block
-extern          Pmc                        *ApvPeripheralControlBlock_p;                                     // physical block address
+extern          Pmc                          ApvPeripheralControlBlock;                                      // shadow peripheral control block
+extern          Pmc                         *ApvPeripheralControlBlock_p;                                    // physical block address
 
 extern          Uart                         ApvUartControlBlock;                                            // shadow UART control block
 extern volatile Uart                        *ApvUartControlBlock_p;                                          // physical block address
@@ -188,6 +332,39 @@ extern APV_ERROR_CODE apvGetInterruptPriority(int16_t  interruptSource,
 extern APV_ERROR_CODE apvSetInterruptPriority(int16_t                      interruptSourceNumber,
                                               uint8_t                      interruptPriority,
                                               apvInterruptPriorityLevel_t *deviceInterruptPriorities);
+
+/******************************************************************************/
+/* SPI Peripheral Function Declarations :                                     */
+/******************************************************************************/
+
+extern APV_ERROR_CODE apvSPIEnable(Spi  *spiControlBlock_p,
+                                   bool  spiEnable);
+extern APV_ERROR_CODE apvSPIReset(Spi *spiControlBlock_p);
+extern APV_ERROR_CODE apvSPISetNPCSEndOfCharacterState(Spi                           *spiControlBlock_p,
+                                                       apvSPILastTransferNPCSState_t  lastTransferState);
+extern APV_ERROR_CODE apvSPISetOperatingMode(Spi                      *spiControlBlock_p,
+                                             apvSPIMasterSlaveMode_t   controlMode,
+                                             apvSPIPeripheralSelect_t  peripheralMode,
+                                             apvSPIChipSelectDecode_t  chipSelectDecode,
+                                             apvSPIModeFaultDetect_t   modeFaultDetect,
+                                             apvSPIWaitOnDataRead_t    waitOnDataRead,
+                                             apvSPILoopbackEnable_t    loopbackEnable,
+                                             uint8_t                   delayBetweenChipSelects);
+extern APV_ERROR_CODE apvSPIDriveChipSelect(Spi     *spiControlBlock_p,
+                                            uint8_t  chipSelectCode);
+extern APV_ERROR_CODE apvSPISwitchInterrupt(Spi                     *spiControlBlock_p,
+                                            apvSPIInterruptSelect_t  interruptSelect,
+                                            bool                     interruptSwitch);
+extern APV_ERROR_CODE apvSetChipSelectCharacteristics(Spi                                    *spiControlBlock_p,
+                                                      uint8_t                                 chipSelectRegisterNumber,
+                                                      apvSPISerialClockPolarity_t             serialClockPolarity,
+                                                      apvSPISerialClockPhase_t                serialClockDataChange,
+                                                      apvSPIChipSelectBehaviourSingleSlave_t  chipSelectSingleSlave,
+                                                      apvSPIChipSelectBehaviourChangeSlave_t  chipSelectChangeSlave,
+                                                      uint8_t                                 busDataWidth,
+                                                      uint32_t                                serialClockBaudRate,
+                                                      uint8_t                                 serialClockFirstTransitionDelay,
+                                                      uint8_t                                 serialClockInterTransferDelay);
 
 /******************************************************************************/
 
