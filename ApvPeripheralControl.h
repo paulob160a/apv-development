@@ -65,10 +65,10 @@
 
 // Direct NPCS are 0 { ... } 3
 #define APV_SPI_MINIMUM_DIRECT_CHIP_SELECT   (0)
-#define APV_SPI_MAXIMUM_DIRECT_CHIP_SELECT   (3)
+#define APV_SPI_MAXIMUM_DIRECT_CHIP_SELECT   (2) // Arduino DUE only connects SS0-SS2!
 // Encoded NPCS are 1 { ... } 15 using an external 4-16 encoder
-#define APV_SPI_MINIMUM_ENCODED_CHIP_SELECT  (1)
-#define APV_SPI_MAXIMUM_ENCODED_CHIP_SELECT (15)
+#define APV_SPI_MINIMUM_ENCODED_CHIP_SELECT  (0)
+#define APV_SPI_MAXIMUM_ENCODED_CHIP_SELECT  (7) // Arduino DUE only connects SS0-SS2 ( 0 { ... } 7 ) !
 // SPI bus transfers are 8 - 16 bits wide
 #define APV_SPI_MINIMUM_BIT_TRANSFER_WIDTH   (8)
 #define APV_SPI_MAXIMUM_BIT_TRANSFER_WIDTH  (16)

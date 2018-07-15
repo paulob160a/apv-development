@@ -77,6 +77,10 @@ APV_ERROR_CODE apvSwitchResourceLines(apvResourceId_t resourceLineId,
       {
       switch(resourceLineId)
         {
+        /******************************************************************************/
+        /* Project-specific I/O allocations :                                         */
+        /******************************************************************************/
+
         case APV_RESOURCE_ID_STROBE_0 : // The first debug strobe is at (MCU PIN34) PIO C PIN 3 (PC3) : enable the line
                                         ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_C]->PIO_PER  = PIO_PER_P3;
 
@@ -123,6 +127,10 @@ APV_ERROR_CODE apvSwitchResourceLines(apvResourceId_t resourceLineId,
       {
       switch(resourceLineId)
         {
+        /******************************************************************************/
+        /* Project-specific I/O allocations :                                         */
+        /******************************************************************************/
+
         case APV_RESOURCE_ID_STROBE_0 : // The first debug strobe is at (MCU PIN34) PIO C PIN 3 (PC3)
                                         ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_C]->PIO_PDR = PIO_PDR_P3;
 

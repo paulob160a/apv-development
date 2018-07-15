@@ -72,7 +72,11 @@ APV_ERROR_CODE apvSwitchPeripheralClock(apvPeripheralId_t peripheralId,
     peripheralControlError = APV_ERROR_CODE_PARAMETER_OUT_OF_RANGE;
     }
   else
-    { // Peripheral clock control is spread across two control registers
+    {
+    /******************************************************************************/
+    /* Peripheral clock control is spread across two control registers            */
+    /******************************************************************************/    
+     
     if ((peripheralId >= APV_PERIPHERAL_ID_TC0) && (peripheralId <= APV_PERIPHERAL_ID_TC4)) // TC0 - 4 --> ID 27 - 31
       {
       if (peripheralSwitch == true)
@@ -101,6 +105,10 @@ APV_ERROR_CODE apvSwitchPeripheralClock(apvPeripheralId_t peripheralId,
         }
       }
 
+    /******************************************************************************/
+    /* UART and RTT Peripherals :                                                 */
+    /******************************************************************************/
+
     if ((peripheralId == APV_PERIPHERAL_ID_UART) || // UART --> ID 8
         (peripheralId == APV_PERIPHERAL_ID_RTT))    // RTT  --> ID 3
       {
@@ -116,6 +124,10 @@ APV_ERROR_CODE apvSwitchPeripheralClock(apvPeripheralId_t peripheralId,
         }
       }
 
+    /******************************************************************************/
+    /* I/O Port Peripherals :                                                     */
+    /******************************************************************************/
+
     if ((peripheralId >= APV_PERIPHERAL_ID_PIOA) && (peripheralId <= APV_PERIPHERAL_ID_PIOD))
       {
       if (peripheralSwitch == true)
@@ -129,6 +141,26 @@ APV_ERROR_CODE apvSwitchPeripheralClock(apvPeripheralId_t peripheralId,
         ApvPeripheralControlBlock_p->PMC_PCDR0 = (1 << peripheralId);
         }
       }
+
+    /******************************************************************************/
+    /* SPI Peripherals :                                                          */
+    /******************************************************************************/
+
+    if (peripheralId == APV_PERIPHERAL_ID_SPI0)
+      {
+      if (peripheralSwitch == true)
+        {
+        ApvPeripheralControlBlock.PMC_PCER0    = ApvPeripheralControlBlock.PMC_PCER0 | (1 << peripheralId);
+        ApvPeripheralControlBlock_p->PMC_PCER0 = (1 << peripheralId);
+        }
+      else
+        {
+        ApvPeripheralControlBlock.PMC_PCDR0    = ApvPeripheralControlBlock.PMC_PCDR0 | (1 << peripheralId);
+        ApvPeripheralControlBlock_p->PMC_PCDR0 = (1 << peripheralId);
+        }
+      }
+
+    /******************************************************************************/
     }
 
 /******************************************************************************/
@@ -205,6 +237,7 @@ APV_ERROR_CODE apvSwitchPeripheralLines(apvPeripheralId_t peripheralLineId,
 /******************************************************************************/
 
   APV_ERROR_CODE peripheralControlError = APV_ERROR_CODE_NONE;
+  uint32_t       peripheralABSelect     = 0; // temporary for read-modify-write
 
 /******************************************************************************/
 
@@ -218,6 +251,10 @@ APV_ERROR_CODE apvSwitchPeripheralLines(apvPeripheralId_t peripheralLineId,
       {
       switch(peripheralLineId)
         {
+        /******************************************************************************/
+        /* Peripheral I/O Allocations :                                               */
+        /******************************************************************************/
+
         case APV_PERIPHERAL_ID_UART : // The UART is enabled on PIO A pins PA8 and PA9 as peripheral A. THIS IS THE DEFAULT PIO STATE!
                                       ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PDR  = PIO_PDR_P8  | PIO_PDR_P9;
 
@@ -233,6 +270,59 @@ APV_ERROR_CODE apvSwitchPeripheralLines(apvPeripheralId_t peripheralLineId,
 
                                       break;
 
+        /******************************************************************************/
+        /* SPI0 : Arduino usage :                                                     */
+        /* -------------------------------------------------------------------------- */
+        /*  Arduino   |   I/O   | Peripheral |   Atmel    |          Notes            */
+        /*    Name    |   Pin   |   Select   |    Name    |                           */
+        /* -------------------------------------------------------------------------- */
+        /*    MISO    | PIOA/25 |     'A'    | SPIO_MISO  |                           */
+        /*    MOSI    | PIOA/26 |     'A'    | SPIO_MOSI  |                           */
+        /*    SPCK    | PIOA/27 |     'A'    | SPIO_SPCK  |                           */
+        /*     SS0    | PIOA/28 |     'A'    | SPIO_NPCS0 |                           */
+        /*     SS1    | PIOA/29 |     'A'    | SPIO_NPCS1 |                           */
+        /*     SS2    | PIOB/21 |     'B'    | SPIO_NPCS2 | A/D14 - of 12-bit ADC ??? */
+        /*     SS3    | POIB/23 |     'B'    | SPIO_NPCS3 | not brought out to header */
+        /******************************************************************************/
+
+        case APV_PERIPHERAL_ID_SPI0 : // Program PIOA/25 - SPI0_MISO
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PER  = PIO_PER_P25;                 // enable SPI0 MISO
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_OER  = PIO_OER_P25;                 // enable output
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = (uint32_t)(~PIO_ABSR_P25);   // select as peripheral 'A'
+
+                                      // Program PIOA/26 - SPIO_MOSI
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PER  = PIO_PER_P26;                 // enable SPI0 MOSI
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_OER  = PIO_OER_P26;                 // enable output
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = (uint32_t)(~PIO_ABSR_P26);   // select as peripheral 'A'
+
+                                      // Program PIOA/27 - SPI0_SPCK
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PER  = PIO_PER_P27;                 // enable SPI0 SPCK
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_OER  = PIO_OER_P27;                 // enable output
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = (uint32_t)(~PIO_ABSR_P27);   // select as peripheral 'A'
+
+                                      // Program PIOA/28 - SPI0_NPCS0
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PER  = PIO_PER_P28;                 // enable SPI0 NPCS0
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_OER  = PIO_OER_P28;                 // enable output
+                                      peripheralABSelect = ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR;
+                                      peripheralABSelect = peripheralABSelect & (uint32_t)(~PIO_ABSR_P28);
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = peripheralABSelect;          // select as peripheral 'A'
+
+                                      // Program PIOA/29 - SPIO_NPCS1
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PER  = PIO_PER_P29;                 // enable SPI0 NPCS1
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_OER  = PIO_OER_P29;                 // enable output
+                                      peripheralABSelect = ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR;
+                                      peripheralABSelect = peripheralABSelect & (uint32_t)(~PIO_ABSR_P29);
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = peripheralABSelect;          // select as peripheral 'A'
+
+                                      //Program PIOB/21 - SPI0_NPCS2
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_B]->PIO_PER  = PIO_PER_P21;                 // enable SPI0 NPCS2
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_B]->PIO_OER  = PIO_OER_P21;                 // enable output
+                                      peripheralABSelect = ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_B]->PIO_ABSR;
+                                      peripheralABSelect = peripheralABSelect | PIO_ABSR_P29;
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_B]->PIO_ABSR = peripheralABSelect;          // select as peripheral 'A'
+
+                                      break;
+
         default                     :
                                       break;
         }
@@ -241,6 +331,10 @@ APV_ERROR_CODE apvSwitchPeripheralLines(apvPeripheralId_t peripheralLineId,
       {
       switch(peripheralLineId)
         {
+        /******************************************************************************/
+        /* Peripheral I/O Allocations :                                               */
+        /******************************************************************************/
+
         case APV_PERIPHERAL_ID_UART : // The UART is disabled on pins PA8 and PA9
                                       ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PER = PIO_PDR_P8 | PIO_PDR_P9;
 
@@ -251,6 +345,9 @@ APV_ERROR_CODE apvSwitchPeripheralLines(apvPeripheralId_t peripheralLineId,
                                         peripheralControlError = APV_ERROR_CODE_CONFIGURATION_ERROR;
                                         }
 
+                                      break;
+
+        case APV_PERIPHERAL_ID_SPI0 :
                                       break;
 
         default                     :
@@ -934,7 +1031,7 @@ APV_ERROR_CODE apvSPISetNPCSEndOfCharacterState(Spi                           *s
 /*  --> modeFaultDetect         : enable/disable mode fault detection         */
 /*  --> waitOnDataRead          : (in master mode) no further transfers are   */
 /*                                allowed until the receiver register is      */
-/*                                empty                                       */
+/*                                empty - prevents receiver overrun           */
 /*  --> loopbackEnable          : enable/disable local loopback               */
 /*  --> delayBetweenChipSelects : inter-NPCS delay                            */
 /*  <-- spiError                : error codes                                 */
@@ -1017,7 +1114,10 @@ APV_ERROR_CODE apvSPISetOperatingMode(Spi                      *spiControlBlock_
 /*                                                                            */
 /* - assert or de-assert SPI chip-select :                                    */
 /*    - DIRECT  : 0 { NPCS }  3                                               */
-/*    - ENCODED : 1 { NPCS } 15                                               */
+/*    - ENCODED : 0 { NPCS } 14                                               */
+/*                                                                            */
+/*   NOTE : Arduino DUE does not connect SS3(PB23) - only 3 chip-selects are  */
+/*          available!                                                        */
 /*                                                                            */
 /******************************************************************************/
 
@@ -1034,7 +1134,7 @@ APV_ERROR_CODE apvSPIDriveChipSelect(Spi     *spiControlBlock_p,
     {
     if (spiControlBlock_p->SPI_MR & SPI_MR_PCSDEC) // chip-select decoding is selected
       {
-      if ((chipSelectCode >= APV_SPI_MINIMUM_ENCODED_CHIP_SELECT) && (chipSelectCode <= APV_SPI_MAXIMUM_ENCODED_CHIP_SELECT))
+      if (chipSelectCode <= APV_SPI_MAXIMUM_ENCODED_CHIP_SELECT)
         {
         spiControlBlock_p->SPI_MR = (spiControlBlock_p->SPI_MR & (~((uint32_t)SPI_MR_PCS_Msk))) | SPI_MR_PCS(chipSelectCode);
         }
