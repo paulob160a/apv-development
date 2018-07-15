@@ -286,39 +286,33 @@ APV_ERROR_CODE apvSwitchPeripheralLines(apvPeripheralId_t peripheralLineId,
         /******************************************************************************/
 
         case APV_PERIPHERAL_ID_SPI0 : // Program PIOA/25 - SPI0_MISO
-                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PER  = PIO_PER_P25;                 // enable SPI0 MISO
-                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_OER  = PIO_OER_P25;                 // enable output
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PDR  = PIO_PDR_P25;                 // enable SPI0 MISO
                                       ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = (uint32_t)(~PIO_ABSR_P25);   // select as peripheral 'A'
 
                                       // Program PIOA/26 - SPIO_MOSI
-                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PER  = PIO_PER_P26;                 // enable SPI0 MOSI
-                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_OER  = PIO_OER_P26;                 // enable output
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PDR  = PIO_PDR_P26;                 // enable SPI0 MOSI
                                       ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = (uint32_t)(~PIO_ABSR_P26);   // select as peripheral 'A'
 
                                       // Program PIOA/27 - SPI0_SPCK
-                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PER  = PIO_PER_P27;                 // enable SPI0 SPCK
-                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_OER  = PIO_OER_P27;                 // enable output
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PDR  = PIO_PDR_P27;                 // enable SPI0 SPCK
                                       ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = (uint32_t)(~PIO_ABSR_P27);   // select as peripheral 'A'
 
                                       // Program PIOA/28 - SPI0_NPCS0
-                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PER  = PIO_PER_P28;                 // enable SPI0 NPCS0
-                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_OER  = PIO_OER_P28;                 // enable output
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PDR  = PIO_PDR_P28;                 // enable SPI0 NPCS0
                                       peripheralABSelect = ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR;
                                       peripheralABSelect = peripheralABSelect & (uint32_t)(~PIO_ABSR_P28);
                                       ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = peripheralABSelect;          // select as peripheral 'A'
 
                                       // Program PIOA/29 - SPIO_NPCS1
-                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PER  = PIO_PER_P29;                 // enable SPI0 NPCS1
-                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_OER  = PIO_OER_P29;                 // enable output
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PDR  = PIO_PDR_P29;                 // enable SPI0 NPCS1
                                       peripheralABSelect = ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR;
                                       peripheralABSelect = peripheralABSelect & (uint32_t)(~PIO_ABSR_P29);
                                       ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = peripheralABSelect;          // select as peripheral 'A'
 
                                       //Program PIOB/21 - SPI0_NPCS2
-                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_B]->PIO_PER  = PIO_PER_P21;                 // enable SPI0 NPCS2
-                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_B]->PIO_OER  = PIO_OER_P21;                 // enable output
+                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_B]->PIO_PDR  = PIO_PDR_P21;                 // enable SPI0 NPCS2
                                       peripheralABSelect = ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_B]->PIO_ABSR;
-                                      peripheralABSelect = peripheralABSelect | PIO_ABSR_P29;
+                                      peripheralABSelect = peripheralABSelect | PIO_ABSR_P21;
                                       ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_B]->PIO_ABSR = peripheralABSelect;          // select as peripheral 'A'
 
                                       break;
@@ -1025,7 +1019,8 @@ APV_ERROR_CODE apvSPISetNPCSEndOfCharacterState(Spi                           *s
 /*  --> spiControlBlock_p       : address of the SPI hardware peripheral      */
 /*                                block                                       */
 /*  --> controlMode             : operate as a master or a slave              */
-/*  --> peripheralMode          :                                             */
+/*  --> peripheralMode          : [ 0 == chip-selects 1:1 peripheral device | */
+/*                                  1 == chip-selects --> 4-16 decoder ]      */
 /*  --> chipSelectDecode        : chip-selects are direct or encode 4 bits to */
 /*                                16 selects                                  */
 /*  --> modeFaultDetect         : enable/disable mode fault detection         */
@@ -1036,7 +1031,9 @@ APV_ERROR_CODE apvSPISetNPCSEndOfCharacterState(Spi                           *s
 /*  --> delayBetweenChipSelects : inter-NPCS delay                            */
 /*  <-- spiError                : error codes                                 */
 /*                                                                            */
-/* - set the SPI peripheral operating mode in one operation                   */
+/* - set the SPI peripheral operating mode in one operation. IMPLIES the      */
+/*   chip-select will be deferred until a transmit phase is initiated ((PS    */
+/*   == 1) leave at default '00')                                             */
 /*                                                                            */
 /******************************************************************************/
 
@@ -1063,6 +1060,12 @@ APV_ERROR_CODE apvSPISetOperatingMode(Spi                      *spiControlBlock_
     if (controlMode == APV_SPI_MASTER_MODE) // default to slave
       {
       spiModeRegister = SPI_MR_MSTR;
+      }
+
+    /* STRONGLY RECOMMEND THIS!!! */
+    if (peripheralMode == APV_SPI_PERIPHERAL_SELECT_VARIABLE) // chip-select is defined at transmit-tme
+      {
+      spiModeRegister = spiModeRegister | SPI_MR_PS;
       }
 
     if (chipSelectDecode == APV_SPI_CHIP_SELECT_DECODE_4_TO_16) // default to 1:1 NPCS
@@ -1404,6 +1407,41 @@ APV_ERROR_CODE apvSetChipSelectCharacteristics(Spi                              
 
 /******************************************************************************/
   } /* end of apvSetChipSelectCharacteristics                                 */
+
+/******************************************************************************/
+/* apvSPITransmitCharacter() :                                                */
+/*  --> spiPrefixCharacter   : 0 { ... } 8 bits - high-byte character         */
+/*  --> spiTrafficCharacter  :           8 bits - low-character               */
+/*  --> spiChipSelect        : [ 0 { ... } 2 | 0 { ... } 7 ]                  */
+/*  --> lastTransfer         : 1 == de-assert NPCSx DISREGARDING 'CSAAT'      */
+/*  <-- spiError             : error code                                     */
+/*                                                                            */
+/* - load an 8 [ .. ] 16-bit character into the transmit buffer. The          */
+/*   character is passed here as two bytes to logically seperate the function */
+/*   i.e. typically an 'address' byte and a 'data' byte. Chip-select          */
+/*   behaviour is defined by the 'mode' flags i.e. direct one-to-one with a   */
+/*   peripheral or indirectly via a 4-16 decoder. Chip-select de-assert can   */
+/*   be forced here even if 'CSAAT' is set to hold off de-assert ('Variable   */
+/*   Chip Select' (PS) must be '1')                                           */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvSPITransmitCharacter(uint8_t              spiPrefixCharacter,
+                                       uint8_t              spiTrafficCharacter,
+                                       uint8_t              spiChipSelect,
+                                       apvSPILastTransfer_t lastTransfer)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE spiError = APV_ERROR_CODE_NONE;
+
+/******************************************************************************/
+/******************************************************************************/
+
+  return(spiError);
+
+/******************************************************************************/
+  } /* end of apvSPITransmitCharacter                                         */
 
 /******************************************************************************/
 /* (C) PulsingCoreSoftware Limited 2018 (C)                                   */

@@ -180,6 +180,15 @@ int main(void)
   apvSerialErrorCode = apvSwitchNvicDeviceIrq(APV_PERIPHERAL_ID_UART,
                                               true);
 
+  /******************************************************************************/
+  /* SPI Setup :                                                                */
+  /******************************************************************************/
+
+  apvSerialErrorCode = apvSwitchPeripheralClock(APV_PERIPHERAL_ID_SPI0, // switch on SPI0
+                                                true);
+
+  /******************************************************************************/
+
   apvSerialErrorCode = apvSwitchPeripheralClock(ID_RTT, // switch on the core timer
                                                 true);
 

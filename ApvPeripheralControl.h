@@ -297,6 +297,13 @@ typedef enum apvChipSelectRegisterInstance_tTag
   APV_SPI_CHIP_SELECT_REGISTER_SET
   } apvChipSelectRegisterInstance_t;
 
+typedef enum apvSPILastTransfer_tTag
+  {
+  APV_SPI_LAST_TRANSFER_NONE = 0,
+  APV_SPI_LAST_TRANSFER_ACTIVE,
+  APV_SPI_LAST_TRANSFER_SET
+  } apvSPILastTransfer_t;
+
 /******************************************************************************/
 /* Global Variable Definitions :                                              */
 /******************************************************************************/
