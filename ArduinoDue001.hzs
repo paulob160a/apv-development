@@ -1,7 +1,9 @@
 <!DOCTYPE CrossStudio_Session_File>
 <session>
  <Bookmarks/>
- <Breakpoints/>
+ <Breakpoints>
+  <Exceptions set="MemManage;UsageFault_Coprocessor;UsageFault_CheckingError;UsageFault_StateError;BusFault;ExceptionEntryReturnFault;HardFault" />
+ </Breakpoints>
  <ExecutionProfileWindow/>
  <FrameBufferWindow>
   <FrameBufferWindow addressText="" bufferWidth="-1" bufferHeight="-1" addressSpace="" />
@@ -16,7 +18,7 @@
  </Memory2>
  <Memory3>
   <MemoryWindow autoEvaluate="0" addressText="" addressOrder="0" refreshPeriod="0" columnsText="" sizeText="" viewMode="0" dataSize="1" radix="16" name="BeagleBone_Sitara_Base_Code" addressSpace="" />
-  <MemoryWindow autoEvaluate="0" addressText="0x20072f64" addressOrder="0" refreshPeriod="500" columnsText="0" sizeText="sizeof" viewMode="1" dataSize="4" radix="16" name="ArduinoDue001" addressSpace="" />
+  <MemoryWindow autoEvaluate="0" addressText="0x40008000" addressOrder="0" refreshPeriod="500" columnsText="0" sizeText="sizeof" viewMode="1" dataSize="4" radix="16" name="ArduinoDue001" addressSpace="" />
  </Memory3>
  <Memory4>
   <MemoryWindow autoEvaluate="0" addressText="" addressOrder="0" refreshPeriod="0" columnsText="" sizeText="" viewMode="0" dataSize="1" radix="16" name="BeagleBone_Sitara_Base_Code" addressSpace="" />
@@ -68,13 +70,14 @@
    <Watchpoint evalMode="1" linenumber="260" numelements="0" radix="-1" name="apvPrimarySerialCommsInterruptHandler" list="" expression="apvPrimarySerialCommsInterruptHandler" filename="ArduinoDueSerial.c" />
    <Watchpoint evalMode="1" linenumber="0" numelements="0" radix="16" name="apvPrimarySerialCommsReceiveBuffer" list="" expression="apvPrimarySerialCommsReceiveBuffer" filename="../ArduinoDue001" />
    <Watchpoint evalMode="1" linenumber="515" numelements="0" radix="-1" name="apvPrimarySerialCommsTransmitBuffer" list="" expression="apvPrimarySerialCommsTransmitBuffer" filename="ApvMessagingLayerManager.c" />
-   <Watchpoint evalMode="0" linenumber="248" numelements="0" radix="-1" name="apvRunTimeCounter" list="" expression="apvRunTimeCounter" filename="ArduinoDueMain.c" />
+   <Watchpoint evalMode="0" linenumber="286" numelements="0" radix="-1" name="apvRunTimeCounter" list="" expression="apvRunTimeCounter" filename="ArduinoDueMain.c" />
    <Watchpoint evalMode="2" linenumber="318" numelements="8" radix="16" name="apvSerialPortPrimaryRingBuffer_p" list="" expression="apvSerialPortPrimaryRingBuffer_p" filename="ArduinoDueSerial.c" />
    <Watchpoint evalMode="1" linenumber="309" numelements="0" radix="-1" name="messageStructure" list="" expression="messageStructure" filename="ApvMessageHandling.c" />
    <Watchpoint evalMode="1" linenumber="331" numelements="0" radix="-1" name="thisComponent" list="" expression="thisComponent" filename="ApvMessagingLayerManager.c" />
    <Watchpoint evalMode="1" linenumber="357" numelements="0" radix="-1" name="uartInputMessage" list="" expression="uartInputMessage" filename="ApvMessagingLayerManager.c" />
    <Watchpoint evalMode="0" linenumber="499" numelements="0" radix="-1" name="uartModifiedOutputMessage" list="" expression="uartModifiedOutputMessage" filename="ApvMessagingLayerManager.c" />
    <Watchpoint evalMode="1" linenumber="493" numelements="0" radix="16" name="uartOutputMessage" list="" expression="uartOutputMessage" filename="ApvMessagingLayerManager.c" />
+   <Watchpoint evalMode="0" linenumber="1094" numelements="0" radix="16" name="spiModeRegister" list="" expression="spiModeRegister" filename="ApvPeripheralControl.c" />
   </Watches>
  </Watch1>
  <Watch2>
@@ -88,9 +91,9 @@
  </Watch4>
  <Files>
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="19" debugPath="ApvMessagingLayerManager.c" y="519" path="ApvMessagingLayerManager.c" left="0" selected="0" name="unnamed" top="492" />
-  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="82" debugPath="ArduinoDueMain.c" y="183" path="ArduinoDueMain.c" left="0" selected="0" name="unnamed" top="280" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="62" debugPath="ArduinoDueMain.c" y="215" path="ArduinoDueMain.c" left="0" selected="1" name="unnamed" top="184" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/SAM3XA_Startup.s" y="172" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/SAM3XA_Startup.s" left="0" selected="0" name="unnamed" top="150" />
-  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="78" debugPath="ApvPeripheralControl.c" y="1035" path="ApvPeripheralControl.c" left="0" selected="1" name="unnamed" top="1027" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="118" debugPath="ApvPeripheralControl.c" y="1366" path="ApvPeripheralControl.c" left="0" selected="0" name="unnamed" top="1348" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvControlPortProtocol.c" y="102" path="ApvControlPortProtocol.c" left="0" selected="0" name="unnamed" top="80" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvCommsUtilities.c" y="434" path="ApvCommsUtilities.c" left="0" selected="0" name="unnamed" top="469" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvMessageHandling.c" y="1140" path="ApvMessageHandling.c" left="0" selected="0" name="unnamed" top="1103" />
@@ -98,18 +101,21 @@
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ArduinoDueSerial.c" y="376" path="ArduinoDueSerial.c" left="0" selected="0" name="unnamed" top="333" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvSerial.h" y="139" path="ApvSerial.h" left="0" selected="0" name="unnamed" top="117" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvControlPortProtocol.h" y="33" path="ApvControlPortProtocol.h" left="0" selected="0" name="unnamed" top="0" />
-  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvCommsUtilities.h" y="85" path="ApvCommsUtilities.h" left="0" selected="0" name="unnamed" top="63" />
-  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="36" debugPath="ApvPeripheralControl.h" y="206" path="ApvPeripheralControl.h" left="0" selected="0" name="unnamed" top="183" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvCommsUtilities.h" y="85" path="ApvCommsUtilities.h" left="0" selected="0" name="unnamed" top="26" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="2" debugPath="ApvPeripheralControl.h" y="294" path="ApvPeripheralControl.h" left="0" selected="0" name="unnamed" top="272" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvEventTimers.c" y="93" path="ApvEventTimers.c" left="0" selected="0" name="unnamed" top="75" />
-  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="8" debugPath="ApvUtilities.h" y="33" path="ApvUtilities.h" left="0" selected="0" name="unnamed" top="36" />
-  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvEventTimers.h" y="27" path="ApvEventTimers.h" left="0" selected="0" name="unnamed" top="19" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="8" debugPath="ApvUtilities.h" y="33" path="ApvUtilities.h" left="0" selected="0" name="unnamed" top="1" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="38" debugPath="ApvEventTimers.h" y="27" path="ApvEventTimers.h" left="0" selected="0" name="unnamed" top="19" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvEventTimersIsrs.h" y="0" path="ApvEventTimersIsrs.h" left="0" selected="0" name="unnamed" top="0" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/CMSIS_3/CMSIS/Include/core_cm3.h" y="0" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/CMSIS_3/CMSIS/Include/core_cm3.h" left="0" selected="0" name="unnamed" top="0" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvEventTimerIsrs.c" y="245" path="ApvEventTimerIsrs.c" left="0" selected="0" name="unnamed" top="211" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvLsm9ds1.h" y="547" path="ApvLsm9ds1.h" left="0" selected="0" name="unnamed" top="519" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvLsm9ds1.c" y="387" path="ApvLsm9ds1.c" left="0" selected="0" name="unnamed" top="365" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvError.h" y="55" path="ApvError.h" left="0" selected="0" name="unnamed" top="33" />
-  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="8" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/CMSIS/Device/ATMEL/sam3xa/include/component/spi.h" y="64" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/CMSIS/Device/ATMEL/sam3xa/include/component/spi.h" left="0" selected="0" name="unnamed" top="32" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/CMSIS/Device/ATMEL/sam3xa/include/sam3x8e.h" y="283" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/CMSIS/Device/ATMEL/sam3xa/include/sam3x8e.h" left="0" selected="0" name="unnamed" top="239" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/CMSIS/Device/ATMEL/sam3xa/include/component/spi.h" y="86" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/CMSIS/Device/ATMEL/sam3xa/include/component/spi.h" left="0" selected="0" name="unnamed" top="42" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvSystemTime.h" y="0" path="ApvSystemTime.h" left="0" selected="0" name="unnamed" top="0" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="C:/Program Files (x86)/Rowley Associates Limited/CrossWorks for ARM 3.7/include/stdint.h" y="51" path="C:/Program Files (x86)/Rowley Associates Limited/CrossWorks for ARM 3.7/include/stdint.h" left="0" selected="0" name="unnamed" top="29" />
  </Files>
  <ARMCrossStudioWindow activeProject="ArduinoDue001" autoConnectTarget="SEGGER J-Link" debugSearchFileMap="" fileDialogInitialDirectory="C:/Users/Paul/Documents/CrossWorks Projects/ArduinoDue001" fileDialogDefaultFilter="*.c" autoConnectCapabilities="388991" debugSearchPath="" buildConfiguration="THUMB Flash Debug" />
 </session>

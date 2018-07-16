@@ -64,14 +64,14 @@
 /******************************************************************************/
 
 // Direct NPCS are 0 { ... } 3
-#define APV_SPI_MINIMUM_DIRECT_CHIP_SELECT   (0)
-#define APV_SPI_MAXIMUM_DIRECT_CHIP_SELECT   (2) // Arduino DUE only connects SS0-SS2!
+#define APV_SPI_MINIMUM_DIRECT_CHIP_SELECT     (0)
+#define APV_SPI_MAXIMUM_DIRECT_CHIP_SELECT     (2) // Arduino DUE only connects SS0-SS2!
 // Encoded NPCS are 1 { ... } 15 using an external 4-16 encoder
-#define APV_SPI_MINIMUM_ENCODED_CHIP_SELECT  (0)
-#define APV_SPI_MAXIMUM_ENCODED_CHIP_SELECT  (7) // Arduino DUE only connects SS0-SS2 ( 0 { ... } 7 ) !
+#define APV_SPI_MINIMUM_ENCODED_CHIP_SELECT    (0)
+#define APV_SPI_MAXIMUM_ENCODED_CHIP_SELECT    (7) // Arduino DUE only connects SS0-SS2 ( 0 { ... } 7 ) !
 // SPI bus transfers are 8 - 16 bits wide
-#define APV_SPI_MINIMUM_BIT_TRANSFER_WIDTH   (8)
-#define APV_SPI_MAXIMUM_BIT_TRANSFER_WIDTH  (16)
+#define APV_SPI_MINIMUM_BIT_TRANSFER_WIDTH     (8)
+#define APV_SPI_MAXIMUM_BIT_TRANSFER_WIDTH    (16)
 // Data bits are numbered in the chip-select register field as :
 //  0 == 8-bits
 //  1 == 9-bits
@@ -82,12 +82,31 @@
 //  6 == 14-bits
 //  7 == 15-bits
 //  8 == 16-bits
-#define APV_SPI_DATA_WIDTH_NORMALISE         (8) // i.e. subtract 8!
+#define APV_SPI_DATA_WIDTH_NORMALISE           (8) // i.e. subtract 8!
 
-#define APV_SPI_MINIMUM_BAUD_DIVISOR         (1)
-#define APV_SPI_MAXIMUM_BAUD_DIVISOR       (255)
-#define APV_SPI_MAXIMUM_BAUD_RATE            APV_SYSTEM_TIMER_TIMEBASE_BASECLOCK                                 // this may not be realisable!
-#define APV_SPI_MINIMUM_BAUD_RATE           (APV_SYSTEM_TIMER_TIMEBASE_BASECLOCK / APV_SPI_MAXIMUM_BAUD_DIVISOR) // 329411 bps
+#define APV_SPI_MINIMUM_BAUD_DIVISOR           (1)
+#define APV_SPI_MAXIMUM_BAUD_DIVISOR         (255)
+#define APV_SPI_MAXIMUM_BAUD_RATE             ((uint64_t)10000000)                                       // 10 Mbps
+#define APV_SPI_MINIMUM_BAUD_RATE             (APV_SPI_MAXIMUM_BAUD_RATE / APV_SPI_MAXIMUM_BAUD_DIVISOR) // 39215 bps
+
+#define APV_SPI_CHIP_SELECT_DELAY_MINIMUM      (6) // field "DLYBCS" in "SPI_MR"
+#define APV_SPI_CHIP_SELECT_DELAY_MAXIMUM    (255)
+
+#define APV_SPI_CHIP_SELECT_DELAY_MINIMUM_nS ((uint16_t)(((uint64_t)APV_SPI_CHIP_SELECT_DELAY_MINIMUM) * APV_SYSTEM_TIMER_CLOCK_MINIMUM_INTERVAL))
+#define APV_SPI_CHIP_SELECT_DELAY_MAXIMUM_nS ((uint16_t)(((uint64_t)APV_SPI_CHIP_SELECT_DELAY_MAXIMUM) * APV_SYSTEM_TIMER_CLOCK_MINIMUM_INTERVAL))
+
+// Transmit and receive data registers are 8 { ... } 16 bits wide. In APV they 
+// are nominally "prefix" and "traffic" :
+//  txrx_data = (prefix << 8) | traffic
+#define APV_SPI_DATA_PREFIX_SHIFT              (8)
+
+// Protects SPCK setup time but limits data rate
+#define APV_SPI_FIRST_SPCK_TRANSITION_DELAY    (4)
+#define APV_SPI_FIRST_SPCK_TRANSITION_DELAY_nS ((uint16_t)(APV_SPI_FIRST_SPCK_TRANSITION_DELAY * APV_SYSTEM_TIMER_CLOCK_MINIMUM_INTERVAL))
+
+// Sets the delay between data transfers that MUST elapse BEFORE the chip-
+// select is de-asserted
+#define APV_SPI_INTER_TRANSFER_DELAY           (0)
 
 /******************************************************************************/
 /* Type Definitions :                                                         */
@@ -304,6 +323,20 @@ typedef enum apvSPILastTransfer_tTag
   APV_SPI_LAST_TRANSFER_SET
   } apvSPILastTransfer_t;
 
+// A potentially useful(?) set of SPI bus clock rates
+typedef enum apvSPIBaudRateSelectors_tTag
+  {
+  APV_SPI_BAUD_RATE_SELECT_10M0   = APV_SPI_MAXIMUM_BAUD_RATE,              // divisor ==   1
+  APV_SPI_BAUD_RATE_SELECT_2M5    = (APV_SPI_BAUD_RATE_SELECT_10M0   >> 2), // divisor ==   4
+  APV_SPI_BAUD_RATE_SELECT_1M25   = (APV_SPI_BAUD_RATE_SELECT_2M5    >> 1), // divisor ==   8
+  APV_SPI_BAUD_RATE_SELECT_625K0  = (APV_SPI_BAUD_RATE_SELECT_1M25   >> 1), // divisor ==  16
+  APV_SPI_BAUD_RATE_SELECT_312K5  = (APV_SPI_BAUD_RATE_SELECT_625K0  >> 1), // divisor ==  32
+  APV_SPI_BAUD_RATE_SELECT_156K25 = (APV_SPI_BAUD_RATE_SELECT_312K5  >> 1), // divisor ==  64
+  APV_SPI_BAUD_RATE_SELECT_78K125 = (APV_SPI_BAUD_RATE_SELECT_156K25 >> 1), // divisor == 128
+  APV_SPI_BAUD_RATE_SELECT_39K215 = APV_SPI_MINIMUM_BAUD_RATE,              // divisor == 255
+  APV_SPI_BAUD_RATE_SELECT_SET    = 8
+  } apvSPIBaudRateSelectors_t;
+
 /******************************************************************************/
 /* Global Variable Definitions :                                              */
 /******************************************************************************/
@@ -313,6 +346,9 @@ extern          Pmc                         *ApvPeripheralControlBlock_p;       
 
 extern          Uart                         ApvUartControlBlock;                                            // shadow UART control block
 extern volatile Uart                        *ApvUartControlBlock_p;                                          // physical block address
+
+extern          Spi                          ApvSpi0ControlBlock;                                            // Shadow SPI control block
+extern          Spi                         *ApvSpi0ControlBlock_p;
 
 extern          apvInterruptPriorityLevel_t  apvInterruptPriorities[APV_DEVICE_INTERRUPT_PRIORITIES_PACKED]; // shadow device interrupt priorities
 
@@ -356,7 +392,7 @@ extern APV_ERROR_CODE apvSPISetOperatingMode(Spi                      *spiContro
                                              apvSPIModeFaultDetect_t   modeFaultDetect,
                                              apvSPIWaitOnDataRead_t    waitOnDataRead,
                                              apvSPILoopbackEnable_t    loopbackEnable,
-                                             uint8_t                   delayBetweenChipSelects);
+                                             uint16_t                  delayBetweenChipSelects);
 extern APV_ERROR_CODE apvSPIDriveChipSelect(Spi     *spiControlBlock_p,
                                             uint8_t  chipSelectCode);
 extern APV_ERROR_CODE apvSPISwitchInterrupt(Spi                     *spiControlBlock_p,
@@ -370,8 +406,8 @@ extern APV_ERROR_CODE apvSetChipSelectCharacteristics(Spi                       
                                                       apvSPIChipSelectBehaviourChangeSlave_t  chipSelectChangeSlave,
                                                       uint8_t                                 busDataWidth,
                                                       uint32_t                                serialClockBaudRate,
-                                                      uint8_t                                 serialClockFirstTransitionDelay,
-                                                      uint8_t                                 serialClockInterTransferDelay);
+                                                      uint16_t                                serialClockFirstTransitionDelay,
+                                                      uint16_t                                serialClockInterTransferDelay);
 
 /******************************************************************************/
 

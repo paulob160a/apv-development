@@ -941,6 +941,9 @@ APV_ERROR_CODE apvSetInterruptPriority(int16_t                      interruptSou
 /*                                                                            */
 /* - enable the SPI peripheral                                                */
 /*                                                                            */
+/*   Reference : Atmel-11057C-ATARM-SAM3X-SAM3A-Datasheet_23-Mar-15", Section */
+/*               32.8.1 p693                                                  */
+/*                                                                            */
 /******************************************************************************/
 
 APV_ERROR_CODE apvSPIEnable(Spi  *spiControlBlock_p,
@@ -983,6 +986,9 @@ APV_ERROR_CODE apvSPIEnable(Spi  *spiControlBlock_p,
 /*                                                                            */
 /* - the current chip select can be set to de-assert or remain asserted after */
 /*   the current transmit character has finished transmission                 */
+/*                                                                            */
+/*   Reference : Atmel-11057C-ATARM-SAM3X-SAM3A-Datasheet_23-Mar-15", Section */
+/*               32.8.1 p693                                                  */
 /*                                                                            */
 /******************************************************************************/
 
@@ -1028,12 +1034,16 @@ APV_ERROR_CODE apvSPISetNPCSEndOfCharacterState(Spi                           *s
 /*                                allowed until the receiver register is      */
 /*                                empty - prevents receiver overrun           */
 /*  --> loopbackEnable          : enable/disable local loopback               */
-/*  --> delayBetweenChipSelects : inter-NPCS delay                            */
+/*  --> delayBetweenChipSelects : inter-NPCS delay in nanoseconds (65.335us   */
+/*                                maximum)                                    */
 /*  <-- spiError                : error codes                                 */
 /*                                                                            */
 /* - set the SPI peripheral operating mode in one operation. IMPLIES the      */
 /*   chip-select will be deferred until a transmit phase is initiated ((PS    */
 /*   == 1) leave at default '00')                                             */
+/*                                                                            */
+/*   Reference : Atmel-11057C-ATARM-SAM3X-SAM3A-Datasheet_23-Mar-15", Section */
+/*               32.8.2 p694                                                  */
 /*                                                                            */
 /******************************************************************************/
 
@@ -1044,7 +1054,7 @@ APV_ERROR_CODE apvSPISetOperatingMode(Spi                      *spiControlBlock_
                                       apvSPIModeFaultDetect_t   modeFaultDetect,
                                       apvSPIWaitOnDataRead_t    waitOnDataRead,
                                       apvSPILoopbackEnable_t    loopbackEnable,
-                                      uint8_t                   delayBetweenChipSelects)
+                                      uint16_t                  delayBetweenChipSelects)
   {
 /******************************************************************************/
 
@@ -1052,6 +1062,8 @@ APV_ERROR_CODE apvSPISetOperatingMode(Spi                      *spiControlBlock_
 
   uint32_t       spiModeRegister = 0; // used to build the final write to the 
                                       // register
+  uint16_t       chipSelectDelay = 0; // used to compute inter-chip-select 
+                                      // delay counts
 
 /******************************************************************************/
 
@@ -1092,7 +1104,21 @@ APV_ERROR_CODE apvSPISetOperatingMode(Spi                      *spiControlBlock_
       spiModeRegister = spiModeRegister | SPI_MR_LLB;
       }
 
-    spiModeRegister = spiModeRegister | SPI_MR_DLYBCS(delayBetweenChipSelects); // 6 =< delays <= (delayBetweenChipSelects) / MCLK
+    chipSelectDelay = delayBetweenChipSelects / ((uint16_t)APV_SYSTEM_TIMER_CLOCK_MINIMUM_INTERVAL);
+    
+    if (chipSelectDelay < APV_SPI_CHIP_SELECT_DELAY_MINIMUM)
+      {
+      chipSelectDelay = APV_SPI_CHIP_SELECT_DELAY_MINIMUM;
+      }
+    else
+      {
+      if (chipSelectDelay >= APV_SPI_CHIP_SELECT_DELAY_MAXIMUM)
+        {
+        chipSelectDelay = APV_SPI_CHIP_SELECT_DELAY_MAXIMUM;
+        }
+      }
+
+    spiModeRegister = spiModeRegister | SPI_MR_DLYBCS(((uint8_t)chipSelectDelay)); // 6 =< delays <= (delayBetweenChipSelects) / MCLK
 
     // Write the whole ensemble
     spiControlBlock_p->SPI_MR = spiModeRegister;
@@ -1121,6 +1147,9 @@ APV_ERROR_CODE apvSPISetOperatingMode(Spi                      *spiControlBlock_
 /*                                                                            */
 /*   NOTE : Arduino DUE does not connect SS3(PB23) - only 3 chip-selects are  */
 /*          available!                                                        */
+/*                                                                            */
+/*   Reference : Atmel-11057C-ATARM-SAM3X-SAM3A-Datasheet_23-Mar-15", Section */
+/*               32.8.2 p694                                                  */
 /*                                                                            */
 /******************************************************************************/
 
@@ -1177,6 +1206,9 @@ APV_ERROR_CODE apvSPIDriveChipSelect(Spi     *spiControlBlock_p,
 /*                                                                            */
 /* - reset the SPI hardware using a software trigger                          */
 /*                                                                            */
+/*   Reference : Atmel-11057C-ATARM-SAM3X-SAM3A-Datasheet_23-Mar-15", Section */
+/*               32.8.1 p693                                                  */
+/*                                                                            */
 /******************************************************************************/
 
 APV_ERROR_CODE apvSPIReset(Spi *spiControlBlock_p)
@@ -1211,6 +1243,9 @@ APV_ERROR_CODE apvSPIReset(Spi *spiControlBlock_p)
 /*                                                interrupt disable == true ] */
 /*                                                                            */
 /* - enable or disable one SPI peripheral interrupt                           */
+/*                                                                            */
+/*   Reference : Atmel-11057C-ATARM-SAM3X-SAM3A-Datasheet_23-Mar-15", Section */
+/*               32.8.6/7 p700                                                */
 /*                                                                            */
 /******************************************************************************/
 
@@ -1306,12 +1341,18 @@ APV_ERROR_CODE apvSPISwitchInterrupt(Spi                     *spiControlBlock_p,
 /*  --> chipSelectChangeSlave           : CSAAT                               */
 /*  --> busDataWidth                    : BITS ( 8 { ... } 16 )               */
 /*  --> serialClockBaudRate             : SCBR ( 1 { ... } 255 )              */
-/*  --> serialClockFirstTransitionDelay : DLYBS  ( 0 { ... } 255 )            */
-/*  --> serialClockInterTransferDelay   : DLYBCT ( 0 { ... } 255 )            */
+/*  --> serialClockFirstTransitionDelay : delay before SPCK in nanoseconds    */
+/*                                        (maximum 65535)                     */
+/*  --> serialClockInterTransferDelay   : delay between transfers in nano-    */
+/*                                        seconds (maximum 65535) - this is   */
+/*                                        multiplied by 32 internally         *?
 /*                                                                            */
 /* - set the characteristics for the NPCS[0:3] in one operation. NOTE : this  */
 /*   must ALWAYS be done as the BITS field of the underlying register is un-  */
 /*   defined until written                                                    */
+/*                                                                            */
+/*   Reference : Atmel-11057C-ATARM-SAM3X-SAM3A-Datasheet_23-Mar-15", Section */
+/*               32.8.9 p703                                                  */
 /*                                                                            */
 /******************************************************************************/
 
@@ -1323,8 +1364,8 @@ APV_ERROR_CODE apvSetChipSelectCharacteristics(Spi                              
                                                apvSPIChipSelectBehaviourChangeSlave_t  chipSelectChangeSlave,
                                                uint8_t                                 busDataWidth,
                                                uint32_t                                serialClockBaudRate,
-                                               uint8_t                                 serialClockFirstTransitionDelay,
-                                               uint8_t                                 serialClockInterTransferDelay)
+                                               uint16_t                                serialClockFirstTransitionDelay,
+                                               uint16_t                                serialClockInterTransferDelay)
   {
 /******************************************************************************/
 
@@ -1332,6 +1373,8 @@ APV_ERROR_CODE apvSetChipSelectCharacteristics(Spi                              
 
   uint32_t       spiCSRegister = 0; // used to build the final write to the 
                                     // register
+  uint16_t       delayCounter  = 0; // used to compute the SPCK and inter-
+                                    // transfer delays
 
 /******************************************************************************/
 
@@ -1345,11 +1388,15 @@ APV_ERROR_CODE apvSetChipSelectCharacteristics(Spi                              
           { // Compute the baud rate divisor
           spiCSRegister = SPI_CSR_SCBR( ((uint8_t)( APV_SPI_MAXIMUM_BAUD_RATE / serialClockBaudRate )) );
 
-          // Load the pre-serial-clock delay
-          spiCSRegister = spiCSRegister | SPI_CSR_DLYBS(serialClockFirstTransitionDelay);
+          // Compute and load the pre-serial-clock delay
+          delayCounter = serialClockFirstTransitionDelay / ((uint16_t)APV_SYSTEM_TIMER_CLOCK_MINIMUM_INTERVAL);
 
-          // Load the inter-transfer delay
-          spiCSRegister = spiCSRegister | SPI_CSR_DLYBCT(serialClockInterTransferDelay);
+          spiCSRegister = spiCSRegister | SPI_CSR_DLYBS(((uint8_t)delayCounter));
+
+          // Compute and load the inter-transfer delay
+          delayCounter = serialClockInterTransferDelay / ((uint16_t)APV_SYSTEM_TIMER_CLOCK_MINIMUM_INTERVAL);
+
+          spiCSRegister = spiCSRegister | SPI_CSR_DLYBCT(((uint8_t)delayCounter));
 
           // Load the data-width in bits
           spiCSRegister = spiCSRegister | ((busDataWidth - APV_SPI_DATA_WIDTH_NORMALISE) << SPI_CSR_BITS_Pos);
@@ -1410,6 +1457,8 @@ APV_ERROR_CODE apvSetChipSelectCharacteristics(Spi                              
 
 /******************************************************************************/
 /* apvSPITransmitCharacter() :                                                */
+/*  --> spiControlBlock_p    : address of the SPI hardware                    */
+/*                                        peripheral block                    */
 /*  --> spiPrefixCharacter   : 0 { ... } 8 bits - high-byte character         */
 /*  --> spiTrafficCharacter  :           8 bits - low-character               */
 /*  --> spiChipSelect        : [ 0 { ... } 2 | 0 { ... } 7 ]                  */
@@ -1424,18 +1473,39 @@ APV_ERROR_CODE apvSetChipSelectCharacteristics(Spi                              
 /*   be forced here even if 'CSAAT' is set to hold off de-assert ('Variable   */
 /*   Chip Select' (PS) must be '1')                                           */
 /*                                                                            */
+/*   Reference : Atmel-11057C-ATARM-SAM3X-SAM3A-Datasheet_23-Mar-15", Section */
+/*               32.28.4 p697                                                 */
+/*                                                                            */
 /******************************************************************************/
 
-APV_ERROR_CODE apvSPITransmitCharacter(uint8_t              spiPrefixCharacter,
-                                       uint8_t              spiTrafficCharacter,
-                                       uint8_t              spiChipSelect,
-                                       apvSPILastTransfer_t lastTransfer)
+APV_ERROR_CODE apvSPITransmitCharacter(Spi                  *spiControlBlock_p,
+                                       uint8_t               spiPrefixCharacter,
+                                       uint8_t               spiTrafficCharacter,
+                                       uint8_t               spiChipSelect,
+                                       apvSPILastTransfer_t  lastTransfer)
   {
 /******************************************************************************/
 
-  APV_ERROR_CODE spiError = APV_ERROR_CODE_NONE;
+  APV_ERROR_CODE spiError     = APV_ERROR_CODE_NONE;
+  uint32_t       transmitData = 0; // temporary to build the register value
 
 /******************************************************************************/
+
+  if (spiControlBlock_p != NULL)
+    {
+    transmitData = (uint32_t)((spiPrefixCharacter << APV_SPI_DATA_PREFIX_SHIFT) | spiTrafficCharacter);
+    transmitData = transmitData | SPI_TDR_PCS(spiChipSelect);
+
+    if (lastTransfer == APV_SPI_LAST_TRANSFER_ACTIVE)
+      {
+      transmitData = transmitData | SPI_TDR_LASTXFER;
+      }
+    }
+  else
+    {
+    spiError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+
 /******************************************************************************/
 
   return(spiError);

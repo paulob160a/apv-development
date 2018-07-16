@@ -187,6 +187,44 @@ int main(void)
   apvSerialErrorCode = apvSwitchPeripheralClock(APV_PERIPHERAL_ID_SPI0, // switch on SPI0
                                                 true);
 
+  // Operatimg mode is :
+  //  - MASTER
+  //  - chip-select set by registers SPI0_CSR[0 .. 3]
+  //  - chip-selects are connected to one device each
+  //  - fault detection mode is OFF
+  //  - data receiver must be read before the next transmit event
+  //  - loopback is ON
+  //  - chip-select delay is 6 * MCK
+  apvSerialErrorCode = apvSPISetOperatingMode(ApvSpi0ControlBlock_p,
+                                              APV_SPI_MASTER_MODE,
+                                              APV_SPI_PERIPHERAL_SELECT_VARIABLE,
+                                              APV_SPI_CHIP_SELECT_DECODE_DIRECT,
+                                              APV_SPI_MODE_FAULT_DETECTION_DISABLED,
+                                              APV_SPI_WAIT_ON_DATA_READ_ENABLED,
+                                              APV_SPI_LOOPBACK_ENABLED,
+                                              APV_SPI_CHIP_SELECT_DELAY_MINIMUM_nS);
+
+  // Chip-select mode is :
+  //  - SPI0_CSR[0]
+  //  - chip-select "inactive" is logic '1'
+  //  - data CHANGES on the LEADING edge of "SPCK" and is sampled on the edge "FOLLOWING"
+  //  - chip-select ALWAYS rises after each data transfer ON THE SAME SLAVE
+  //  - chip-select ALWAYS rises on ANY slave
+  //  - data bit width   == 16
+  //  - serial baud rate == 1.25 Mbps
+  //  - pre-SPCK delay   == 4 * MCK
+  //  - inter-transfer delay BEFORE chip-select de-assert == 0
+  apvSerialErrorCode = apvSetChipSelectCharacteristics(ApvSpi0ControlBlock_p,
+                                                       APV_SPI_CHIP_SELECT_REGISTER_0,
+                                                       APV_SPI_SERIAL_CLOCK_POLARITY_ONE,
+                                                       APV_SPI_SERIAL_CLOCK_PHASE_DATA_CHANGE_LEADING,
+                                                       APV_SPI_CHIP_SELECT_SINGLE_SLAVE_RISE,
+                                                       APV_SPI_CHIP_SELECT_CHANGE_SLAVE_RISE,
+                                                       APV_SPI_MAXIMUM_BIT_TRANSFER_WIDTH,
+                                                       APV_SPI_BAUD_RATE_SELECT_1M25,
+                                                       APV_SPI_FIRST_SPCK_TRANSITION_DELAY_nS,
+                                                       APV_SPI_INTER_TRANSFER_DELAY);
+
   /******************************************************************************/
 
   apvSerialErrorCode = apvSwitchPeripheralClock(ID_RTT, // switch on the core timer
