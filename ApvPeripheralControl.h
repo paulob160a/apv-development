@@ -101,7 +101,7 @@
 #define APV_SPI_DATA_PREFIX_SHIFT              (8)
 
 // Protects SPCK setup time but limits data rate
-#define APV_SPI_FIRST_SPCK_TRANSITION_DELAY    (4)
+#define APV_SPI_FIRST_SPCK_TRANSITION_DELAY    (8)
 #define APV_SPI_FIRST_SPCK_TRANSITION_DELAY_nS ((uint16_t)(APV_SPI_FIRST_SPCK_TRANSITION_DELAY * APV_SYSTEM_TIMER_CLOCK_MINIMUM_INTERVAL))
 
 // Sets the delay between data transfers that MUST elapse BEFORE the chip-

@@ -2,9 +2,7 @@
 <session>
  <Bookmarks/>
  <Breakpoints>
-  <BreakpointListItem line="233" action="" hardwareBreakpoint="" trigger="" useHWbreakpoint="false" group="Breakpoints" type="Breakpoint" state="2" counter="0" isFunctionBreakpoint="false" filename="ArduinoDueMain.c" expression="" />
-  <BreakpointListItem line="239" action="" hardwareBreakpoint="" trigger="" useHWbreakpoint="false" group="Breakpoints" type="Breakpoint" state="2" counter="0" isFunctionBreakpoint="false" filename="ArduinoDueMain.c" expression="" />
-  <BreakpointListItem line="245" action="" hardwareBreakpoint="" trigger="" useHWbreakpoint="false" group="Breakpoints" type="Breakpoint" state="2" counter="0" isFunctionBreakpoint="false" filename="ArduinoDueMain.c" expression="" />
+  <BreakpointListItem line="242" action="" hardwareBreakpoint="" trigger="" useHWbreakpoint="false" group="Breakpoints" type="Breakpoint" state="2" counter="0" isFunctionBreakpoint="false" filename="ArduinoDueMain.c" expression="" />
   <Exceptions set="Reset;MemManage;UsageFault_Coprocessor;UsageFault_CheckingError;UsageFault_StateError;BusFault;ExceptionEntryReturnFault;HardFault" />
  </Breakpoints>
  <ExecutionProfileWindow/>
@@ -73,20 +71,20 @@
    <Watchpoint evalMode="1" linenumber="260" numelements="0" radix="-1" name="apvPrimarySerialCommsInterruptHandler" list="" expression="apvPrimarySerialCommsInterruptHandler" filename="ArduinoDueSerial.c" />
    <Watchpoint evalMode="1" linenumber="0" numelements="0" radix="16" name="apvPrimarySerialCommsReceiveBuffer" list="" expression="apvPrimarySerialCommsReceiveBuffer" filename="../ArduinoDue001" />
    <Watchpoint evalMode="1" linenumber="515" numelements="0" radix="-1" name="apvPrimarySerialCommsTransmitBuffer" list="" expression="apvPrimarySerialCommsTransmitBuffer" filename="ApvMessagingLayerManager.c" />
-   <Watchpoint evalMode="0" linenumber="308" numelements="0" radix="-1" name="apvRunTimeCounter" list="" expression="apvRunTimeCounter" filename="ArduinoDueMain.c" />
+   <Watchpoint evalMode="0" linenumber="311" numelements="0" radix="-1" name="apvRunTimeCounter" list="" expression="apvRunTimeCounter" filename="ArduinoDueMain.c" />
    <Watchpoint evalMode="2" linenumber="318" numelements="8" radix="16" name="apvSerialPortPrimaryRingBuffer_p" list="" expression="apvSerialPortPrimaryRingBuffer_p" filename="ArduinoDueSerial.c" />
    <Watchpoint evalMode="1" linenumber="309" numelements="0" radix="-1" name="messageStructure" list="" expression="messageStructure" filename="ApvMessageHandling.c" />
    <Watchpoint evalMode="1" linenumber="331" numelements="0" radix="-1" name="thisComponent" list="" expression="thisComponent" filename="ApvMessagingLayerManager.c" />
    <Watchpoint evalMode="1" linenumber="357" numelements="0" radix="-1" name="uartInputMessage" list="" expression="uartInputMessage" filename="ApvMessagingLayerManager.c" />
    <Watchpoint evalMode="0" linenumber="499" numelements="0" radix="-1" name="uartModifiedOutputMessage" list="" expression="uartModifiedOutputMessage" filename="ApvMessagingLayerManager.c" />
    <Watchpoint evalMode="1" linenumber="493" numelements="0" radix="16" name="uartOutputMessage" list="" expression="uartOutputMessage" filename="ApvMessagingLayerManager.c" />
-   <Watchpoint evalMode="0" linenumber="1094" numelements="0" radix="16" name="spiModeRegister" list="" expression="spiModeRegister" filename="ApvPeripheralControl.c" />
-   <Watchpoint evalMode="0" linenumber="1504" numelements="0" radix="-1" name="transmitData" list="" expression="transmitData" filename="ApvPeripheralControl.c" />
-   <Watchpoint evalMode="0" linenumber="233" numelements="0" radix="-1" name="spiTransmitPrefix" list="" expression="spiTransmitPrefix" filename="ArduinoDueMain.c" />
-   <Watchpoint evalMode="0" linenumber="234" numelements="0" radix="-1" name="spiTransmitTraffic" list="" expression="spiTransmitTraffic" filename="ArduinoDueMain.c" />
-   <Watchpoint evalMode="0" linenumber="235" numelements="0" radix="-1" name="spiChipSelectOut" list="" expression="spiChipSelectOut" filename="ArduinoDueMain.c" />
-   <Watchpoint evalMode="0" linenumber="236" numelements="0" radix="-1" name="spiReceivedCharacter" list="" expression="spiReceivedCharacter" filename="ArduinoDueMain.c" />
-   <Watchpoint evalMode="0" linenumber="237" numelements="0" radix="-1" name="spiChipSelectIn" list="" expression="spiChipSelectIn" filename="ArduinoDueMain.c" />
+   <Watchpoint evalMode="0" linenumber="1100" numelements="0" radix="16" name="spiModeRegister" list="" expression="spiModeRegister" filename="ApvPeripheralControl.c" />
+   <Watchpoint evalMode="0" linenumber="1510" numelements="0" radix="-1" name="transmitData" list="" expression="transmitData" filename="ApvPeripheralControl.c" />
+   <Watchpoint evalMode="0" linenumber="236" numelements="0" radix="-1" name="spiTransmitPrefix" list="" expression="spiTransmitPrefix" filename="ArduinoDueMain.c" />
+   <Watchpoint evalMode="0" linenumber="237" numelements="0" radix="-1" name="spiTransmitTraffic" list="" expression="spiTransmitTraffic" filename="ArduinoDueMain.c" />
+   <Watchpoint evalMode="0" linenumber="238" numelements="0" radix="-1" name="spiChipSelectOut" list="" expression="spiChipSelectOut" filename="ArduinoDueMain.c" />
+   <Watchpoint evalMode="0" linenumber="239" numelements="0" radix="-1" name="spiReceivedCharacter" list="" expression="spiReceivedCharacter" filename="ArduinoDueMain.c" />
+   <Watchpoint evalMode="0" linenumber="240" numelements="0" radix="-1" name="spiChipSelectIn" list="" expression="spiChipSelectIn" filename="ArduinoDueMain.c" />
   </Watches>
  </Watch1>
  <Watch2>
@@ -100,18 +98,18 @@
  </Watch4>
  <Files>
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="19" debugPath="ApvMessagingLayerManager.c" y="519" path="ApvMessagingLayerManager.c" left="0" selected="0" name="unnamed" top="492" />
-  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="36" debugPath="ArduinoDueMain.c" y="238" path="ArduinoDueMain.c" left="0" selected="0" name="unnamed" top="210" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ArduinoDueMain.c" y="241" path="ArduinoDueMain.c" left="0" selected="1" name="unnamed" top="219" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/SAM3XA_Startup.s" y="172" path="../../../AppData/Local/Rowley Associates Limited/CrossWorks for ARM/v3/packages/targets/SAM/SAM3XA_Startup.s" left="0" selected="0" name="unnamed" top="150" />
-  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="80" debugPath="ApvPeripheralControl.c" y="1482" path="ApvPeripheralControl.c" left="0" selected="1" name="unnamed" top="1458" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="2" debugPath="ApvPeripheralControl.c" y="290" path="ApvPeripheralControl.c" left="0" selected="0" name="unnamed" top="265" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvControlPortProtocol.c" y="102" path="ApvControlPortProtocol.c" left="0" selected="0" name="unnamed" top="80" />
-  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvCommsUtilities.c" y="434" path="ApvCommsUtilities.c" left="0" selected="0" name="unnamed" top="469" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvCommsUtilities.c" y="434" path="ApvCommsUtilities.c" left="0" selected="0" name="unnamed" top="9" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvMessageHandling.c" y="1140" path="ApvMessageHandling.c" left="0" selected="0" name="unnamed" top="1103" />
-  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="5" debugPath="ApvUtilities.c" y="34" path="ApvUtilities.c" left="0" selected="0" name="unnamed" top="12" />
-  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ArduinoDueSerial.c" y="376" path="ArduinoDueSerial.c" left="0" selected="0" name="unnamed" top="333" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="5" debugPath="ApvUtilities.c" y="34" path="ApvUtilities.c" left="0" selected="0" name="unnamed" top="228" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ArduinoDueSerial.c" y="376" path="ArduinoDueSerial.c" left="0" selected="0" name="unnamed" top="44" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvSerial.h" y="139" path="ApvSerial.h" left="0" selected="0" name="unnamed" top="117" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvControlPortProtocol.h" y="33" path="ApvControlPortProtocol.h" left="0" selected="0" name="unnamed" top="0" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvCommsUtilities.h" y="85" path="ApvCommsUtilities.h" left="0" selected="0" name="unnamed" top="26" />
-  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="42" debugPath="ApvPeripheralControl.h" y="427" path="ApvPeripheralControl.h" left="0" selected="0" name="unnamed" top="393" />
+  <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="33" debugPath="ApvPeripheralControl.h" y="346" path="ApvPeripheralControl.h" left="0" selected="0" name="unnamed" top="319" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="0" debugPath="ApvEventTimers.c" y="93" path="ApvEventTimers.c" left="0" selected="0" name="unnamed" top="75" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="8" debugPath="ApvUtilities.h" y="33" path="ApvUtilities.h" left="0" selected="0" name="unnamed" top="1" />
   <SessionOpenFile useTextEdit="1" useBinaryEdit="0" codecName="Default" x="38" debugPath="ApvEventTimers.h" y="27" path="ApvEventTimers.h" left="0" selected="0" name="unnamed" top="19" />
