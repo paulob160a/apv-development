@@ -1345,7 +1345,7 @@ APV_ERROR_CODE apvSPISwitchInterrupt(Spi                     *spiControlBlock_p,
 /*                                        (maximum 65535)                     */
 /*  --> serialClockInterTransferDelay   : delay between transfers in nano-    */
 /*                                        seconds (maximum 65535) - this is   */
-/*                                        multiplied by 32 internally         *?
+/*                                        multiplied by 32 internally         */
 /*                                                                            */
 /* - set the characteristics for the NPCS[0:3] in one operation. NOTE : this  */
 /*   must ALWAYS be done as the BITS field of the underlying register is un-  */
@@ -1473,6 +1473,14 @@ APV_ERROR_CODE apvSetChipSelectCharacteristics(Spi                              
 /*   be forced here even if 'CSAAT' is set to hold off de-assert ('Variable   */
 /*   Chip Select' (PS) must be '1')                                           */
 /*                                                                            */
+/*   NOTE : the chip-select register (PS == 1) works as follows :             */
+/*           - xxx0 : SPI0_CSR[0] characteristics                             */
+/*           - xx01 : SPI0_CSR[1] characteristics                             */
+/*           - x011 : SPI0_CSR[2] characteristics                             */
+/*           - 0111 : SPI0_CSR[3] characteristics                             */
+/*          if PCS is set to an SPI0_CSR[x] that has not been initialised the */
+/*          SPI peripheral NO LONGER WORKS PROPERLY AND RECOVERY IS BY RESET! */
+/*                                                                            */
 /*   Reference : Atmel-11057C-ATARM-SAM3X-SAM3A-Datasheet_23-Mar-15", Section */
 /*               32.28.4 p697                                                 */
 /*                                                                            */
@@ -1500,6 +1508,8 @@ APV_ERROR_CODE apvSPITransmitCharacter(Spi                  *spiControlBlock_p,
       {
       transmitData = transmitData | SPI_TDR_LASTXFER;
       }
+
+    spiControlBlock_p->SPI_TDR = transmitData;
     }
   else
     {
@@ -1512,6 +1522,49 @@ APV_ERROR_CODE apvSPITransmitCharacter(Spi                  *spiControlBlock_p,
 
 /******************************************************************************/
   } /* end of apvSPITransmitCharacter                                         */
+
+/******************************************************************************/
+/* apvSpiReceiveCharacter() :                                                 */
+/*  --> spiControlBlock_p    : address of the SPI hardware                    */
+/*                                        peripheral block                    */
+/*  --> spiReceivedCharacter : 8 { ... } 16-bits                              */
+/*  --> spiChipSelect        : [ 0 { ... } 2 | 0 { ... } 7 ]                  */
+/*  <-- spiError             : error code                                     */
+/*                                                                            */
+/*   Reference : Atmel-11057C-ATARM-SAM3X-SAM3A-Datasheet_23-Mar-15", Section */
+/*               32.28.4 p697                                                 */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvSpiReceiveCharacter(Spi      *spiControlBlock_p,
+                                      uint16_t *spiReceivedCharacter,
+                                      uint8_t  *spiChipSelect)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE spiError     = APV_ERROR_CODE_NONE;
+  uint32_t       receivedData = 0;
+
+/******************************************************************************/
+
+  if (spiControlBlock_p != NULL)
+    {
+    receivedData = spiControlBlock_p->SPI_RDR;
+
+    *spiReceivedCharacter = APV_SPI_RECEIVED_CHARACTER(receivedData);
+    *spiChipSelect        = APV_SPI_RECEIVED_CHIP_SELECT(receivedData);
+    }
+  else
+    {
+    spiError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+
+/******************************************************************************/
+
+  return(spiError);
+
+/******************************************************************************/
+  } /* end of apvSpiReceiveCharacter                                          */
 
 /******************************************************************************/
 /* (C) PulsingCoreSoftware Limited 2018 (C)                                   */

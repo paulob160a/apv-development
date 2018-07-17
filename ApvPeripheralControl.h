@@ -108,6 +108,17 @@
 // select is de-asserted
 #define APV_SPI_INTER_TRANSFER_DELAY           (0)
 
+// Received character shifts and masks
+#define APV_SPI_RECEIVED_CHARACTER_SHIFT         (0)
+#define APV_SPI_RECEIVED_CHARACTER_WIDTH         APV_SPI_MAXIMUM_BIT_TRANSFER_WIDTH
+#define APV_SPI_RECEIVED_CHARACTER_MASK          ((uint16_t)(~(0)))
+#define APV_SPI_RECEIVED_CHARACTER(rxData)       ((rxData) & APV_SPI_RECEIVED_CHARACTER_MASK)
+
+#define APV_SPI_RECEIVED_CHIP_SELECT_SHIFT       APV_SPI_RECEIVED_CHARACTER_WIDTH
+#define APV_SPI_RECEIVED_CHIP_SELECT_WIDTH       (4)
+#define APV_SPI_RECEIVED_CHIP_SELECT_MASK        ((uint8_t)((1 << APV_SPI_RECEIVED_CHIP_SELECT_WIDTH) - 1))
+#define APV_SPI_RECEIVED_CHIP_SELECT(chipSelect) ((chipSelect >> APV_SPI_RECEIVED_CHARACTER_WIDTH) & APV_SPI_RECEIVED_CHIP_SELECT_MASK)
+
 /******************************************************************************/
 /* Type Definitions :                                                         */
 /******************************************************************************/
@@ -408,6 +419,14 @@ extern APV_ERROR_CODE apvSetChipSelectCharacteristics(Spi                       
                                                       uint32_t                                serialClockBaudRate,
                                                       uint16_t                                serialClockFirstTransitionDelay,
                                                       uint16_t                                serialClockInterTransferDelay);
+extern APV_ERROR_CODE apvSPITransmitCharacter(Spi                  *spiControlBlock_p,
+                                              uint8_t               spiPrefixCharacter,
+                                              uint8_t               spiTrafficCharacter,
+                                              uint8_t               spiChipSelect,
+                                              apvSPILastTransfer_t  lastTransfer);
+extern APV_ERROR_CODE apvSpiReceiveCharacter(Spi      *spiControlBlock_p,
+                                             uint16_t *spiReceivedCharacter,
+                                             uint8_t  *spiChipSelect);
 
 /******************************************************************************/
 

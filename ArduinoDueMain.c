@@ -215,7 +215,7 @@ int main(void)
   //  - pre-SPCK delay   == 4 * MCK
   //  - inter-transfer delay BEFORE chip-select de-assert == 0
   apvSerialErrorCode = apvSetChipSelectCharacteristics(ApvSpi0ControlBlock_p,
-                                                       APV_SPI_CHIP_SELECT_REGISTER_0,
+                                                       APV_SPI_CHIP_SELECT_REGISTER_2,
                                                        APV_SPI_SERIAL_CLOCK_POLARITY_ONE,
                                                        APV_SPI_SERIAL_CLOCK_PHASE_DATA_CHANGE_LEADING,
                                                        APV_SPI_CHIP_SELECT_SINGLE_SLAVE_RISE,
@@ -224,6 +224,28 @@ int main(void)
                                                        APV_SPI_BAUD_RATE_SELECT_1M25,
                                                        APV_SPI_FIRST_SPCK_TRANSITION_DELAY_nS,
                                                        APV_SPI_INTER_TRANSFER_DELAY);
+
+  apvSerialErrorCode = apvSPIEnable(ApvSpi0ControlBlock_p,
+                                    true);
+
+  while (true)
+    {
+    volatile uint8_t  spiTransmitPrefix    = 0x55;
+    volatile uint8_t  spiTransmitTraffic   = 0xaa;
+    volatile uint8_t  spiChipSelectOut     = 0x03;
+    volatile uint16_t spiReceivedCharacter = 0;
+    volatile uint8_t  spiChipSelectIn      = 0;
+
+    apvSerialErrorCode = apvSPITransmitCharacter(ApvSpi0ControlBlock_p,
+                                                 spiTransmitPrefix,
+                                                 spiTransmitTraffic,
+                                                 spiChipSelectOut,
+                                                 APV_SPI_LAST_TRANSFER_ACTIVE);
+
+    apvSerialErrorCode = apvSpiReceiveCharacter( ApvSpi0ControlBlock_p,
+                                                &spiReceivedCharacter,
+                                                &spiChipSelectIn);
+    }
 
   /******************************************************************************/
 
