@@ -187,6 +187,9 @@ int main(void)
   apvSerialErrorCode = apvSwitchPeripheralClock(APV_PERIPHERAL_ID_SPI0, // switch on SPI0
                                                 true);
 
+  apvSerialErrorCode = apvSPIEnable(ApvSpi0ControlBlock_p,
+                                    true);
+
   // Operatimg mode is :
   //  - MASTER
   //  - chip-select set by registers SPI0_CSR[0 .. 3]
@@ -216,25 +219,22 @@ int main(void)
   //  - inter-transfer delay BEFORE chip-select de-assert == 0
   apvSerialErrorCode = apvSetChipSelectCharacteristics(ApvSpi0ControlBlock_p,
                                                        APV_SPI_CHIP_SELECT_REGISTER_0,
-                                                       APV_SPI_SERIAL_CLOCK_POLARITY_ONE,
-                                                       APV_SPI_SERIAL_CLOCK_PHASE_DATA_CHANGE_LEADING,
+                                                       APV_SPI_SERIAL_CLOCK_POLARITY_ZERO,
+                                                       APV_SPI_SERIAL_CLOCK_PHASE_DATA_CHANGE_FOLLOWING,
                                                        APV_SPI_CHIP_SELECT_SINGLE_SLAVE_RISE,
                                                        APV_SPI_CHIP_SELECT_CHANGE_SLAVE_RISE,
                                                        APV_SPI_MAXIMUM_BIT_TRANSFER_WIDTH,
-                                                       APV_SPI_BAUD_RATE_SELECT_39K215,
+                                                       APV_SPI_BAUD_RATE_SELECT_1M25,
                                                        APV_SPI_FIRST_SPCK_TRANSITION_DELAY_nS,
                                                        APV_SPI_INTER_TRANSFER_DELAY);
 
   apvSerialErrorCode = apvSwitchPeripheralLines(ID_SPI0,
                                                 true);
 
-  apvSerialErrorCode = apvSPIEnable(ApvSpi0ControlBlock_p,
-                                    true);
-
  while (true)
     {
-    volatile uint8_t  spiTransmitPrefix    = 0x55;
-    volatile uint8_t  spiTransmitTraffic   = 0xaa;
+    volatile uint8_t  spiTransmitPrefix    = 0x8f;
+    volatile uint8_t  spiTransmitTraffic   = 0x00; //0x8f; // bit 7 (READ) == 1, address 0:6 0x0f "WHO_AM_I" // 0x00;
     volatile uint8_t  spiChipSelectOut     = 0x00;
     volatile uint16_t spiReceivedCharacter = 0;
     volatile uint8_t  spiChipSelectIn      = 0;

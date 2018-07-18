@@ -304,28 +304,28 @@ APV_ERROR_CODE apvSwitchPeripheralLines(apvPeripheralId_t peripheralLineId,
                                       peripheralABSelect = ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR;
                                       peripheralABSelect = peripheralABSelect & (uint32_t)(~PIO_ABSR_P27);
                                       ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = peripheralABSelect;            // select as peripheral 'A'
-                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PUER = PIO_PUER_P27;      
+//                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PUER = PIO_PUER_P27;      
 
                                       // Program PIOA/28 - SPI0_NPCS0
                                       ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PDR  = PIO_PDR_P28;                 // enable SPI0 NPCS0
                                       peripheralABSelect = ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR;
                                       peripheralABSelect = peripheralABSelect & (uint32_t)(~PIO_ABSR_P28);
                                       ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = peripheralABSelect;          // select as peripheral 'A'
-                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PUER = PIO_PUER_P28;                // enable pull-up
+//                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PUER = PIO_PUER_P28;                // enable pull-up
 
                                       // Program PIOA/29 - SPIO_NPCS1
                                       ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PDR  = PIO_PDR_P29;                 // enable SPI0 NPCS1
                                       peripheralABSelect = ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR;
                                       peripheralABSelect = peripheralABSelect & (uint32_t)(~PIO_ABSR_P29);
                                       ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_ABSR = peripheralABSelect;          // select as peripheral 'A'
-                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PUER = PIO_PUER_P29;      
+ //                                     ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PUER = PIO_PUER_P29;      
 
                                       //Program PIOB/21 - SPI0_NPCS2
                                       ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_B]->PIO_PDR  = PIO_PDR_P21;                 // enable SPI0 NPCS2
                                       peripheralABSelect = ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_B]->PIO_ABSR;
                                       peripheralABSelect = peripheralABSelect | PIO_ABSR_P21;
                                       ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_B]->PIO_ABSR = peripheralABSelect;          // select as peripheral 'A'
-                                      ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PUER = PIO_PUER_P21;      
+ //                                     ApvPeripheralLineControlBlock_p[APV_PERIPHERAL_LINE_GROUP_A]->PIO_PUER = PIO_PUER_P21;      
 
                                       break;
 
