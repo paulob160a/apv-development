@@ -122,14 +122,14 @@
 typedef enum apvCommsPlanes_tTag
   {
   APV_COMMS_PLANE_SERIAL_UART = 0, /*  0 */
-  APV_COMMS_PLANE_SERIAL_USART_0,  /*  1 */
-  APV_COMMS_PLANE_SERIAL_USART_1,  /*  2 */
-  APV_COMMS_PLANE_SERIAL_USART_2,  /*  3 */
-  APV_COMMS_PLANE_SERIAL_USART_3,  /*  4 */
-  APV_COMMS_PLANE_SPI_RADIO_0,     /*  5 */
-  APV_COMMS_PLANE_SPI_RADIO_1,     /*  6 */
-  APV_COMMS_PLANE_SPI_RADIO_2,     /*  7 */
-  APV_COMMS_PLANE_SPI_RADIO_3,     /*  8 */
+  APV_COMMS_PLANE_SPI_0,           /*  1 */
+  APV_COMMS_PLANE_SPI_1,           /*  2 */
+  APV_COMMS_PLANE_SPI_2,           /*  3 */
+  APV_COMMS_PLANE_SPI_3,           /*  4 */
+  APV_COMMS_PLANE_SERIAL_USART_0,  /*  5 */
+  APV_COMMS_PLANE_SERIAL_USART_1,  /*  6 */
+  APV_COMMS_PLANE_SERIAL_USART_2,  /*  7 */
+  APV_COMMS_PLANE_SERIAL_USART_3,  /*  8 */
   APV_COMMS_PLANE_I2C_ANON,        /*  9 */
   APV_COMMS_PLANE_UNUSED_0,        /* 10 */
   APV_COMMS_PLANE_UNUSED_1,        /* 11 */

@@ -73,7 +73,7 @@
 #define APV_LSM9DS1_INT_GEN_CFG_XL_ZLIE_MASK             (APV_LSM9DS1_INT_GEN_CFG_XL_YHIE_MASK << 1) // enable Z-LOW  interrupt
 #define APV_LSM9DS1_INT_GEN_CFG_XL_ZHIE_MASK             (APV_LSM9DS1_INT_GEN_CFG_XL_ZLIE_MASK << 1) // enable Z-HIGH interrupt
 #define APV_LSM9DS1_INT_GEN_CFG_6D_MASK                  (APV_LSM9DS1_INT_GEN_CFG_XL_ZHIE_MASK << 1) // enable "6-direction" interrupt
-#define APV_LSM9DS1_INT_GEN_CFG_AOI_MASK                 (APV_LSM9DS1_INT_GEN_CFG_6D_MASK      << 1) // [ 0 == OR | 1 == AND ] inerrupt events
+#define APV_LSM9DS1_INT_GEN_CFG_AOI_MASK                 (APV_LSM9DS1_INT_GEN_CFG_6D_MASK      << 1) // [ 0 == OR | 1 == AND ] interrupt events
 
 // INT_GEN_THS_X_XL :  linear acceleration sensor X-axis interrupt threshold register
 #define APV_LSM9DS1_INT_GEN_THS_X_XL_THRESHOLD_MASK      ((APV_LSM9DS1_FIELD_SIZE)0xFF) 
@@ -371,7 +371,7 @@
           (threshold) = (int16_t)(((uint16_t)(threshold)) + ((uint16_t)(((uint8_t)registerHigh) & APV_LSM9DS1_INT_GEN_THS_G_MASK))); \\
           }
 
-// DCRM is only present in the 'X' threshold register
+// DCRM is only present in the 'X' threshold register (see "INT_GEN_DUR_G")
 #define APV_LSM9DS1_INT_GEN_THS_DCRM_G_READ(dcrm,registerHigh) \\
           { \\
           (dcrm) = ((registerHigh) & APV_LSM9DS1_INT_GEN_THS_G_DCRM_G_MASK) >> APV_LSM9DS1_INT_GEN_THS_G_DCRM_G_SHIFT; \\
@@ -398,7 +398,7 @@
 #define APV_LSM9DS1_INT_GEN_THS_Y_G_WRITE     APV_LSM9DS1_INT_GEN_THS_G_WRITE
 #define APV_LSM9DS1_INT_GEN_THS_Z_G_WRITE     APV_LSM9DS1_INT_GEN_THS_G_WRITE
 
-// INT_GEN_DUR_G : see Table 100
+// INT_GEN_DUR_G : see Table 100 and "APV_LSM9DS1_INT_GEN_THS_X_DCRM_G_READ"
 #define APV_LSM9DS1_INT_GEN_DUR_G_DUR_G_MASK  ((APV_LSM9DS1_FIELD_SIZE)0x7F)                                  // interrupt duration mask
 #define APV_LSM9DS1_INT_GEN_DUR_G_WAIT_G_MASK ((APV_LSM9DS1_FIELD_SIZE)~APV_LSM9DS1_INT_GEN_DUR_G_DUR_G_MASK) // [ 0 == no wait | 1 == wait ] for "DUR_G" samples 
                                                                                                               // before sampling and interrupt exit

@@ -75,12 +75,12 @@ int main(void)
 
   // Initialise the array of message layer handling components
   apvSerialErrorCode = apvMessagingLayerComponentInitialise(&apvMessagingLayerComponents[0],
-                                                             APV_PLANE_SERIAL_UART_CHANNELS);
+                                                             APV_MESSAGING_LAYER_COMPONENT_ENTRIES);
 
   // Load the serial UART messaging layer received message interpreter
   apvSerialErrorCode = apvMessagingLayerComponentLoad( APV_PLANE_SERIAL_UART_CONTROL_0,
                                                       &apvMessagingLayerComponents[0],
-                                                       APV_PLANE_SERIAL_UART_CHANNELS,
+                                                       APV_MESSAGING_LAYER_COMPONENT_ENTRIES,
                                                       &apvMessageSerialUartFreeBufferSet,            // serial UART free buffer set/pool
                                                       &apvMessagingLayerFreeBufferSet,               // messaging layer free buffer set/pool
                                                       &apvMessagingLayerComponentSerialUartRxBuffer, // serial UART component input ring
@@ -91,7 +91,7 @@ int main(void)
   // Load the serial UART messaging layer transmit message handler
   apvSerialErrorCode = apvMessagingLayerComponentLoad( APV_PLANE_SERIAL_UART_CONTROL_1,
                                                       &apvMessagingLayerComponents[0],
-                                                       APV_PLANE_SERIAL_UART_CHANNELS,
+                                                       APV_MESSAGING_LAYER_COMPONENT_ENTRIES,
                                                       &apvMessagingLayerFreeBufferSet,               // messaging layer free buffer set/pool
                                                       &apvMessageSerialUartFreeBufferSet,            // serial UART free buffer set/pool
                                                       &apvMessagingLayerComponentSerialUartTxBuffer, // serial UART component output ring

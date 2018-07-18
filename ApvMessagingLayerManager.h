@@ -78,13 +78,24 @@
 /******************************************************************************/
 /* Constants :                                                                */
 /******************************************************************************/
-/* The first 16 entries in the messaging layer definition array are serial    */
+
+#define APV_MESSAGING_LAYER_COMPONENT_OFFSET_0 (0) // always used for the serial UART
+#define APV_MESSAGING_LAYER_COMPONENT_OFFSET_1 (4) // first offset component is the local SPI bus
+
+/******************************************************************************/
+/* NOTE : the index in the component table DOES NOT have to match the comms   */
+/*        and signal plane identifiers! The index selects the slot in the     */
+/*        table where a component is loaded BUT components are found using a  */
+/*        search on the comms and signal plane ids! This means the table can  */
+/*        be smaller than (comms * 16) + (signal) per comms plane!            */
+/******************************************************************************/
+/* The first 4 entries in the messaging layer definition array are serial     */
 /* UART channels defined in pairs :                                           */
 /*  - APV_SIGNAL_PLANE_CONTROL_0 == 0 : defined as input MATCHED TO           */
-/*  - APV_SIGNAL_PLANE_CONTROL_1 == 2 : defined as ouput                      */
+/*  - APV_SIGNAL_PLANE_CONTROL_1 == 2 : defined as output                     */
 /*                                                                            */
 /*  - APV_SIGNAL_PLANE_DATA_0 == 1 : defined as input MATCHED TO              */
-/*  - APV_SIGNAL_PLANE_DATA_1 == 3 : defined as ouput                         */
+/*  - APV_SIGNAL_PLANE_DATA_1 == 3 : defined as output                        */
 /*                                                                            */
 /******************************************************************************/
 
@@ -95,8 +106,19 @@
                  APV_PLANE_SERIAL_UART_DATA_##signalPlaneIndex = (((uint8_t)APV_COMMS_PLANE_SERIAL_UART) + ((uint8_t)APV_SIGNAL_PLANE_DATA_##signalPlaneIndex))
 
 /******************************************************************************/
+/* The next 4 entries in the messaging layer definition array are SPI         */
+/* channels defined in pairs :                                                */
+/******************************************************************************/
 
-#define APV_MESSAGING_LAYER_COMPONENT_ENTRIES_SIZE        (APV_PLANE_SERIAL_UART_CHANNELS)
+#define APV_PLANE_SPI_CONTROL_nn(signalPlaneIndex,componentOffset) \
+                 APV_PLANE_SPI_CONTROL_0_##signalPlaneIndex = (((uint8_t)(APV_COMMS_PLANE_SPI_0 * componentOffset)) + ((uint8_t)APV_SIGNAL_PLANE_CONTROL_##signalPlaneIndex))
+
+#define APV_PLANE_SPI_DATA_nn(signalPlaneIndex,componentOffset) \
+                 APV_PLANE_SPI_DATA_0_##signalPlaneIndex = (((uint8_t)(APV_COMMS_PLANE_SPI_0 * componentOffset)) + ((uint8_t)APV_SIGNAL_PLANE_DATA_##signalPlaneIndex))
+
+/******************************************************************************/
+
+#define APV_MESSAGING_LAYER_COMPONENT_ENTRIES_SIZE        (APV_MESSAGING_LAYER_COMPONENT_ENTRIES)
 #define APV_MESSAGING_LAYER_FREE_MESSAGE_BUFFER_SET_SIZE  16 // the pool of inter-messaging layer message buffers
 
 #define APV_MESSAGINIG_COMPONENT_MESSAGE_RING_BUFFER_SIZE 16 // a messaging layer components' message buffer holding ring
@@ -111,7 +133,11 @@ typedef enum apvMessagingLayerPlaneHandlers_tTag
   APV_PLANE_SERIAL_UART_CONTROL_nn(1),
   APV_PLANE_SERIAL_UART_DATA_nn(0),
   APV_PLANE_SERIAL_UART_DATA_nn(1),
-  APV_PLANE_SERIAL_UART_CHANNELS
+  APV_PLANE_SPI_CONTROL_nn(0,APV_MESSAGING_LAYER_COMPONENT_OFFSET_1),
+  APV_PLANE_SPI_CONTROL_nn(1,APV_MESSAGING_LAYER_COMPONENT_OFFSET_1),
+  APV_PLANE_SPI_DATA_nn(0,APV_MESSAGING_LAYER_COMPONENT_OFFSET_1),
+  APV_PLANE_SPI_DATA_nn(1,APV_MESSAGING_LAYER_COMPONENT_OFFSET_1),
+  APV_MESSAGING_LAYER_COMPONENT_ENTRIES
   } apvMessagingLayerPlaneHandlers_t;
 
 
@@ -136,7 +162,7 @@ typedef struct apvMessagingLayerComponent_tTag
 /* Global Variable Declarations :                                             */
 /******************************************************************************/
 
-extern apvMessagingLayerComponent_t apvMessagingLayerComponents[APV_PLANE_SERIAL_UART_CHANNELS];
+extern apvMessagingLayerComponent_t apvMessagingLayerComponents[APV_MESSAGING_LAYER_COMPONENT_ENTRIES];
 extern bool                         apvMessagingLayerComponentReady[APV_MESSAGING_LAYER_COMPONENT_ENTRIES_SIZE];
 
 extern apvRingBuffer_t              apvMessagingLayerFreeBufferSet;

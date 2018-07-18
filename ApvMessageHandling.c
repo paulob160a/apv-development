@@ -174,10 +174,10 @@ bool apvMessageFramerCheckCommsPlane(apvCommsPlanes_t commsPlane)
     case APV_COMMS_PLANE_SERIAL_USART_1 :
     case APV_COMMS_PLANE_SERIAL_USART_2 :
     case APV_COMMS_PLANE_SERIAL_USART_3 :
-    case APV_COMMS_PLANE_SPI_RADIO_0    :
-    case APV_COMMS_PLANE_SPI_RADIO_1    :
-    case APV_COMMS_PLANE_SPI_RADIO_2    :
-    case APV_COMMS_PLANE_SPI_RADIO_3    :
+    case APV_COMMS_PLANE_SPI_0          :
+    case APV_COMMS_PLANE_SPI_1          :
+    case APV_COMMS_PLANE_SPI_2          :
+    case APV_COMMS_PLANE_SPI_3          :
     case APV_COMMS_PLANE_I2C_ANON       :
                                           apvCommsPlaneCheck = true;
 
