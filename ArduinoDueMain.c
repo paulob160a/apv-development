@@ -22,6 +22,7 @@
 #include "ApvControlPortProtocol.h"
 #include "ApvMessageHandling.h"
 #include "ApvMessagingLayerManager.h"
+#include "ApvLsm9ds1.h"
 
 /******************************************************************************/
 /* Constant Definitions :                                                     */
@@ -33,7 +34,7 @@
 /* Local Variable Definitions :                                               */
 /******************************************************************************/
 
-static uint32_t spiTimerIndex = 0;
+static uint32_t apvDurationTimer0Index = APV_DURATION_TIMER_NULL_INDEX; // the first countdown timer is an 150usecs timer
 
 /******************************************************************************/
 /* Local Function Declarations :                                              */
@@ -180,6 +181,7 @@ int main(void)
   apvSerialErrorCode = apvSwitchNvicDeviceIrq(APV_PERIPHERAL_ID_UART,
                                               true);
 
+#if (0)
   /******************************************************************************/
   /* SPI Setup :                                                                */
   /******************************************************************************/
@@ -249,6 +251,7 @@ int main(void)
                                                 &spiReceivedCharacter,
                                                 &spiChipSelectIn);
     }
+#endif
 
   /******************************************************************************/
 
@@ -270,11 +273,11 @@ int main(void)
                                               &spiTimerIndex); */
 
   apvSerialErrorCode = apvAssignDurationTimer(&apvCoreTimeBaseBlock,
-                                               apvSpiStateTimer,
+                                               apvDurationStateTimer,
                                                APV_DURATION_TIMER_TYPE_PERIODIC,
                                                APV_SYSTEM_TIMER_CLOCK_MINIMUM_PERIOD,
                                                APV_DURATION_TIMER_SOURCE_SYSTICK,
-                                              &spiTimerIndex);
+                                              &apvDurationTimer0Index);
 
   // Switch on the peripheral I/O "C" channel clock
   apvSerialErrorCode = apvSwitchPeripheralClock(ID_PIOC,
@@ -289,6 +292,9 @@ int main(void)
                                               true); */
 
   apvSerialErrorCode = apvStartSystemTimer(&apvCoreTimeBaseBlock);
+
+  apvSerialErrorCode = apvInitialiseLsm9ds1(ApvSpi0ControlBlock_p,
+                                            &apvCoreTimeBaseBlock);
 
 /******************************************************************************/
 

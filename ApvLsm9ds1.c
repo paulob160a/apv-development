@@ -15,10 +15,33 @@
 /* Includes :                                                                 */
 /******************************************************************************/
 
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include "sam3x8e.h"
+#include "ApvUtilities.h"
+#include "ApvError.h"
+#include "ApvSerial.h"
+#include "ApvPeripheralControl.h"
+#include "ApvCommsUtilities.h"
+#include "ApvEventTimers.h"
 #include "ApvLsm9ds1.h"
 
 /******************************************************************************/
 /* Global Variables :                                                         */
+/******************************************************************************/
+/* The SPI0 global interrupt flags :                                          */
+/******************************************************************************/
+
+         bool apvSPI0ReceiverReady = false; // interrupt signalling flag
+         bool apvSPI0Mutex         = false; // device in-use mutex
+
+/******************************************************************************/
+/* Timing flag :                                                              */
+/******************************************************************************/
+
+volatile bool apvLsm9ds1TimerFlag  = false;
+
 /******************************************************************************/
 
 // Section 6, "Register Mapping", Table 21
@@ -687,6 +710,92 @@ const apvLsm9ds1RegisterDescriptor_t apvLsm9ds1MagnetometerRegisters[APV_LSM9DS1
     APV_LSM9DS1_REGISTER_COMMON_DEFAULT
     }
   };
+
+/******************************************************************************/
+/* apvInitialiseLsm9ds1() :                                                   */
+/* - enable the gyroscopes and accelerometers. Set the output data rates and  */
+/*   bandwidths                                                               */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvInitialiseLsm9ds1(Spi                  *spiControlBlock_p,
+                                    apvCoreTimerBlock_t  *apvCoreTimerBlock)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE lsm9ds1Error         = APV_ERROR_CODE_NONE;
+  uint32_t       apvLsm9ds1TimerIndex = APV_DURATION_TIMER_NULL_INDEX;
+
+/******************************************************************************/
+/* The device startup is a simple state-machine of timed events - get a timer */
+/******************************************************************************/
+
+  lsm9ds1Error = apvAssignDurationTimer( apvCoreTimerBlock,
+                                         apvLsm9ds1StateTimer,
+                                         APV_DURATION_TIMER_TYPE_ONE_SHOT,    // single-shot
+                                         APV_EVENT_TIMER_INVERSE_NANOSECONDS, // one second period
+                                         APV_DURATION_TIMER_SOURCE_SYSTICK,
+                                        &apvLsm9ds1TimerIndex);
+                                               
+  while (apvLsm9ds1TimerFlag == false)
+    ;
+
+  apvLsm9ds1TimerFlag = false;
+
+  lsm9ds1Error = apvReTriggerDurationTimer(apvCoreTimerBlock,
+                                           apvLsm9ds1TimerIndex,
+                                           (APV_EVENT_TIMER_INVERSE_NANOSECONDS * 10));
+
+  while (apvLsm9ds1TimerFlag == false)
+    ;
+
+/******************************************************************************/
+/* Check the accelerometer and gyroscope device is alive by requesting the    */
+/* "WHO_AM_I" code                                                            */
+/******************************************************************************/
+/******************************************************************************/
+
+  return(lsm9ds1Error);
+
+/******************************************************************************/
+  } /* end of apvInitialiseLsm9ds1                                            */
+
+/******************************************************************************/
+/* apvLsm9ds1StateTimer() :                                                   */
+/*  --> durationEventMessage : possible callback parameter                    */
+/*                                                                            */
+/* - device timing callback - set the "timeout" flag                          */
+/*                                                                            */
+/******************************************************************************/
+
+void apvLsm9ds1StateTimer(void *durationEventMessage)
+  {
+/******************************************************************************/
+
+  apvLsm9ds1TimerFlag = true;
+
+/******************************************************************************/
+  } /* end of apvLsm9ds1StateTimer                                            */
+
+/******************************************************************************/
+/* SPI0 Handler :                                                             */
+/*  - SPI0 interrupt handler (replaces the "weak" default definition)         */
+/*  - as SPI is a master/slave device and the Arduino will always be master,  */
+/*    only the receive interrupt is of interest and can stand proxy for "new  */
+/*    message received" and "transmitter ready"                               */
+/*                                                                            */
+/******************************************************************************/
+
+void SPI0_Handler(void)
+  {
+/******************************************************************************/
+
+  apvSPI0ReceiverReady = true;
+
+  NVIC_ClearPendingIRQ(SPI0_IRQn);
+
+/******************************************************************************/
+  } /* end of SPI0_Handler                                                    */
 
 /******************************************************************************/
 /* (C) PulsingCoreSoftware Limited 2018 (C)                                   */

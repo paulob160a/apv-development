@@ -113,6 +113,7 @@
 
 // WHO_AM_I : "who am I ?"
 #define APV_LSM9DS1_WHO_AM_I_MASK                        ((APV_LSM9DS1_FIELD_SIZE)0xFF)
+#define APV_LSM9DS1_WHO_AM_I                             ((APV_LSM9DS1_FIELD_SIZE)0x68) // section 7.11 p45
 
 // CTRL_REG1_G : gyro control #1
 #define APV_LSM9DS1_CTRL_REG1_G_BW_MASK                 ((APV_LSM9DS1_FIELD_SIZE)0x03)
@@ -687,8 +688,21 @@ typedef struct apvLsm9ds1RegisterDescriptor_tTag
   } apvLsm9ds1RegisterDescriptor_t;
 
 /******************************************************************************/
+/* Global Function Declarations :                                             */
+/******************************************************************************/
+
+extern APV_ERROR_CODE apvInitialiseLsm9ds1(Spi                  *spiControlBlock_p,
+                                           apvCoreTimerBlock_t  *apvCoreTimerBlock);
+
+extern void           apvLsm9ds1StateTimer(void *durationEventMessage);
+
+/******************************************************************************/
 /* Global Variable Declarations :                                             */
 /******************************************************************************/
+
+extern          bool  apvSPI0ReceiverReady;
+extern          bool  apvSPI0Mutex;
+extern volatile bool  apvLsm9ds1TimerFlag;
 
 extern const apvLsm9ds1RegisterDescriptor_t apvLsm9ds1AccelerometerAndGyroRegisters[APV_LSM9DS1_ACCELEROMETER_GYRO_REGISTER_SET_SIZE];
 extern const apvLsm9ds1RegisterDescriptor_t apvLsm9ds1MagnetometerRegisters[APV_LSM9DS1_MAGNETOMETER_REGISTER_SET_SIZE];

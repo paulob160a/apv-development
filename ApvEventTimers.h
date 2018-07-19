@@ -207,6 +207,11 @@ extern APV_ERROR_CODE apvAssignDurationTimer(apvCoreTimerBlock_t      *coreTimer
                                              uint64_t                  durationTimerInterval,
                                              apvDurationTimerSource_t  durationTimerSource,
                                              uint32_t                 *timerIndex);
+extern APV_ERROR_CODE apvDeAssignDurationTimer(apvCoreTimerBlock_t *coreTimerBlock,
+                                               uint32_t            *timerIndex);
+extern APV_ERROR_CODE apvReTriggerDurationTimer(apvCoreTimerBlock_t *coreTimerBlock,
+                                                uint32_t             timerIndex,
+                                                uint64_t             durationTimerInterval);
 extern APV_ERROR_CODE apvExecuteDurationTimers(apvCoreTimerBlock_t *coreTimerBlock);
 extern APV_ERROR_CODE apvInitialiseEventTimerBlocks(apvEventTimersBlock_t *apvEventTimerBlock,
                                                     uint32_t               numberOfTimerBlocks);
@@ -234,7 +239,7 @@ extern void           apvEventTimerChannel5CallBack(uint32_t apvEventTimerIndex)
 extern void           apvEventTimerChannel6CallBack(uint32_t apvEventTimerIndex);
 extern void           apvEventTimerChannel7CallBack(uint32_t apvEventTimerIndex);
 extern void           apvEventTimerChannel8CallBack(uint32_t apvEventTimerIndex);
-extern void           apvSpiStateTimer(void *stateTimerIndex);
+extern void           apvDurationStateTimer(void *stateTimerIndex);
 
 /******************************************************************************/
 

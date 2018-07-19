@@ -338,7 +338,12 @@ APV_ERROR_CODE apvAssignDurationTimer(apvCoreTimerBlock_t      *coreTimerBlock,
         durationTimerTicks = durationTimerInterval / APV_SYSTEM_TIMER_CLOCK_MINIMUM_PERIOD;
         }
 
-      // The set of available process timers is small, just do a linear search for a free one
+      /******************************************************************************/
+      /* The set of available process timers is small, just do a linear search for  */
+      /* a free one - the mechanism below will only work if only one process at a   */
+      /* uses this code. IF THAT IS NOT THE CASE PROTECT THE WHOLE BLOCK!           */
+      /******************************************************************************/
+
       *timerIndex = 0;
 
       while ((coreTimerBlock->durationTimer[*timerIndex].durationTimerIndex != APV_DURATION_TIMER_NULL_INDEX) && 
@@ -353,8 +358,20 @@ APV_ERROR_CODE apvAssignDurationTimer(apvCoreTimerBlock_t      *coreTimerBlock,
         coreTimerBlock->durationTimer[*timerIndex].durationTimerRequestedMicroSeconds =  durationTimerInterval;
         coreTimerBlock->durationTimer[*timerIndex].durationTimerRequestedTicks        =  durationTimerTicks;
         coreTimerBlock->durationTimer[*timerIndex].durationTimerCallBack              =  durationTimerCallBack;
+
+        /******************************************************************************/
+        /* At this point the interrupt service routine can execute the timer if these */
+        /* fields are populated. Ensure coherency!                                    */
+        /******************************************************************************/
+
+        APV_CRITICAL_REGION_ENTRY();
+
         coreTimerBlock->durationTimer[*timerIndex].durationTimerIndex                 = *timerIndex;
         coreTimerBlock->durationTimer[*timerIndex].durationTimerType                  =  durationTimerType;
+
+        APV_CRITICAL_REGION_EXIT();
+
+        /******************************************************************************/
         }
       else
         {
@@ -369,6 +386,135 @@ APV_ERROR_CODE apvAssignDurationTimer(apvCoreTimerBlock_t      *coreTimerBlock,
 
 /******************************************************************************/
   } /* end of apvAssignDurationTimer                                          */
+
+/******************************************************************************/
+/* apvDeAssignDurationTimer() :                                               */
+/*  --> coreTimerBlock        : the single core-timer block                   */
+/*  --> timerIndex            : the allocated process timer index (if any)    */
+/*                                                                            */
+/*  - remove a duration timer from the list                                   */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvDeAssignDurationTimer(apvCoreTimerBlock_t *coreTimerBlock,
+                                        uint32_t            *timerIndex)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE durationTimerError = APV_ERROR_CODE_NONE;
+  uint32_t       durationTimerIndex = 0;
+
+/******************************************************************************/
+
+  if ((coreTimerBlock != NULL) && (*timerIndex < APV_CORE_TIMER_DURATION_TIMERS))
+    {
+    // Search for this index
+    while (durationTimerIndex < APV_CORE_TIMER_DURATION_TIMERS)
+      {
+      // If the index is found deallocate it's slot
+      if (durationTimerIndex == *timerIndex)
+        {
+        APV_CRITICAL_REGION_ENTRY();
+
+         coreTimerBlock->durationTimer[*timerIndex].durationTimerIndex = APV_DURATION_TIMER_NULL_INDEX;
+         coreTimerBlock->durationTimer[*timerIndex].durationTimerType  = APV_DURATION_TIMER_TYPE_NONE;
+
+        APV_CRITICAL_REGION_EXIT();
+
+        *timerIndex = APV_DURATION_TIMER_NULL_INDEX;
+
+        break;
+        }
+
+      durationTimerIndex = durationTimerIndex + 1;
+      }
+
+    // If the loop fell out without finding the index - error!
+    if (durationTimerIndex == APV_CORE_TIMER_DURATION_TIMERS)
+      {
+      durationTimerError = APV_ERROR_CODE_EVENT_TIMER_INITIALISATION_ERROR;     
+      }
+    }
+  else
+    {
+    durationTimerError = APV_ERROR_CODE_EVENT_TIMER_INITIALISATION_ERROR;
+    }
+
+/******************************************************************************/
+
+  return(durationTimerError);
+
+/******************************************************************************/
+  } /* end of apvDeAssignDurationTimer                                        */
+
+/******************************************************************************/
+/* apvReTriggerDurationTimer() :                                              */
+/*  --> coreTimerBlock        : the single core-timer block                   */
+/*  --> timerIndex            : the allocated process timer index (if any)    */
+/*  --> durationTimerInterval : duration of the timer in nanoseconds          */
+/*                                                                            */
+/* - retrigger a duration timer with the same or a different period           */
+/*                                                                            */
+/******************************************************************************/
+
+APV_ERROR_CODE apvReTriggerDurationTimer(apvCoreTimerBlock_t *coreTimerBlock,
+                                         uint32_t             timerIndex,
+                                         uint64_t             durationTimerInterval)
+  {
+/******************************************************************************/
+
+  APV_ERROR_CODE durationTimerError = APV_ERROR_CODE_NONE;
+  uint32_t       durationTimerIndex = 0,
+                 durationTimerTicks = 0;
+
+/******************************************************************************/
+
+  if ((coreTimerBlock != NULL) && (timerIndex < APV_CORE_TIMER_DURATION_TIMERS))
+    {
+    // Search for this index
+    while (durationTimerIndex < APV_CORE_TIMER_DURATION_TIMERS)
+      {
+      // If the index is found reset the timer interval
+      if (durationTimerIndex == timerIndex)
+        {
+        if (durationTimerInterval < APV_SYSTEM_TIMER_CLOCK_MINIMUM_INTERVAL)
+          {
+          durationTimerInterval = APV_SYSTEM_TIMER_CLOCK_MINIMUM_INTERVAL;
+          }
+
+        durationTimerTicks = durationTimerInterval / APV_SYSTEM_TIMER_CLOCK_MINIMUM_PERIOD;
+
+        APV_CRITICAL_REGION_ENTRY();
+
+        coreTimerBlock->durationTimer[timerIndex].durationTimerDownCounter           =  durationTimerTicks;
+        coreTimerBlock->durationTimer[timerIndex].durationTimerRequestedMicroSeconds =  durationTimerInterval;
+        coreTimerBlock->durationTimer[timerIndex].durationTimerRequestedTicks        =  durationTimerTicks;
+
+        APV_CRITICAL_REGION_EXIT();
+
+        break;
+        }
+
+      durationTimerIndex = durationTimerIndex + 1;
+      }
+
+    // If the loop fell out without finding the index - error!
+    if (durationTimerIndex == APV_CORE_TIMER_DURATION_TIMERS)
+      {
+      durationTimerError = APV_ERROR_CODE_EVENT_TIMER_INITIALISATION_ERROR;     
+      }
+    }
+  else
+    {
+    durationTimerError = APV_ERROR_CODE_NULL_PARAMETER;
+    }
+
+/******************************************************************************/
+
+  return(durationTimerError);
+
+/******************************************************************************/
+  } /* end of apvReTriggerDurationTimer                                       */
 
 /******************************************************************************/
 /* apvExecuteDurationTimers() :                                               */
@@ -947,27 +1093,29 @@ void apvEventTimerChannel8CallBack(uint32_t apvEventTimerIndex)
   } /* end of apvEventTimerChannel8CallBack                                   */
 
 /******************************************************************************/
-/* apvSpiStateTimer() :                                                       */
-/*   --> stateTimerIndex : currently a dummy message to this SPI callback     */
-/*                         function                                           */
+/* apvDurationStateTimer() :                                                  */
+/*   --> stateTimerIndex : currently a dummy message to this duration timer   */
+/*                         callback function                                  */
+/* - duration timer callback function                                         */
+/*                                                                            */
 /******************************************************************************/
 
-void apvSpiStateTimer(void *stateTimerIndex)
+void apvDurationStateTimer(void *stateTimerIndex)
   {
 /******************************************************************************/
 
-  static bool spiStateTimerStrobe = false;
+  static bool durationStateTimerStrobe = false;
 
 /******************************************************************************/
 
-  if (spiStateTimerStrobe == false)
+  if (durationStateTimerStrobe == false)
     {
     apvDriveResourceIoLine(APV_RESOURCE_ID_STROBE_0,
                            APV_PERIPHERAL_LINE_GROUP_C,
                            PIO_PER_P3,
                            true);
 
-    spiStateTimerStrobe = true;
+    durationStateTimerStrobe = true;
     }
   else
     {
@@ -976,11 +1124,11 @@ void apvSpiStateTimer(void *stateTimerIndex)
                            PIO_PER_P3,
                            false);
 
-    spiStateTimerStrobe = false;
+    durationStateTimerStrobe = false;
     }
 
 /******************************************************************************/
-  } /* end of apvSpiStateTimer                                                */
+  } /* end of apvDurationStateTimer                                           */
 
 /******************************************************************************/
 /* (C) PulsingCoreSoftware Limited 2018 (C)                                   */
